@@ -9,6 +9,8 @@
     "preview": "vite preview"
   },
   "devDependencies": {
+    "@babylonjs/core": "^6.35.0",
+    "@babylonjs/inspector": "^6.35.0",
     "@typescript-eslint/eslint-plugin": "^6.16.0",
     "eslint": "^8.56.0",
     "eslint-config-prettier": "^9.1.0",
