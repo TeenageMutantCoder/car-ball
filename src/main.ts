@@ -1,15 +1,16 @@
 import "@babylonjs/core/Debug/debugLayer";
 import "@babylonjs/inspector";
+import "@babylonjs/loaders/glTF";
 import {
   Engine,
   Scene,
   ArcRotateCamera,
   Vector3,
   HemisphericLight,
-  type Mesh,
   MeshBuilder,
   StandardMaterial,
   Color3,
+  SceneLoader,
 } from "@babylonjs/core";
 
 class App {
@@ -37,7 +38,7 @@ class App {
   #createScene(): Scene {
     const scene = new Scene(this.#engine);
 
-    const camera: ArcRotateCamera = new ArcRotateCamera(
+    const camera = new ArcRotateCamera(
       "Camera",
       Math.PI / 2,
       (3 * Math.PI) / 8,
@@ -47,28 +48,25 @@ class App {
     );
     camera.attachControl(this.#canvas, true);
 
-    const light1: HemisphericLight = new HemisphericLight(
-      "light1",
-      new Vector3(1, 1, 0),
-      scene,
-    );
+    const light1 = new HemisphericLight("light1", new Vector3(1, 1, 0), scene);
 
     light1.intensity = 0.7;
 
-    const boxSize = 5;
-    const box: Mesh = MeshBuilder.CreateBox("box", { size: boxSize }, scene);
-
-    box.position.y = 0.5 * boxSize;
+    SceneLoader.ImportMesh("", "./Buggy/", "Buggy.gltf", scene, (meshes) => {
+      const buggy = meshes[0];
+      buggy.position.y = 1;
+      buggy.scaling = new Vector3(0.1, 0.1, 0.1);
+    });
 
     const ground = MeshBuilder.CreateGround(
       "ground",
-      { width: 100, height: 100 },
+      { width: 1000, height: 1000 },
       scene,
     );
     ground.position.y = 0;
 
     const groundMat = new StandardMaterial("groundMat");
-    groundMat.diffuseColor = new Color3(0, 1, 0);
+    groundMat.diffuseColor = new Color3(0.1, 0.5, 0.1);
     ground.material = groundMat;
 
     return scene;
