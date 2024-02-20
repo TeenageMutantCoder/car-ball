@@ -73,6 +73,15 @@ class App {
       }
     });
 
+    SceneLoader.ImportMesh("", "./Marble/", "marble.gltf", scene, (meshes) => {
+      const ball = meshes[0];
+      ball.position.x = -5;
+      ball.position.y = 5;
+      ball.position.z = 40;
+      ball.rotation = Vector3.Zero();
+      ball.scaling = new Vector3(10, 10, 10);
+    });
+
     const ground = MeshBuilder.CreateGround(
       "ground",
       { width: 1000, height: 1000 },
