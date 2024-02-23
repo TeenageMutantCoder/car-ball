@@ -29,15 +29,15 @@ class App {
   readonly #scene: Scene;
   inputMap: Record<string, KeyboardEventTypes> = {};
   car: AbstractMesh | null = null;
-  speed = 1.5;
-  turnSpeed = 0.05;
+  speed = 50;
+  turnSpeed = 1;
   camera: FollowCamera | null = null;
 
   constructor() {
     this.#canvas = this.#createCanvas();
     this.#engine = new Engine(this.#canvas, true);
     const engine = this.#engine;
-    window.addEventListener("resize", function () {
+    window.addEventListener("resize", function() {
       engine.resize();
     });
     this.#scene = this.#createScene();
@@ -189,34 +189,37 @@ class App {
   #updateFromKeyboard(): void {
     if (this.car === null) return;
 
+    // Forward and backward movement
+    const newLinearVelocity = Vector3.Zero();
     const forwardVector = this.car.forward.scale(this.speed);
-    const carVelocity = Vector3.Zero();
-    let isMoving = false;
-    let isBackward = false;
 
     if (this.inputMap.w === KeyboardEventTypes.KEYDOWN) {
-      carVelocity.addInPlace(forwardVector);
-      isMoving = true;
+      newLinearVelocity.addInPlace(forwardVector);
     }
     if (this.inputMap.s === KeyboardEventTypes.KEYDOWN) {
-      carVelocity.subtractInPlace(forwardVector);
-      isMoving = true;
-      isBackward = true;
+      newLinearVelocity.subtractInPlace(forwardVector);
     }
 
-    this.car.position.addInPlace(carVelocity);
+    this.car.physicsBody?.setLinearVelocity(newLinearVelocity);
 
+    // Left and right turning
+    const isMoving = !newLinearVelocity.equals(Vector3.Zero());
+    const isMovingBackward =
+      isMoving && newLinearVelocity.equals(forwardVector.scale(-1));
+    const newAngularVelocity = Vector3.Zero();
     const turnVector = new Vector3(0, this.turnSpeed, 0);
-    if (isBackward) {
+    if (isMovingBackward) {
       turnVector.scaleInPlace(-1);
     }
 
     if (this.inputMap.a === KeyboardEventTypes.KEYDOWN && isMoving) {
-      this.car.rotation.subtractInPlace(turnVector);
+      newAngularVelocity.subtractInPlace(turnVector);
     }
     if (this.inputMap.d === KeyboardEventTypes.KEYDOWN && isMoving) {
-      this.car.rotation.addInPlace(turnVector);
+      newAngularVelocity.addInPlace(turnVector);
     }
+
+    this.car.physicsBody?.setAngularVelocity(newAngularVelocity);
   }
 
   #addInspectorListener(): void {
