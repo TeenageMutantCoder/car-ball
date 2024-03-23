@@ -15,6 +15,7 @@ import {
   FollowCamera,
   Texture,
   CubeTexture,
+  Quaternion,
 } from "@babylonjs/core";
 import {
   Body,
@@ -23,7 +24,7 @@ import {
   Cylinder,
   Heightfield,
   Material,
-  Quaternion,
+  Quaternion as CannonQuaternion,
   RaycastVehicle,
   Vec3,
   World,
@@ -41,8 +42,9 @@ class App {
   #camera: FollowCamera | null = null;
   readonly #groundSize = 1000;
   readonly #maxSteerVal = 0.5;
-  readonly #maxForce = 200;
-  readonly #brakeForce = 10000;
+  readonly #maxForce = 1000;
+  readonly #brakeForce = 1000000;
+  readonly #carSizeMultiplier = 3;
 
   constructor() {
     this.#canvas = this.#createCanvas();
@@ -95,6 +97,7 @@ class App {
 
     scene.onBeforeRenderObservable.add(() => {
       this.#updateFromKeyboard();
+      this.#updateFromPhysics();
     });
 
     return scene;
@@ -123,7 +126,7 @@ class App {
         this.#car = car;
         this.#car.position.y = 1;
         this.#car.rotation = Vector3.Zero();
-        this.#car.scaling = new Vector3(0.1, 0.1, 0.1);
+        this.#car.scaling = new Vector3(0.08, 0.08, 0.08);
 
         if (this.#camera !== null) {
           this.#camera.lockedTarget = this.#car;
@@ -166,19 +169,23 @@ class App {
     this.#world.gravity.set(0, -10, 0);
 
     // Build the car chassis
-    const chassisShape = new Box(new Vec3(2, 0.5, 1));
+    const chassisShape = new Box(
+      new Vec3(1, 0.5, 2).scale(this.#carSizeMultiplier),
+    );
     const chassisBody = new Body({ mass: 150 });
     chassisBody.addShape(chassisShape);
-    chassisBody.position.set(0, 4, 0);
+    chassisBody.position.set(0, 2 * this.#carSizeMultiplier, 0);
     chassisBody.angularVelocity.set(0, 0.5, 0);
 
     // Create the vehicle
     this.#physicsVehicle = new RaycastVehicle({
       chassisBody,
+      indexForwardAxis: 2,
+      indexRightAxis: 0,
     });
 
     const wheelOptions = {
-      radius: 0.5,
+      radius: 0.5 * this.#carSizeMultiplier,
       directionLocal: new Vec3(0, -1, 0),
       suspensionStiffness: 30,
       suspensionRestLength: 0.3,
@@ -187,23 +194,45 @@ class App {
       dampingCompression: 4.4,
       maxSuspensionForce: 100000,
       rollInfluence: 0.01,
-      axleLocal: new Vec3(0, 0, 1),
-      chassisConnectionPointLocal: new Vec3(-1, 0, 1),
+      axleLocal: new Vec3(1, 0, 0),
+      chassisConnectionPointLocal: new Vec3(-1, 0, 1).scale(
+        this.#carSizeMultiplier,
+      ),
       maxSuspensionTravel: 0.3,
       customSlidingRotationalSpeed: -30,
       useCustomSlidingRotationalSpeed: true,
     };
 
-    wheelOptions.chassisConnectionPointLocal.set(-1, 0, 1);
+    // Front left wheel
+    wheelOptions.chassisConnectionPointLocal.set(
+      -1 * this.#carSizeMultiplier,
+      0,
+      1 * this.#carSizeMultiplier,
+    );
     this.#physicsVehicle.addWheel(wheelOptions);
 
-    wheelOptions.chassisConnectionPointLocal.set(-1, 0, -1);
+    // Front right wheel
+    wheelOptions.chassisConnectionPointLocal.set(
+      1 * this.#carSizeMultiplier,
+      0,
+      1 * this.#carSizeMultiplier,
+    );
     this.#physicsVehicle.addWheel(wheelOptions);
 
-    wheelOptions.chassisConnectionPointLocal.set(1, 0, 1);
+    // Rear left wheel
+    wheelOptions.chassisConnectionPointLocal.set(
+      -1 * this.#carSizeMultiplier,
+      0,
+      -1 * this.#carSizeMultiplier,
+    );
     this.#physicsVehicle.addWheel(wheelOptions);
 
-    wheelOptions.chassisConnectionPointLocal.set(1, 0, -1);
+    // Rear right wheel
+    wheelOptions.chassisConnectionPointLocal.set(
+      1 * this.#carSizeMultiplier,
+      0,
+      -1 * this.#carSizeMultiplier,
+    );
     this.#physicsVehicle.addWheel(wheelOptions);
 
     this.#physicsVehicle.addToWorld(this.#world);
@@ -224,7 +253,11 @@ class App {
       });
       wheelBody.type = Body.KINEMATIC;
       wheelBody.collisionFilterGroup = 0; // turn off collisions
-      const quaternion = new Quaternion().setFromEuler(-Math.PI / 2, 0, 0);
+      const quaternion = new CannonQuaternion().setFromEuler(
+        0,
+        0,
+        -Math.PI / 2,
+      );
       wheelBody.addShape(cylinderShape, new Vec3(), quaternion);
       wheelBodies.push(wheelBody);
 
@@ -369,6 +402,19 @@ class App {
 
       delete this.#inputMap.b;
     }
+  }
+
+  #updateFromPhysics(): void {
+    if (this.#car === null || this.#physicsVehicle === null) return;
+
+    const physicsCarPosition = Vector3.FromArray(
+      this.#physicsVehicle.chassisBody.position.toArray(),
+    );
+    const physicsCarQuaternion = Quaternion.FromArray(
+      this.#physicsVehicle.chassisBody.quaternion.toArray(),
+    );
+    this.#car.position.copyFrom(physicsCarPosition);
+    this.#car.rotationQuaternion = physicsCarQuaternion;
   }
 
   #addDebuggers(): void {
