@@ -22,12 +22,12 @@ import {
   Box,
   ContactMaterial,
   Cylinder,
-  Heightfield,
   Material,
   Quaternion as CannonQuaternion,
   RaycastVehicle,
   Vec3,
   World,
+  Sphere,
 } from "cannon-es";
 
 class App {
@@ -38,12 +38,14 @@ class App {
   #world: World | null = null;
   readonly #inputMap: Record<string, KeyboardEventTypes> = {};
   #car: AbstractMesh | null = null;
+  #ball: AbstractMesh | null = null;
   #physicsVehicle: RaycastVehicle | null = null;
+  #physicsBall: Body | null = null;
   #camera: FollowCamera | null = null;
-  readonly #groundSize = 1000;
-  readonly #maxSteerVal = 0.5;
-  readonly #maxForce = 1000;
-  readonly #brakeForce = 1000000;
+  readonly #groundSize = 10000;
+  readonly #maxSteerVal = 0.7;
+  readonly #maxForce = 5000;
+  readonly #brakeForce = 20;
   readonly #carSizeMultiplier = 3;
 
   constructor() {
@@ -124,7 +126,7 @@ class App {
       (meshes) => {
         const car = meshes[0];
         this.#car = car;
-        this.#car.name = 'vehicle'
+        this.#car.name = "vehicle";
         this.#car.position.y = 1;
         this.#car.rotation = Vector3.Zero();
         this.#car.scaling = new Vector3(0.08, 0.08, 0.08);
@@ -141,13 +143,13 @@ class App {
       "marble.gltf",
       this.#scene,
       (meshes) => {
-        const ball = meshes[0];
-        ball.name = 'ball';
-        ball.position.x = -5;
-        ball.position.y = 5;
-        ball.position.z = 40;
-        ball.rotation = Vector3.Zero();
-        ball.scaling = new Vector3(10, 10, 10);
+        this.#ball = meshes[0];
+        this.#ball.name = "ball";
+        this.#ball.position.x = -5;
+        this.#ball.position.y = 5;
+        this.#ball.position.z = 40;
+        this.#ball.rotation = Vector3.Zero();
+        this.#ball.scaling = new Vector3(10, 10, 10);
       },
     );
 
@@ -158,8 +160,8 @@ class App {
     );
     const groundMaterial = new StandardMaterial("groundMat");
     const groundTexture = new Texture("./grass.jpg", this.#scene);
-    groundTexture.uScale = 100;
-    groundTexture.vScale = 100;
+    groundTexture.uScale = this.#groundSize / 10;
+    groundTexture.vScale = this.#groundSize / 10;
     groundMaterial.diffuseTexture = groundTexture;
     ground.material = groundMaterial;
     ground.position.y = 0;
@@ -176,8 +178,7 @@ class App {
     );
     const chassisBody = new Body({ mass: 150 });
     chassisBody.addShape(chassisShape);
-    chassisBody.position.set(0, 2 * this.#carSizeMultiplier, 0);
-    chassisBody.angularVelocity.set(0, 0.5, 0);
+    chassisBody.position.set(0, 1.5 * this.#carSizeMultiplier, 0);
 
     // Create the vehicle
     this.#physicsVehicle = new RaycastVehicle({
@@ -186,8 +187,9 @@ class App {
       indexRightAxis: 0,
     });
 
+    const wheelHeight = -1;
     const wheelOptions = {
-      radius: 0.5 * this.#carSizeMultiplier,
+      radius: 0.5 * (0.75 * this.#carSizeMultiplier),
       directionLocal: new Vec3(0, -1, 0),
       suspensionStiffness: 30,
       suspensionRestLength: 0.3,
@@ -197,9 +199,7 @@ class App {
       maxSuspensionForce: 100000,
       rollInfluence: 0.01,
       axleLocal: new Vec3(-1, 0, 0),
-      chassisConnectionPointLocal: new Vec3(-1, 0, 1).scale(
-        this.#carSizeMultiplier,
-      ),
+      chassisConnectionPointLocal: new Vec3(),
       maxSuspensionTravel: 0.3,
       customSlidingRotationalSpeed: -30,
       useCustomSlidingRotationalSpeed: true,
@@ -208,7 +208,7 @@ class App {
     // Front left wheel
     wheelOptions.chassisConnectionPointLocal.set(
       -1 * this.#carSizeMultiplier,
-      0,
+      wheelHeight,
       1 * this.#carSizeMultiplier,
     );
     this.#physicsVehicle.addWheel(wheelOptions);
@@ -216,7 +216,7 @@ class App {
     // Front right wheel
     wheelOptions.chassisConnectionPointLocal.set(
       1 * this.#carSizeMultiplier,
-      0,
+      wheelHeight,
       1 * this.#carSizeMultiplier,
     );
     this.#physicsVehicle.addWheel(wheelOptions);
@@ -224,16 +224,16 @@ class App {
     // Rear left wheel
     wheelOptions.chassisConnectionPointLocal.set(
       -1 * this.#carSizeMultiplier,
-      0,
-      -1 * this.#carSizeMultiplier,
+      wheelHeight,
+      -1.5 * this.#carSizeMultiplier,
     );
     this.#physicsVehicle.addWheel(wheelOptions);
 
     // Rear right wheel
     wheelOptions.chassisConnectionPointLocal.set(
       1 * this.#carSizeMultiplier,
-      0,
-      -1 * this.#carSizeMultiplier,
+      wheelHeight,
+      -1.5 * this.#carSizeMultiplier,
     );
     this.#physicsVehicle.addWheel(wheelOptions);
 
@@ -284,31 +284,17 @@ class App {
     });
 
     // Add the ground
-    const matrix: number[][] = [];
-    for (let i = 0; i < this.#groundSize; i++) {
-      matrix.push([]);
-      for (let j = 0; j < this.#groundSize; j++) {
-        const height = 1;
-        matrix[i].push(height);
-      }
-    }
-
     const groundMaterial = new Material("ground");
-    const heightfieldShape = new Heightfield(matrix, {
-      elementSize: 1,
-    });
-    const heightfieldBody = new Body({
-      mass: 0,
+    const groundHeight = 20;
+    const groundBody = new Body({
+      type: Body.STATIC,
+      shape: new Box(
+        new Vec3(this.#groundSize / 2, groundHeight, this.#groundSize / 2),
+      ),
       material: groundMaterial,
     });
-    heightfieldBody.addShape(heightfieldShape);
-    heightfieldBody.position.set(
-      -(this.#groundSize * heightfieldShape.elementSize) / 2,
-      -1,
-      (this.#groundSize * heightfieldShape.elementSize) / 2,
-    );
-    heightfieldBody.quaternion.setFromEuler(-Math.PI / 2, 0, 0);
-    this.#world.addBody(heightfieldBody);
+    groundBody.position.set(0, -groundHeight, 0);
+    this.#world.addBody(groundBody);
 
     // Define interactions between wheels and ground
     const wheelGround = new ContactMaterial(wheelMaterial, groundMaterial, {
@@ -317,10 +303,37 @@ class App {
       contactEquationStiffness: 1000,
     });
     this.#world.addContactMaterial(wheelGround);
+
+    // Add the ball
+    const ballShape = new Sphere(4);
+    const ballMaterial = new Material({
+      friction: 0.8,
+      restitution: 0.6,
+    });
+    this.#physicsBall = new Body({
+      mass: 10,
+      shape: ballShape,
+      material: ballMaterial,
+    });
+    this.#physicsBall.position.set(-5, 5, 40);
+    this.#world.addBody(this.#physicsBall);
+
+    // Define interactions between ball and ground
+    const ballGround = new ContactMaterial(ballMaterial, groundMaterial, {
+      friction: 0.8,
+      restitution: 0.6,
+      contactEquationStiffness: 1000,
+    });
+    this.#world.addContactMaterial(ballGround);
   }
 
   #updateFromKeyboard(): void {
     if (this.#physicsVehicle === null) return;
+
+    this.#physicsVehicle.chassisBody.applyLocalForce(
+      new Vec3(0, -8000, 0),
+      new Vec3(0, 0, 0),
+    );
 
     // Accelerating/Reversing
     if (
@@ -407,7 +420,14 @@ class App {
   }
 
   #updateFromPhysics(): void {
-    if (this.#car === null || this.#physicsVehicle === null) return;
+    if (
+      this.#car === null ||
+      this.#physicsVehicle === null ||
+      this.#ball === null ||
+      this.#physicsBall === null
+    ) {
+      return;
+    }
 
     const physicsCarPosition = Vector3.FromArray(
       this.#physicsVehicle.chassisBody.position.toArray(),
@@ -417,6 +437,15 @@ class App {
     );
     this.#car.position.copyFrom(physicsCarPosition);
     this.#car.rotationQuaternion = physicsCarQuaternion;
+
+    const physicsBallPosition = Vector3.FromArray(
+      this.#physicsBall.position.toArray(),
+    );
+    const physicsBallQuaternion = Quaternion.FromArray(
+      this.#physicsBall.quaternion.toArray(),
+    );
+    this.#ball.position.copyFrom(physicsBallPosition);
+    this.#ball.rotationQuaternion = physicsBallQuaternion;
   }
 
   #addDebuggers(): void {
