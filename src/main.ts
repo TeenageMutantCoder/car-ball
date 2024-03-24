@@ -194,7 +194,7 @@ class App {
       dampingCompression: 4.4,
       maxSuspensionForce: 100000,
       rollInfluence: 0.01,
-      axleLocal: new Vec3(1, 0, 0),
+      axleLocal: new Vec3(-1, 0, 0),
       chassisConnectionPointLocal: new Vec3(-1, 0, 1).scale(
         this.#carSizeMultiplier,
       ),
