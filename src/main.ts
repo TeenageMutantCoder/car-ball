@@ -124,6 +124,7 @@ class App {
       (meshes) => {
         const car = meshes[0];
         this.#car = car;
+        this.#car.name = 'vehicle'
         this.#car.position.y = 1;
         this.#car.rotation = Vector3.Zero();
         this.#car.scaling = new Vector3(0.08, 0.08, 0.08);
@@ -141,6 +142,7 @@ class App {
       this.#scene,
       (meshes) => {
         const ball = meshes[0];
+        ball.name = 'ball';
         ball.position.x = -5;
         ball.position.y = 5;
         ball.position.z = 40;
