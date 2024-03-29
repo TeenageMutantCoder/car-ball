@@ -40,6 +40,7 @@ class App {
   #world: World | null = null;
   readonly #inputMap: Record<string, KeyboardEventTypes> = {};
   #car: AbstractMesh | null = null;
+  #wheels: AbstractMesh[] | null = null;
   #ball: AbstractMesh | null = null;
   #physicsVehicle: RaycastVehicle | null = null;
   #physicsBall: Body | null = null;
@@ -142,33 +143,15 @@ class App {
     );
     frontLeftWheel.rotate(Axis.Z, -Math.PI / 2, Space.LOCAL);
     frontLeftWheel.bakeCurrentTransformIntoVertices();
-    frontLeftWheel.parent = this.#car;
-    frontLeftWheel.position = new Vector3(
-      -1 * this.#carSizeMultiplier,
-      -1,
-      1 * this.#carSizeMultiplier,
-    );
     const frontRightWheel = frontLeftWheel.createInstance("wheelFrontRight");
-    frontRightWheel.parent = this.#car;
-    frontRightWheel.position = new Vector3(
-      1 * this.#carSizeMultiplier,
-      -1,
-      1 * this.#carSizeMultiplier,
-    );
     const rearLeftWheel = frontLeftWheel.createInstance("wheelRearLeft");
-    rearLeftWheel.parent = this.#car;
-    rearLeftWheel.position = new Vector3(
-      -1 * this.#carSizeMultiplier,
-      -1,
-      -1.5 * this.#carSizeMultiplier,
-    );
     const rearRightWheel = frontLeftWheel.createInstance("wheelRearRight");
-    rearRightWheel.parent = this.#car;
-    rearRightWheel.position = new Vector3(
-      1 * this.#carSizeMultiplier,
-      -1,
-      -1.5 * this.#carSizeMultiplier,
-    );
+    this.#wheels = [
+      frontLeftWheel,
+      frontRightWheel,
+      rearLeftWheel,
+      rearRightWheel,
+    ];
 
     SceneLoader.ImportMesh(
       "",
@@ -454,7 +437,8 @@ class App {
       this.#car === null ||
       this.#physicsVehicle === null ||
       this.#ball === null ||
-      this.#physicsBall === null
+      this.#physicsBall === null ||
+      this.#wheels === null
     ) {
       return;
     }
@@ -468,17 +452,8 @@ class App {
     this.#car.position.copyFrom(physicsCarPosition);
     this.#car.rotationQuaternion = physicsCarQuaternion;
 
-    const wheels = this.#car.getChildMeshes();
-
-    const wheelInfo = this.#physicsVehicle.wheelInfos[0];
-    console.log(
-      Quaternion.FromArray(wheelInfo.worldTransform.quaternion.toArray())
-        .toEulerAngles()
-        .toString(),
-    );
-
-    wheels.forEach((wheel, wheelIndex) => {
-      if (this.#physicsVehicle === null) return;
+    this.#wheels.forEach((wheel, wheelIndex) => {
+      if (this.#physicsVehicle === null || this.#car === null) return;
       const wheelInfo = this.#physicsVehicle.wheelInfos[wheelIndex];
       const wheelPosition = Vector3.FromArray(
         wheelInfo.worldTransform.position.toArray(),
@@ -487,7 +462,7 @@ class App {
       const wheelQuaternion = Quaternion.FromArray(
         wheelInfo.worldTransform.quaternion.toArray(),
       );
-      wheel.absolutePosition.copyFrom(wheelPosition);
+      wheel.position.copyFrom(wheelPosition);
       wheel.rotationQuaternion = wheelQuaternion;
     });
 
