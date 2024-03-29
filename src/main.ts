@@ -16,6 +16,8 @@ import {
   Texture,
   CubeTexture,
   Quaternion,
+  Axis,
+  Space,
 } from "@babylonjs/core";
 import {
   Body,
@@ -52,7 +54,7 @@ class App {
     this.#canvas = this.#createCanvas();
     this.#engine = new Engine(this.#canvas, true);
     const engine = this.#engine;
-    window.addEventListener("resize", function() {
+    window.addEventListener("resize", function () {
       engine.resize();
     });
     this.#scene = this.#createScene();
@@ -113,28 +115,59 @@ class App {
     );
     this.#camera.radius = 27;
     this.#camera.heightOffset = 10;
-    this.#camera.rotationOffset = 180;
+    this.#camera.rotationOffset = 90;
     this.#camera.cameraAcceleration = 0.125;
     this.#camera.maxCameraSpeed = 3;
     this.#camera.attachControl(true);
 
-    SceneLoader.ImportMesh(
-      "",
-      "./Buggy/",
-      "Buggy.gltf",
-      this.#scene,
-      (meshes) => {
-        const car = meshes[0];
-        this.#car = car;
-        this.#car.name = "vehicle";
-        this.#car.position.y = 1;
-        this.#car.rotation = Vector3.Zero();
-        this.#car.scaling = new Vector3(0.08, 0.08, 0.08);
-
-        if (this.#camera !== null) {
-          this.#camera.lockedTarget = this.#car;
-        }
+    this.#car = MeshBuilder.CreateBox(
+      "vehicle",
+      {
+        width: 2 * 2 * this.#carSizeMultiplier,
+        height: 0.5 * 2 * this.#carSizeMultiplier,
+        depth: 1 * 2 * this.#carSizeMultiplier,
       },
+      this.#scene,
+    );
+    this.#camera.lockedTarget = this.#car;
+
+    const frontLeftWheel = MeshBuilder.CreateCylinder(
+      "wheelFrontLeft",
+      {
+        diameter: 0.5 * (0.75 * 2 * this.#carSizeMultiplier),
+        height: 0.5,
+        tessellation: 24,
+      },
+      this.#scene,
+    );
+    frontLeftWheel.rotate(Axis.X, -Math.PI / 2, Space.LOCAL);
+    frontLeftWheel.bakeCurrentTransformIntoVertices();
+    frontLeftWheel.parent = this.#car;
+    frontLeftWheel.position = new Vector3(
+      -1 * this.#carSizeMultiplier,
+      -1,
+      -1 * this.#carSizeMultiplier,
+    );
+    const frontRightWheel = frontLeftWheel.createInstance("wheelFrontRight");
+    frontRightWheel.parent = this.#car;
+    frontRightWheel.position = new Vector3(
+      -1 * this.#carSizeMultiplier,
+      -1,
+      1 * this.#carSizeMultiplier,
+    );
+    const rearLeftWheel = frontLeftWheel.createInstance("wheelRearLeft");
+    rearLeftWheel.parent = this.#car;
+    rearLeftWheel.position = new Vector3(
+      1.5 * this.#carSizeMultiplier,
+      -1,
+      -1 * this.#carSizeMultiplier,
+    );
+    const rearRightWheel = frontLeftWheel.createInstance("wheelRearRight");
+    rearRightWheel.parent = this.#car;
+    rearRightWheel.position = new Vector3(
+      1.5 * this.#carSizeMultiplier,
+      -1,
+      1 * this.#carSizeMultiplier,
     );
 
     SceneLoader.ImportMesh(
@@ -145,9 +178,6 @@ class App {
       (meshes) => {
         this.#ball = meshes[0];
         this.#ball.name = "ball";
-        this.#ball.position.x = -5;
-        this.#ball.position.y = 5;
-        this.#ball.position.z = 40;
         this.#ball.rotation = Vector3.Zero();
         this.#ball.scaling = new Vector3(10, 10, 10);
       },
@@ -174,7 +204,7 @@ class App {
 
     // Build the car chassis
     const chassisShape = new Box(
-      new Vec3(1, 0.5, 2).scale(this.#carSizeMultiplier),
+      new Vec3(2, 0.5, 1).scale(this.#carSizeMultiplier),
     );
     const chassisBody = new Body({ mass: 150 });
     chassisBody.addShape(chassisShape);
@@ -183,8 +213,6 @@ class App {
     // Create the vehicle
     this.#physicsVehicle = new RaycastVehicle({
       chassisBody,
-      indexForwardAxis: 2,
-      indexRightAxis: 0,
     });
 
     const wheelHeight = -1;
@@ -198,7 +226,7 @@ class App {
       dampingCompression: 4.4,
       maxSuspensionForce: 100000,
       rollInfluence: 0.01,
-      axleLocal: new Vec3(-1, 0, 0),
+      axleLocal: new Vec3(0, 0, -1),
       chassisConnectionPointLocal: new Vec3(),
       maxSuspensionTravel: 0.3,
       customSlidingRotationalSpeed: -30,
@@ -209,13 +237,13 @@ class App {
     wheelOptions.chassisConnectionPointLocal.set(
       -1 * this.#carSizeMultiplier,
       wheelHeight,
-      1 * this.#carSizeMultiplier,
+      -1 * this.#carSizeMultiplier,
     );
     this.#physicsVehicle.addWheel(wheelOptions);
 
     // Front right wheel
     wheelOptions.chassisConnectionPointLocal.set(
-      1 * this.#carSizeMultiplier,
+      -1 * this.#carSizeMultiplier,
       wheelHeight,
       1 * this.#carSizeMultiplier,
     );
@@ -223,17 +251,17 @@ class App {
 
     // Rear left wheel
     wheelOptions.chassisConnectionPointLocal.set(
-      -1 * this.#carSizeMultiplier,
+      1.5 * this.#carSizeMultiplier,
       wheelHeight,
-      -1.5 * this.#carSizeMultiplier,
+      -1 * this.#carSizeMultiplier,
     );
     this.#physicsVehicle.addWheel(wheelOptions);
 
     // Rear right wheel
     wheelOptions.chassisConnectionPointLocal.set(
-      1 * this.#carSizeMultiplier,
+      1.5 * this.#carSizeMultiplier,
       wheelHeight,
-      -1.5 * this.#carSizeMultiplier,
+      1 * this.#carSizeMultiplier,
     );
     this.#physicsVehicle.addWheel(wheelOptions);
 
@@ -256,9 +284,9 @@ class App {
       wheelBody.type = Body.KINEMATIC;
       wheelBody.collisionFilterGroup = 0; // turn off collisions
       const quaternion = new CannonQuaternion().setFromEuler(
-        0,
-        0,
         -Math.PI / 2,
+        0,
+        0,
       );
       wheelBody.addShape(cylinderShape, new Vec3(), quaternion);
       wheelBodies.push(wheelBody);
@@ -315,7 +343,7 @@ class App {
       shape: ballShape,
       material: ballMaterial,
     });
-    this.#physicsBall.position.set(-5, 5, 40);
+    this.#physicsBall.position.set(-40, 5, 5);
     this.#world.addBody(this.#physicsBall);
 
     // Define interactions between ball and ground
@@ -437,6 +465,22 @@ class App {
     );
     this.#car.position.copyFrom(physicsCarPosition);
     this.#car.rotationQuaternion = physicsCarQuaternion;
+
+    const wheels = this.#car.getChildMeshes();
+
+    wheels.forEach((wheel, wheelIndex) => {
+      if (this.#physicsVehicle === null) return;
+      const wheelInfo = this.#physicsVehicle.wheelInfos[wheelIndex];
+      const wheelPosition = Vector3.FromArray(
+        wheelInfo.worldTransform.position.toArray(),
+      );
+
+      const wheelQuaternion = Quaternion.FromArray(
+        wheelInfo.worldTransform.quaternion.toArray(),
+      );
+      wheel.absolutePosition.copyFrom(wheelPosition);
+      wheel.rotationQuaternion = wheelQuaternion;
+    });
 
     const physicsBallPosition = Vector3.FromArray(
       this.#physicsBall.position.toArray(),
