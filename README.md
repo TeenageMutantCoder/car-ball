@@ -35,3 +35,4 @@ Sources of inspiration:
 8. https://blog.raananweber.com/2016/09/06/webgl-car-physics-using-babylon-js-and-oimo-js/
 9. https://forum.babylonjs.com/t/ammojs-vehicle-demo/453
 10. https://playground.babylonjs.com/#609QKP#6
+11. https://github.com/pmndrs/cannon-es/blob/master/examples/raycast_vehicle.html
