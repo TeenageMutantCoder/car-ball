@@ -19,6 +19,7 @@ import {
   Cylinder,
   Quaternion as CannonQuaternion,
   ContactMaterial,
+  type WheelInfoOptions,
 } from "cannon-es";
 
 export class Vehicle {
@@ -30,20 +31,40 @@ export class Vehicle {
   #lastJumpTime: number | null = null;
   #hasStoppedJumping = true;
   #hasUsedDoubleJump = false;
+  readonly #sizeX = 6;
+  readonly #sizeY = 3;
+  readonly #sizeZ = 12;
+  readonly #mass = 100;
   readonly #maxSteerValue = 0.7;
-  readonly #maxForce = 5000;
-  readonly #brakeForce = 80;
-  readonly #carSizeMultiplier = 3;
+  readonly #downforceAmount = 700;
+  readonly #maxDownforceAmount = 3000;
+  readonly #maxForceAmount = 2000;
+  readonly #brakeForceAmount = 100;
+  readonly #jumpForceAmount = 2000;
   readonly #maxDoubleJumpTimeMilliseconds = 1500;
   readonly #minDoubleJumpTimeMilliseconds = 100;
+  readonly #defaultWheelOptions = {
+    radius: 1.25,
+    directionLocal: new Vec3(0, -1, 0),
+    axleLocal: new Vec3(-1, 0, 0),
+    chassisConnectionPointLocal: new Vec3(),
+    frictionSlip: 14,
+  } satisfies WheelInfoOptions;
+
+  readonly #wheelPositions = {
+    frontLeft: new Vec3(-3, 0, 4.5),
+    frontRight: new Vec3(3, 0, 4.5),
+    rearLeft: new Vec3(-3, 0, -4.5),
+    rearRight: new Vec3(3, 0, -4.5),
+  };
 
   setupScene(scene: Scene): void {
     this.#chassisMesh = MeshBuilder.CreateBox(
       "vehicle",
       {
-        width: 1 * 2 * this.#carSizeMultiplier,
-        height: 0.5 * 2 * this.#carSizeMultiplier,
-        depth: 2 * 2 * this.#carSizeMultiplier,
+        width: this.#sizeX,
+        height: this.#sizeY,
+        depth: this.#sizeZ,
       },
       scene,
     );
@@ -51,7 +72,7 @@ export class Vehicle {
     const frontLeftWheel = MeshBuilder.CreateCylinder(
       "wheelFrontLeft",
       {
-        diameter: 0.5 * (0.75 * 2 * this.#carSizeMultiplier),
+        diameter: this.#defaultWheelOptions.radius * 2,
         height: 0.5,
         tessellation: 24,
       },
@@ -86,74 +107,40 @@ export class Vehicle {
   }
 
   setupPhysics(world: World, groundMaterial: Material): void {
-    // Build the car chassis
     const chassisShape = new Box(
-      new Vec3(1, 0.5, 2).scale(this.#carSizeMultiplier),
+      new Vec3(this.#sizeX / 2, this.#sizeY / 2, this.#sizeZ / 2),
     );
-    const chassisBody = new Body({ mass: 150 });
+    const chassisBody = new Body({ mass: this.#mass });
     chassisBody.addShape(chassisShape);
-    chassisBody.position.set(0, 1.5 * this.#carSizeMultiplier, 0);
+    chassisBody.position.set(0, this.#sizeY, 0);
 
-    // Create the vehicle
     this.#physicsVehicle = new RaycastVehicle({
       chassisBody,
       indexForwardAxis: 2,
       indexRightAxis: 0,
     });
 
-    const wheelHeight = -1;
-    const wheelOptions = {
-      radius: 0.5 * (0.75 * this.#carSizeMultiplier),
-      directionLocal: new Vec3(0, -1, 0),
-      suspensionStiffness: 30,
-      suspensionRestLength: 0.3,
-      frictionSlip: 1.4,
-      dampingRelaxation: 2.3,
-      dampingCompression: 4.4,
-      maxSuspensionForce: 100000,
-      rollInfluence: 0.01,
-      axleLocal: new Vec3(-1, 0, 0),
-      chassisConnectionPointLocal: new Vec3(),
-      maxSuspensionTravel: 0.3,
-      customSlidingRotationalSpeed: -30,
-      useCustomSlidingRotationalSpeed: true,
-    };
-
-    // Front left wheel
-    wheelOptions.chassisConnectionPointLocal.set(
-      -1 * this.#carSizeMultiplier,
-      wheelHeight,
-      1 * this.#carSizeMultiplier,
-    );
-    this.#physicsVehicle.addWheel(wheelOptions);
-
-    // Front right wheel
-    wheelOptions.chassisConnectionPointLocal.set(
-      1 * this.#carSizeMultiplier,
-      wheelHeight,
-      1 * this.#carSizeMultiplier,
-    );
-    this.#physicsVehicle.addWheel(wheelOptions);
-
-    // Rear left wheel
-    wheelOptions.chassisConnectionPointLocal.set(
-      -1 * this.#carSizeMultiplier,
-      wheelHeight,
-      -1.5 * this.#carSizeMultiplier,
-    );
-    this.#physicsVehicle.addWheel(wheelOptions);
-
-    // Rear right wheel
-    wheelOptions.chassisConnectionPointLocal.set(
-      1 * this.#carSizeMultiplier,
-      wheelHeight,
-      -1.5 * this.#carSizeMultiplier,
-    );
-    this.#physicsVehicle.addWheel(wheelOptions);
+    this.#physicsVehicle.addWheel({
+      ...this.#defaultWheelOptions,
+      chassisConnectionPointLocal: this.#wheelPositions.frontLeft,
+    });
+    this.#physicsVehicle.addWheel({
+      ...this.#defaultWheelOptions,
+      chassisConnectionPointLocal: this.#wheelPositions.frontRight,
+    });
+    this.#physicsVehicle.addWheel({
+      ...this.#defaultWheelOptions,
+      chassisConnectionPointLocal: this.#wheelPositions.rearLeft,
+      isFrontWheel: false,
+    });
+    this.#physicsVehicle.addWheel({
+      ...this.#defaultWheelOptions,
+      chassisConnectionPointLocal: this.#wheelPositions.rearRight,
+      isFrontWheel: false,
+    });
 
     this.#physicsVehicle.addToWorld(world);
 
-    // Add the wheel bodies
     const wheelBodies: Body[] = [];
     const wheelMaterial = new Material("wheel");
     this.#physicsVehicle.wheelInfos.forEach((wheel) => {
@@ -180,7 +167,6 @@ export class Vehicle {
       world.addBody(wheelBody);
     });
 
-    // Update the wheel bodies
     world.addEventListener("postStep", () => {
       if (this.#physicsVehicle === null)
         throw new Error("Physics vehicle failed to initialize");
@@ -194,7 +180,6 @@ export class Vehicle {
       }
     });
 
-    // Define interactions between wheels and ground
     const wheelGround = new ContactMaterial(wheelMaterial, groundMaterial, {
       friction: 0.3,
       restitution: 0,
@@ -212,10 +197,16 @@ export class Vehicle {
       return;
     }
 
-    this.#physicsVehicle.chassisBody.applyForce(
-      new Vec3(0, -8000, 0),
-      new Vec3(0, 0, 0),
+    const downforce = new Vec3(
+      0,
+      -Math.min(
+        this.#maxDownforceAmount,
+        this.#downforceAmount *
+        this.#physicsVehicle.chassisBody.velocity.length(),
+      ),
+      0,
     );
+    this.#physicsVehicle.chassisBody.applyForce(downforce, new Vec3(0, 0, 0));
 
     const physicsCarPosition = Vector3.FromArray(
       this.#physicsVehicle.chassisBody.position.toArray(),
@@ -249,17 +240,25 @@ export class Vehicle {
       this.#inputMap.w === KeyboardEventTypes.KEYDOWN &&
       this.#inputMap.s === KeyboardEventTypes.KEYDOWN
     ) {
+      this.#physicsVehicle.applyEngineForce(0, 0);
+      this.#physicsVehicle.applyEngineForce(0, 1);
       this.#physicsVehicle.applyEngineForce(0, 2);
       this.#physicsVehicle.applyEngineForce(0, 3);
     } else if (this.#inputMap.w === KeyboardEventTypes.KEYDOWN) {
-      this.#physicsVehicle.applyEngineForce(-this.#maxForce, 2);
-      this.#physicsVehicle.applyEngineForce(-this.#maxForce, 3);
+      this.#physicsVehicle.applyEngineForce(-this.#maxForceAmount, 0);
+      this.#physicsVehicle.applyEngineForce(-this.#maxForceAmount, 1);
+      this.#physicsVehicle.applyEngineForce(-this.#maxForceAmount, 2);
+      this.#physicsVehicle.applyEngineForce(-this.#maxForceAmount, 3);
     } else if (this.#inputMap.s === KeyboardEventTypes.KEYDOWN) {
-      this.#physicsVehicle.applyEngineForce(this.#maxForce, 2);
-      this.#physicsVehicle.applyEngineForce(this.#maxForce, 3);
+      this.#physicsVehicle.applyEngineForce(this.#maxForceAmount, 0);
+      this.#physicsVehicle.applyEngineForce(this.#maxForceAmount, 1);
+      this.#physicsVehicle.applyEngineForce(this.#maxForceAmount, 2);
+      this.#physicsVehicle.applyEngineForce(this.#maxForceAmount, 3);
     }
 
     if (this.#inputMap.w === KeyboardEventTypes.KEYUP) {
+      this.#physicsVehicle.applyEngineForce(0, 0);
+      this.#physicsVehicle.applyEngineForce(0, 1);
       this.#physicsVehicle.applyEngineForce(0, 2);
       this.#physicsVehicle.applyEngineForce(0, 3);
 
@@ -269,6 +268,8 @@ export class Vehicle {
     }
 
     if (this.#inputMap.s === KeyboardEventTypes.KEYUP) {
+      this.#physicsVehicle.applyEngineForce(0, 0);
+      this.#physicsVehicle.applyEngineForce(0, 1);
       this.#physicsVehicle.applyEngineForce(0, 2);
       this.#physicsVehicle.applyEngineForce(0, 3);
 
@@ -312,10 +313,10 @@ export class Vehicle {
 
     // Braking
     if (this.#inputMap.shiftKey === true) {
-      this.#physicsVehicle.setBrake(this.#brakeForce, 0);
-      this.#physicsVehicle.setBrake(this.#brakeForce, 1);
-      this.#physicsVehicle.setBrake(this.#brakeForce, 2);
-      this.#physicsVehicle.setBrake(this.#brakeForce, 3);
+      this.#physicsVehicle.setBrake(this.#brakeForceAmount, 0);
+      this.#physicsVehicle.setBrake(this.#brakeForceAmount, 1);
+      this.#physicsVehicle.setBrake(this.#brakeForceAmount, 2);
+      this.#physicsVehicle.setBrake(this.#brakeForceAmount, 3);
     }
 
     if (this.#inputMap.shiftKey === false) {
@@ -346,7 +347,7 @@ export class Vehicle {
       this.#lastJumpTime = Date.now();
       this.#hasStoppedJumping = false;
       this.#physicsVehicle.chassisBody.applyImpulse(
-        new Vec3(0, 4000, 0),
+        new Vec3(0, this.#jumpForceAmount, 0),
         new Vec3(0, 0, 0),
       );
     }
@@ -362,7 +363,7 @@ export class Vehicle {
       this.#hasUsedDoubleJump = true;
       this.#hasStoppedJumping = false;
       this.#physicsVehicle.chassisBody.applyImpulse(
-        new Vec3(0, 4000, 0),
+        new Vec3(0, this.#jumpForceAmount * 0.75, 0),
         new Vec3(0, 0, 0),
       );
     }
