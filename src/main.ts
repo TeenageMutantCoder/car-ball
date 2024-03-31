@@ -45,17 +45,22 @@ class App {
   #physicsVehicle: RaycastVehicle | null = null;
   #physicsBall: Body | null = null;
   #camera: FollowCamera | null = null;
+  #lastJumpTime: number | null = null;
+  #hasStoppedJumping = true;
+  #hasUsedDoubleJump = false;
   readonly #groundSize = 10000;
   readonly #maxSteerVal = 0.7;
   readonly #maxForce = 5000;
   readonly #brakeForce = 80;
   readonly #carSizeMultiplier = 3;
+  readonly #maxDoubleJumpTimeMilliseconds = 1500;
+  readonly #minDoubleJumpTimeMilliseconds = 100;
 
   constructor() {
     this.#canvas = this.#createCanvas();
     this.#engine = new Engine(this.#canvas, true);
     const engine = this.#engine;
-    window.addEventListener("resize", function () {
+    window.addEventListener("resize", function() {
       engine.resize();
     });
     this.#scene = this.#createScene();
@@ -426,6 +431,46 @@ class App {
       this.#physicsVehicle.setBrake(0, 3);
 
       delete this.#inputMap.b;
+    }
+
+    // Jumping
+    const wheelsAreOnGround =
+      this.#physicsVehicle.numWheelsOnGround ===
+      this.#physicsVehicle.wheelInfos.length;
+    if (wheelsAreOnGround) {
+      this.#hasUsedDoubleJump = false;
+    }
+    if (this.#inputMap[" "] === KeyboardEventTypes.KEYUP) {
+      this.#hasStoppedJumping = true;
+    }
+
+    if (
+      this.#inputMap[" "] === KeyboardEventTypes.KEYDOWN &&
+      wheelsAreOnGround &&
+      this.#hasStoppedJumping
+    ) {
+      this.#lastJumpTime = Date.now();
+      this.#hasStoppedJumping = false;
+      this.#physicsVehicle.chassisBody.applyImpulse(
+        new Vec3(0, 4000, 0),
+        new Vec3(0, 0, 0),
+      );
+    }
+
+    const canDoubleJump =
+      !wheelsAreOnGround &&
+      !this.#hasUsedDoubleJump &&
+      this.#hasStoppedJumping &&
+      this.#lastJumpTime !== null &&
+      Date.now() - this.#lastJumpTime > this.#minDoubleJumpTimeMilliseconds &&
+      Date.now() - this.#lastJumpTime < this.#maxDoubleJumpTimeMilliseconds;
+    if (this.#inputMap[" "] === KeyboardEventTypes.KEYDOWN && canDoubleJump) {
+      this.#hasUsedDoubleJump = true;
+      this.#hasStoppedJumping = false;
+      this.#physicsVehicle.chassisBody.applyImpulse(
+        new Vec3(0, 4000, 0),
+        new Vec3(0, 0, 0),
+      );
     }
   }
 
