@@ -38,7 +38,7 @@ class App {
   readonly #scene: Scene;
   #physicsDebugger: InstanceType<typeof CannonDebugger> | null = null;
   #world: World | null = null;
-  readonly #inputMap: Record<string, KeyboardEventTypes> = {};
+  readonly #inputMap: Record<string, KeyboardEventTypes | boolean> = {};
   #car: AbstractMesh | null = null;
   #wheels: AbstractMesh[] | null = null;
   #ball: AbstractMesh | null = null;
@@ -48,7 +48,7 @@ class App {
   readonly #groundSize = 10000;
   readonly #maxSteerVal = 0.7;
   readonly #maxForce = 5000;
-  readonly #brakeForce = 20;
+  readonly #brakeForce = 80;
   readonly #carSizeMultiplier = 3;
 
   constructor() {
@@ -97,7 +97,9 @@ class App {
     scene.createDefaultSkybox(skyboxTexture, true, 1000);
 
     scene.onKeyboardObservable.add((kbInfo) => {
-      this.#inputMap[kbInfo.event.key] = kbInfo.type;
+      this.#inputMap[kbInfo.event.key.toLowerCase()] = kbInfo.type;
+      this.#inputMap.shiftKey = kbInfo.event.shiftKey;
+      this.#inputMap.ctrlKey = kbInfo.event.ctrlKey;
     });
 
     scene.onBeforeRenderObservable.add(() => {
@@ -343,11 +345,6 @@ class App {
   #updateFromKeyboard(): void {
     if (this.#physicsVehicle === null) return;
 
-    this.#physicsVehicle.chassisBody.applyLocalForce(
-      new Vec3(0, -8000, 0),
-      new Vec3(0, 0, 0),
-    );
-
     // Accelerating/Reversing
     if (
       this.#inputMap.w === KeyboardEventTypes.KEYDOWN &&
@@ -415,14 +412,14 @@ class App {
     }
 
     // Braking
-    if (this.#inputMap.b === KeyboardEventTypes.KEYDOWN) {
+    if (this.#inputMap.shiftKey === true) {
       this.#physicsVehicle.setBrake(this.#brakeForce, 0);
       this.#physicsVehicle.setBrake(this.#brakeForce, 1);
       this.#physicsVehicle.setBrake(this.#brakeForce, 2);
       this.#physicsVehicle.setBrake(this.#brakeForce, 3);
     }
 
-    if (this.#inputMap.b === KeyboardEventTypes.KEYUP) {
+    if (this.#inputMap.shiftKey === false) {
       this.#physicsVehicle.setBrake(0, 0);
       this.#physicsVehicle.setBrake(0, 1);
       this.#physicsVehicle.setBrake(0, 2);
@@ -442,6 +439,11 @@ class App {
     ) {
       return;
     }
+
+    this.#physicsVehicle.chassisBody.applyForce(
+      new Vec3(0, -8000, 0),
+      new Vec3(0, 0, 0),
+    );
 
     const physicsCarPosition = Vector3.FromArray(
       this.#physicsVehicle.chassisBody.position.toArray(),
