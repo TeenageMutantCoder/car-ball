@@ -23,14 +23,14 @@ import {
 
 export class Vehicle {
   readonly #inputMap: Record<string, KeyboardEventTypes | boolean> = {};
-  #car: AbstractMesh | null = null;
-  #wheels: AbstractMesh[] | null = null;
+  #chassisMesh: AbstractMesh | null = null;
+  #wheelMeshes: AbstractMesh[] | null = null;
   #camera: FollowCamera | null = null;
   #physicsVehicle: RaycastVehicle | null = null;
   #lastJumpTime: number | null = null;
   #hasStoppedJumping = true;
   #hasUsedDoubleJump = false;
-  readonly #maxSteerVal = 0.7;
+  readonly #maxSteerValue = 0.7;
   readonly #maxForce = 5000;
   readonly #brakeForce = 80;
   readonly #carSizeMultiplier = 3;
@@ -38,7 +38,7 @@ export class Vehicle {
   readonly #minDoubleJumpTimeMilliseconds = 100;
 
   setupScene(scene: Scene): void {
-    this.#car = MeshBuilder.CreateBox(
+    this.#chassisMesh = MeshBuilder.CreateBox(
       "vehicle",
       {
         width: 1 * 2 * this.#carSizeMultiplier,
@@ -62,7 +62,7 @@ export class Vehicle {
     const frontRightWheel = frontLeftWheel.createInstance("wheelFrontRight");
     const rearLeftWheel = frontLeftWheel.createInstance("wheelRearLeft");
     const rearRightWheel = frontLeftWheel.createInstance("wheelRearRight");
-    this.#wheels = [
+    this.#wheelMeshes = [
       frontLeftWheel,
       frontRightWheel,
       rearLeftWheel,
@@ -76,7 +76,7 @@ export class Vehicle {
     this.#camera.cameraAcceleration = 0.125;
     this.#camera.maxCameraSpeed = 3;
     this.#camera.attachControl(true);
-    this.#camera.lockedTarget = this.#car;
+    this.#camera.lockedTarget = this.#chassisMesh;
 
     scene.onKeyboardObservable.add((kbInfo) => {
       this.#inputMap[kbInfo.event.key.toLowerCase()] = kbInfo.type;
@@ -206,8 +206,8 @@ export class Vehicle {
   updateFromPhysics(): void {
     if (
       this.#physicsVehicle === null ||
-      this.#car === null ||
-      this.#wheels === null
+      this.#chassisMesh === null ||
+      this.#wheelMeshes === null
     ) {
       return;
     }
@@ -223,11 +223,11 @@ export class Vehicle {
     const physicsCarQuaternion = Quaternion.FromArray(
       this.#physicsVehicle.chassisBody.quaternion.toArray(),
     );
-    this.#car.position.copyFrom(physicsCarPosition);
-    this.#car.rotationQuaternion = physicsCarQuaternion;
+    this.#chassisMesh.position.copyFrom(physicsCarPosition);
+    this.#chassisMesh.rotationQuaternion = physicsCarQuaternion;
 
-    this.#wheels.forEach((wheel, wheelIndex) => {
-      if (this.#physicsVehicle === null || this.#car === null) return;
+    this.#wheelMeshes.forEach((wheel, wheelIndex) => {
+      if (this.#physicsVehicle === null || this.#chassisMesh === null) return;
       const wheelInfo = this.#physicsVehicle.wheelInfos[wheelIndex];
       const wheelPosition = Vector3.FromArray(
         wheelInfo.worldTransform.position.toArray(),
@@ -285,11 +285,11 @@ export class Vehicle {
       this.#physicsVehicle.setSteeringValue(0, 0);
       this.#physicsVehicle.setSteeringValue(0, 1);
     } else if (this.#inputMap.a === KeyboardEventTypes.KEYDOWN) {
-      this.#physicsVehicle.setSteeringValue(-this.#maxSteerVal, 0);
-      this.#physicsVehicle.setSteeringValue(-this.#maxSteerVal, 1);
+      this.#physicsVehicle.setSteeringValue(-this.#maxSteerValue, 0);
+      this.#physicsVehicle.setSteeringValue(-this.#maxSteerValue, 1);
     } else if (this.#inputMap.d === KeyboardEventTypes.KEYDOWN) {
-      this.#physicsVehicle.setSteeringValue(this.#maxSteerVal, 0);
-      this.#physicsVehicle.setSteeringValue(this.#maxSteerVal, 1);
+      this.#physicsVehicle.setSteeringValue(this.#maxSteerValue, 0);
+      this.#physicsVehicle.setSteeringValue(this.#maxSteerValue, 1);
     }
 
     if (this.#inputMap.a === KeyboardEventTypes.KEYUP) {
