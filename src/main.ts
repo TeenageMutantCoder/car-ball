@@ -50,7 +50,7 @@ class App {
     this.#vehicle = new Vehicle();
   }
 
-  async setup(): Promise<void> {
+  setup(): void {
     this.#addObjects();
     this.#addPhysics();
     this.#addDebuggers();
@@ -213,10 +213,10 @@ class App {
   }
 }
 
-const startApp = async (): Promise<void> => {
+const startApp = (): void => {
   const app = new App();
-  await app.setup();
+  app.setup();
   app.run();
 };
 
-void startApp();
+startApp();
