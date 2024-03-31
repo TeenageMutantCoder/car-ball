@@ -35,6 +35,7 @@ class App {
   readonly #vehicle: InstanceType<typeof Vehicle>;
   #ball: AbstractMesh | null = null;
   #physicsBall: Body | null = null;
+  #shouldShowPhysicsDebugger = false;
   readonly #groundSize = 10000;
   readonly #ballRadius = 5;
   readonly #ballMass = 20;
@@ -61,7 +62,9 @@ class App {
 
     this.#engine.runRenderLoop(() => {
       this.#world?.fixedStep();
-      this.#physicsDebugger?.update();
+      if (this.#shouldShowPhysicsDebugger) {
+        this.#physicsDebugger?.update();
+      }
       this.#scene.render();
     });
   }
@@ -203,6 +206,10 @@ class App {
         ev.altKey &&
         ev.key.toLowerCase() === "i"
       ) {
+        this.#shouldShowPhysicsDebugger = !this.#shouldShowPhysicsDebugger;
+        if (!this.#shouldShowPhysicsDebugger) {
+          this.#physicsDebugger?.clear();
+        }
         if (this.#scene.debugLayer.isVisible()) {
           this.#scene.debugLayer.hide();
         } else {

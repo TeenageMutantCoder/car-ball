@@ -45,7 +45,7 @@ type CannonDebugger = new (
   scene: Scene,
   world: World,
   debugOptions?: DebugOptions,
-) => { update: () => void };
+) => { update: () => void; clear: () => void };
 
 const cannonDebugger: CannonDebugger = function(
   scene: Scene,
@@ -262,7 +262,15 @@ const cannonDebugger: CannonDebugger = function(
     meshes.length = meshIndex;
   }
 
-  return { update };
+  function clear(): void {
+    for (const mesh of meshes) {
+      mesh.dispose();
+    }
+    meshes.length = 0;
+    meshCounter = 0;
+  }
+
+  return { update, clear };
 } as any;
 
 export default cannonDebugger;
