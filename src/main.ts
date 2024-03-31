@@ -36,12 +36,14 @@ class App {
   #ball: AbstractMesh | null = null;
   #physicsBall: Body | null = null;
   readonly #groundSize = 10000;
+  readonly #ballRadius = 5;
+  readonly #ballMass = 20;
 
   constructor() {
     this.#canvas = this.#createCanvas();
     this.#engine = new Engine(this.#canvas, true);
     const engine = this.#engine;
-    window.addEventListener("resize", function () {
+    window.addEventListener("resize", function() {
       engine.resize();
     });
     this.#scene = this.#createScene();
@@ -103,7 +105,11 @@ class App {
         this.#ball = meshes[0];
         this.#ball.name = "ball";
         this.#ball.rotation = Vector3.Zero();
-        this.#ball.scaling = new Vector3(10, 10, 10);
+        this.#ball.scaling = new Vector3(
+          2.6 * this.#ballRadius,
+          2.6 * this.#ballRadius,
+          2.6 * this.#ballRadius,
+        );
       },
     );
 
@@ -142,13 +148,13 @@ class App {
     this.#vehicle.setupPhysics(this.#world, groundMaterial);
 
     // Add the ball
-    const ballShape = new Sphere(4);
+    const ballShape = new Sphere(this.#ballRadius);
     const ballMaterial = new Material({
       friction: 0.8,
       restitution: 0.6,
     });
     this.#physicsBall = new Body({
-      mass: 10,
+      mass: this.#ballMass,
       shape: ballShape,
       material: ballMaterial,
     });
