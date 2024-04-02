@@ -39,6 +39,7 @@ class App {
   readonly #groundSize = 10000;
   readonly #ballRadius = 5;
   readonly #ballMass = 20;
+  readonly #gravityVector = new Vec3(0, -10, 0);
 
   constructor() {
     this.#canvas = this.#createCanvas();
@@ -133,7 +134,7 @@ class App {
   #addPhysics(): void {
     this.#world = new World();
     this.#world.defaultContactMaterial.friction = 0;
-    this.#world.gravity.set(0, -10, 0);
+    this.#world.gravity.copy(this.#gravityVector);
 
     // Add the ground
     const groundMaterial = new Material("ground");

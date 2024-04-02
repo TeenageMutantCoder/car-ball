@@ -43,6 +43,10 @@ export class Vehicle {
   readonly #jumpForceAmount = 2000;
   readonly #maxDoubleJumpTimeMilliseconds = 1500;
   readonly #minDoubleJumpTimeMilliseconds = 100;
+  readonly #aerialPitchSpeed = 0.1;
+  readonly #maxAerialPitchSpeed = 2.5;
+  readonly #aerialYawSpeed = 0.1;
+  readonly #maxAerialYawSpeed = 2.5;
   readonly #defaultWheelOptions = {
     radius: 1.25,
     directionLocal: new Vec3(0, -1, 0),
@@ -96,7 +100,6 @@ export class Vehicle {
     this.#camera.rotationOffset = 180;
     this.#camera.cameraAcceleration = 0.125;
     this.#camera.maxCameraSpeed = 3;
-    this.#camera.attachControl(true);
     this.#camera.lockedTarget = this.#chassisMesh;
 
     scene.onKeyboardObservable.add((kbInfo) => {
@@ -202,11 +205,11 @@ export class Vehicle {
       -Math.min(
         this.#maxDownforceAmount,
         this.#downforceAmount *
-        this.#physicsVehicle.chassisBody.velocity.length(),
+          this.#physicsVehicle.chassisBody.velocity.length(),
       ),
       0,
     );
-    this.#physicsVehicle.chassisBody.applyForce(downforce, new Vec3(0, 0, 0));
+    // this.#physicsVehicle.chassisBody.applyForce(downforce, new Vec3(0, 0, 0));
 
     const physicsCarPosition = Vector3.FromArray(
       this.#physicsVehicle.chassisBody.position.toArray(),
@@ -234,6 +237,9 @@ export class Vehicle {
 
   updateFromKeyboard(): void {
     if (this.#physicsVehicle === null) return;
+    const wheelsAreOnGround =
+      this.#physicsVehicle.numWheelsOnGround ===
+      this.#physicsVehicle.wheelInfos.length;
 
     // Accelerating/Reversing
     if (
@@ -249,11 +255,39 @@ export class Vehicle {
       this.#physicsVehicle.applyEngineForce(-this.#maxForceAmount, 1);
       this.#physicsVehicle.applyEngineForce(-this.#maxForceAmount, 2);
       this.#physicsVehicle.applyEngineForce(-this.#maxForceAmount, 3);
+
+      if (!wheelsAreOnGround) {
+        const existingVelocity =
+          this.#physicsVehicle.chassisBody.angularVelocity;
+        const newPitch = Math.min(
+          existingVelocity.x + this.#aerialPitchSpeed,
+          this.#maxAerialPitchSpeed,
+        );
+        this.#physicsVehicle.chassisBody.angularVelocity.set(
+          newPitch,
+          existingVelocity.y,
+          existingVelocity.z,
+        );
+      }
     } else if (this.#inputMap.s === KeyboardEventTypes.KEYDOWN) {
       this.#physicsVehicle.applyEngineForce(this.#maxForceAmount, 0);
       this.#physicsVehicle.applyEngineForce(this.#maxForceAmount, 1);
       this.#physicsVehicle.applyEngineForce(this.#maxForceAmount, 2);
       this.#physicsVehicle.applyEngineForce(this.#maxForceAmount, 3);
+
+      if (!wheelsAreOnGround) {
+        const existingVelocity =
+          this.#physicsVehicle.chassisBody.angularVelocity;
+        const newPitch = Math.max(
+          existingVelocity.x - this.#aerialPitchSpeed,
+          -this.#maxAerialPitchSpeed,
+        );
+        this.#physicsVehicle.chassisBody.angularVelocity.set(
+          newPitch,
+          existingVelocity.y,
+          existingVelocity.z,
+        );
+      }
     }
 
     if (this.#inputMap.w === KeyboardEventTypes.KEYUP) {
@@ -288,9 +322,37 @@ export class Vehicle {
     } else if (this.#inputMap.a === KeyboardEventTypes.KEYDOWN) {
       this.#physicsVehicle.setSteeringValue(-this.#maxSteerValue, 0);
       this.#physicsVehicle.setSteeringValue(-this.#maxSteerValue, 1);
+
+      if (!wheelsAreOnGround) {
+        const existingVelocity =
+          this.#physicsVehicle.chassisBody.angularVelocity;
+        const newYaw = Math.max(
+          existingVelocity.y - this.#aerialYawSpeed,
+          -this.#maxAerialYawSpeed,
+        );
+        this.#physicsVehicle.chassisBody.angularVelocity.set(
+          existingVelocity.x,
+          newYaw,
+          existingVelocity.z,
+        );
+      }
     } else if (this.#inputMap.d === KeyboardEventTypes.KEYDOWN) {
       this.#physicsVehicle.setSteeringValue(this.#maxSteerValue, 0);
       this.#physicsVehicle.setSteeringValue(this.#maxSteerValue, 1);
+
+      if (!wheelsAreOnGround) {
+        const existingVelocity =
+          this.#physicsVehicle.chassisBody.angularVelocity;
+        const newYaw = Math.min(
+          existingVelocity.y + this.#aerialYawSpeed,
+          this.#maxAerialYawSpeed,
+        );
+        this.#physicsVehicle.chassisBody.angularVelocity.set(
+          existingVelocity.x,
+          newYaw,
+          existingVelocity.z,
+        );
+      }
     }
 
     if (this.#inputMap.a === KeyboardEventTypes.KEYUP) {
@@ -329,9 +391,6 @@ export class Vehicle {
     }
 
     // Jumping
-    const wheelsAreOnGround =
-      this.#physicsVehicle.numWheelsOnGround ===
-      this.#physicsVehicle.wheelInfos.length;
     if (wheelsAreOnGround) {
       this.#hasUsedDoubleJump = false;
     }
