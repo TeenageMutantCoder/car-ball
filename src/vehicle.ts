@@ -260,9 +260,23 @@ export class Vehicle {
       Math.abs(forwardUnitVector.x) > Math.abs(forwardUnitVector.z) ? "x" : "z";
     const currentRightAxis = currentForwardAxis === "x" ? "z" : "x";
     const useReversedDirection = false
-      // (forwardUnitVector.x < 0 && forwardUnitVector.z > 0) ||
-      // (forwardUnitVector.x > 0 && forwardUnitVector.z < 0);
-    console.log('forward', currentForwardAxis, 'right', currentRightAxis, forwardUnitVector.x > 0, forwardUnitVector.z > 0);
+    // const useReversedDirection = Math.abs(new Vec3(1, 0, 0).dot(forwardUnitVector)) < 0;
+    // const useReversedDirection = Math.abs(new Vec3(1, 0, 0).dot(forwardUnitVector)) > 0.5;
+    // const useReversedDirection =
+    //   forwardUnitVector[currentForwardAxis] < 0 &&
+    //   forwardUnitVector[currentRightAxis] > 0;
+    // console.log(
+    //   "forward",
+    //   currentForwardAxis,
+    //   "right",
+    //   currentRightAxis,
+    //   'x > 0', 
+    //   forwardUnitVector.x > 0,
+    //   'z > 0',
+    //   forwardUnitVector.z > 0,
+    //   'use reverse',
+    //   useReversedDirection,
+    // );
 
     // Accelerating/Reversing
     if (
@@ -360,7 +374,6 @@ export class Vehicle {
     // Air Pitch (up/down)
     if (this.#inputMap.w === KeyboardEventTypes.KEYDOWN && !wheelsAreOnGround) {
       const existingVelocity = this.#physicsVehicle.chassisBody.angularVelocity;
-      const useReversedDirection = forwardUnitVector[currentRightAxis] < 0;
       const newPitch = useReversedDirection
         ? Math.max(
             existingVelocity[currentRightAxis] - this.#aerialPitchSpeed,
@@ -375,7 +388,6 @@ export class Vehicle {
     }
     if (this.#inputMap.s === KeyboardEventTypes.KEYDOWN && !wheelsAreOnGround) {
       const existingVelocity = this.#physicsVehicle.chassisBody.angularVelocity;
-      const useReversedDirection = forwardUnitVector[currentRightAxis] < 0;
       const newPitch = useReversedDirection
         ? Math.min(
             existingVelocity[currentRightAxis] + this.#aerialPitchSpeed,
