@@ -43,18 +43,15 @@ export class Vehicle {
   readonly #jumpForceAmount = 2000;
   readonly #maxDoubleJumpTimeMilliseconds = 1500;
   readonly #minDoubleJumpTimeMilliseconds = 100;
-  readonly #aerialPitchSpeed = 0.1;
-  readonly #maxAerialPitchSpeed = 2.5;
-  readonly #aerialYawSpeed = 0.1;
-  readonly #maxAerialYawSpeed = 2.5;
-  readonly #aerialRollSpeed = 0.3;
-  readonly #maxAerialRollSpeed = 4;
+  readonly #aerialPitchTorque = 7000;
+  readonly #aerialYawTorque = 7000;
+  readonly #aerialRollTorque = 7000;
   readonly #defaultWheelOptions = {
     radius: 1.25,
     directionLocal: new Vec3(0, -1, 0),
     axleLocal: new Vec3(-1, 0, 0),
     chassisConnectionPointLocal: new Vec3(),
-    frictionSlip: 14,
+    frictionSlip: 3,
   } satisfies WheelInfoOptions;
 
   readonly #wheelPositions = {
@@ -125,7 +122,11 @@ export class Vehicle {
     const chassisShape = new Box(
       new Vec3(this.#sizeX / 2, this.#sizeY / 2, this.#sizeZ / 2),
     );
-    const chassisBody = new Body({ mass: this.#mass });
+    const chassisMaterial = new Material("chassis");
+    const chassisBody = new Body({
+      mass: this.#mass,
+      material: chassisMaterial,
+    });
     chassisBody.addShape(chassisShape);
     chassisBody.position.set(0, this.#sizeY, 0);
     chassisBody.inertia.set(0, 0, 0);
@@ -196,12 +197,10 @@ export class Vehicle {
       }
     });
 
-    const wheelGround = new ContactMaterial(wheelMaterial, groundMaterial, {
-      friction: 0.3,
-      restitution: 0,
-      contactEquationStiffness: 1000,
+    const chassisGround = new ContactMaterial(chassisMaterial, groundMaterial, {
+      friction: 0.01,
     });
-    world.addContactMaterial(wheelGround);
+    world.addContactMaterial(chassisGround);
   }
 
   updateFromPhysics(): void {
@@ -257,28 +256,14 @@ export class Vehicle {
       this.#physicsVehicle.wheelInfos[0].worldTransform.position
         .vsub(this.#physicsVehicle.wheelInfos[2].worldTransform.position)
         .unit();
+    const rightUnitVector =
+      this.#physicsVehicle.wheelInfos[1].worldTransform.position
+        .vsub(this.#physicsVehicle.wheelInfos[0].worldTransform.position)
+        .unit();
+    const upUnitVector = forwardUnitVector.cross(rightUnitVector).unit();
     const forwardAxis =
       Math.abs(forwardUnitVector.x) > Math.abs(forwardUnitVector.z) ? "x" : "z";
     const rightAxis = forwardAxis === "x" ? "z" : "x";
-    const dotProduct = new Vec3(1, 0, 0).dot(forwardUnitVector);
-    // This is weird, but it should work most of the time (with a margin of error due to floating point math/comparisons).
-    // I created a truth table to figure out this logic with useReversedDirection set to false.
-    // At different yaw positions, I tested whether pitch went in the correct direction.
-    // I recorded whether it worked as well as the values of dotProduct, currentForwardAxis, forwardUnitVector.x > 0, and forwardUnitVector.z > 0.
-    // Key: {less than or greater than +-0.7} {value of currentFowardAxis} {has positive or negative forwardUnitVector.x} {has positive or negative forwardUnitVector.z}
-    // With a negative dot product, it worked with (> Z -+), (< X --), and (< X -+). It did not work with (> Z --).
-    // With a positive dot product, it worked with (< Z ++). It did not work with (< Z +-), (> X ++), or (> X +-).
-    const useReversedDirection =
-      (dotProduct > -0.707 &&
-        dotProduct < 0 &&
-        forwardUnitVector.x < 0 &&
-        forwardUnitVector.z < 0) ||
-      (dotProduct > 0.707 &&
-        !(
-          forwardAxis === "z" &&
-          forwardUnitVector.x > 0 &&
-          forwardUnitVector.z > 0
-        ));
 
     // Accelerating/Reversing
     if (
@@ -375,48 +360,26 @@ export class Vehicle {
 
     // Air Pitch (up/down)
     if (this.#inputMap.w === KeyboardEventTypes.KEYDOWN && !areWheelsOnGround) {
-      const currentVelocity = this.#physicsVehicle.chassisBody.angularVelocity;
-      const newPitch = useReversedDirection
-        ? Math.max(
-          currentVelocity[rightAxis] - this.#aerialPitchSpeed,
-          -this.#maxAerialPitchSpeed,
-        )
-        : Math.min(
-          currentVelocity[rightAxis] + this.#aerialPitchSpeed,
-          this.#maxAerialPitchSpeed,
-        );
-      this.#physicsVehicle.chassisBody.angularVelocity[rightAxis] = newPitch;
+      this.#physicsVehicle.chassisBody.applyTorque(
+        rightUnitVector.scale(this.#aerialPitchTorque),
+      );
     }
     if (this.#inputMap.s === KeyboardEventTypes.KEYDOWN && !areWheelsOnGround) {
-      const currentVelocity = this.#physicsVehicle.chassisBody.angularVelocity;
-      const newPitch = useReversedDirection
-        ? Math.min(
-          currentVelocity[rightAxis] + this.#aerialPitchSpeed,
-          this.#maxAerialPitchSpeed,
-        )
-        : Math.max(
-          currentVelocity[rightAxis] - this.#aerialPitchSpeed,
-          -this.#maxAerialPitchSpeed,
-        );
-      this.#physicsVehicle.chassisBody.angularVelocity[rightAxis] = newPitch;
+      this.#physicsVehicle.chassisBody.applyTorque(
+        rightUnitVector.scale(-this.#aerialPitchTorque),
+      );
     }
 
     // Air Yaw (left/right)
     if (this.#inputMap.a === KeyboardEventTypes.KEYDOWN && !areWheelsOnGround) {
-      const currentVelocity = this.#physicsVehicle.chassisBody.angularVelocity;
-      const newYaw = Math.max(
-        currentVelocity.y - this.#aerialYawSpeed,
-        -this.#maxAerialYawSpeed,
+      this.#physicsVehicle.chassisBody.applyTorque(
+        upUnitVector.scale(-this.#aerialYawTorque),
       );
-      this.#physicsVehicle.chassisBody.angularVelocity.y = newYaw;
     }
     if (this.#inputMap.d === KeyboardEventTypes.KEYDOWN && !areWheelsOnGround) {
-      const currentVelocity = this.#physicsVehicle.chassisBody.angularVelocity;
-      const newYaw = Math.min(
-        currentVelocity.y + this.#aerialYawSpeed,
-        this.#maxAerialYawSpeed,
+      this.#physicsVehicle.chassisBody.applyTorque(
+        upUnitVector.scale(this.#aerialYawTorque),
       );
-      this.#physicsVehicle.chassisBody.angularVelocity.y = newYaw;
     }
 
     // Air Roll (twisting)
@@ -424,33 +387,17 @@ export class Vehicle {
       this.#inputMap.ArrowLeft === KeyboardEventTypes.KEYDOWN &&
       !areWheelsOnGround
     ) {
-      const currentVelocity = this.#physicsVehicle.chassisBody.angularVelocity;
-      const newRoll = useReversedDirection
-        ? Math.max(
-          currentVelocity[forwardAxis] - this.#aerialRollSpeed,
-          -this.#maxAerialRollSpeed,
-        )
-        : Math.min(
-          currentVelocity[forwardAxis] + this.#aerialRollSpeed,
-          this.#maxAerialRollSpeed,
-        );
-      this.#physicsVehicle.chassisBody.angularVelocity[forwardAxis] = newRoll;
+      this.#physicsVehicle.chassisBody.applyTorque(
+        forwardUnitVector.scale(this.#aerialRollTorque),
+      );
     }
     if (
       this.#inputMap.ArrowRight === KeyboardEventTypes.KEYDOWN &&
       !areWheelsOnGround
     ) {
-      const currentVelocity = this.#physicsVehicle.chassisBody.angularVelocity;
-      const newRoll = useReversedDirection
-        ? Math.min(
-          currentVelocity[forwardAxis] + this.#aerialRollSpeed,
-          this.#maxAerialRollSpeed,
-        )
-        : Math.max(
-          currentVelocity[forwardAxis] - this.#aerialRollSpeed,
-          -this.#maxAerialRollSpeed,
-        );
-      this.#physicsVehicle.chassisBody.angularVelocity[forwardAxis] = newRoll;
+      this.#physicsVehicle.chassisBody.applyTorque(
+        forwardUnitVector.scale(-this.#aerialRollTorque),
+      );
     }
 
     // Jumping
