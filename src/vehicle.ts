@@ -42,6 +42,7 @@ export class Vehicle {
   readonly #downforceAmount = 700;
   readonly #maxDownforceAmount = 3000;
   readonly #maxForceAmount = 2000;
+  readonly #boostForceAmount = 8000;
   readonly #brakeForceAmount = 100;
   readonly #jumpForceAmount = 2000;
   readonly #maxDoubleJumpTimeMilliseconds = 1500;
@@ -461,6 +462,13 @@ export class Vehicle {
     ) {
       this.#isSelfRighting = true;
       this.#lastJumpTime = null;
+    }
+
+    // Boosting
+    if (this.#inputMap.ArrowUp === KeyboardEventTypes.KEYDOWN) {
+      this.#physicsVehicle.chassisBody.applyForce(
+        forwardUnitVector.scale(this.#boostForceAmount),
+      );
     }
   }
 }
