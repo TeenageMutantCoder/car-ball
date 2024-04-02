@@ -462,6 +462,7 @@ export class Vehicle {
     ) {
       this.#isSelfRighting = true;
       this.#lastJumpTime = null;
+      this.#selfRightingProgress = 0;
     }
 
     // Boosting
