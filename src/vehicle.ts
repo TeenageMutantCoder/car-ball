@@ -31,6 +31,7 @@ export class Vehicle {
   #lastJumpTime: number | null = null;
   #hasStoppedJumping = true;
   #hasUsedDoubleJump = false;
+  #isSelfRighting = false;
   readonly #sizeX = 6;
   readonly #sizeY = 3;
   readonly #sizeZ = 12;
@@ -403,6 +404,7 @@ export class Vehicle {
     // Jumping
     if (areWheelsOnGround) {
       this.#hasUsedDoubleJump = false;
+      this.#isSelfRighting = false;
     }
     if (this.#inputMap[" "] === KeyboardEventTypes.KEYUP) {
       this.#hasStoppedJumping = true;
@@ -439,17 +441,29 @@ export class Vehicle {
 
     // Self-righting (get back onto wheels after being stuck upside down)
     if (
+      this.#isSelfRighting &&
+      upUnitVector.almostEquals(new Vec3(0, 1, 0), 0.25)
+    ) {
+      this.#physicsVehicle.chassisBody.angularVelocity.set(0, 0, 0);
+      const currentRotation = new Vec3();
+      this.#physicsVehicle.chassisBody.quaternion.toEuler(currentRotation);
+      this.#physicsVehicle.chassisBody.quaternion.setFromEuler(
+        0,
+        currentRotation.y,
+        0,
+      );
+    }
+    if (
       this.#inputMap[" "] === KeyboardEventTypes.KEYDOWN &&
       !areWheelsOnGround &&
       this.#physicsVehicle.chassisBody.position.y < 2 &&
       this.#physicsVehicle.chassisBody.angularVelocity[rightAxis] < 0.5 &&
       this.#hasStoppedJumping
     ) {
-      this.#lastJumpTime = Date.now();
-      this.#hasStoppedJumping = false;
-      this.#physicsVehicle.chassisBody.applyImpulse(
-        new Vec3(0, 1000, 0),
-        new Vec3(-this.#sizeX / 2, 0, 0),
+      this.#isSelfRighting = true;
+      this.#physicsVehicle.chassisBody.applyImpulse(upUnitVector.scale(-500));
+      this.#physicsVehicle.chassisBody.applyTorque(
+        forwardUnitVector.scale(80000),
       );
     }
   }
