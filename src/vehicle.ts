@@ -269,11 +269,11 @@ export class Vehicle {
     // With a negative dot product, it worked with (> Z -+), (< X --), and (< X -+). It did not work with (> Z --).
     // With a positive dot product, it worked with (< Z ++). It did not work with (< Z +-), (> X ++), or (> X +-).
     const useReversedDirection =
-      (dotProduct > -0.7 &&
+      (dotProduct > -0.707 &&
         dotProduct < 0 &&
         forwardUnitVector.x < 0 &&
         forwardUnitVector.z < 0) ||
-      (dotProduct > 0 &&
+      (dotProduct > 0.707 &&
         !(
           forwardAxis === "z" &&
           forwardUnitVector.x > 0 &&
