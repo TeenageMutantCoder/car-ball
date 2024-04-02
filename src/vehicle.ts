@@ -128,6 +128,7 @@ export class Vehicle {
     const chassisBody = new Body({ mass: this.#mass });
     chassisBody.addShape(chassisShape);
     chassisBody.position.set(0, this.#sizeY, 0);
+    chassisBody.inertia.set(0, 0, 0);
 
     this.#physicsVehicle = new RaycastVehicle({
       chassisBody,
@@ -217,7 +218,7 @@ export class Vehicle {
       -Math.min(
         this.#maxDownforceAmount,
         this.#downforceAmount *
-          this.#physicsVehicle.chassisBody.velocity.length(),
+        this.#physicsVehicle.chassisBody.velocity.length(),
       ),
       0,
     );
@@ -259,24 +260,25 @@ export class Vehicle {
     const currentForwardAxis =
       Math.abs(forwardUnitVector.x) > Math.abs(forwardUnitVector.z) ? "x" : "z";
     const currentRightAxis = currentForwardAxis === "x" ? "z" : "x";
-    const useReversedDirection = false
-    // const useReversedDirection = Math.abs(new Vec3(1, 0, 0).dot(forwardUnitVector)) < 0;
-    // const useReversedDirection = Math.abs(new Vec3(1, 0, 0).dot(forwardUnitVector)) > 0.5;
-    // const useReversedDirection =
-    //   forwardUnitVector[currentForwardAxis] < 0 &&
-    //   forwardUnitVector[currentRightAxis] > 0;
-    // console.log(
-    //   "forward",
-    //   currentForwardAxis,
-    //   "right",
-    //   currentRightAxis,
-    //   'x > 0', 
-    //   forwardUnitVector.x > 0,
-    //   'z > 0',
-    //   forwardUnitVector.z > 0,
-    //   'use reverse',
-    //   useReversedDirection,
-    // );
+    const dotProduct = new Vec3(1, 0, 0).dot(forwardUnitVector);
+    // This is weird, but it should work most of the time (with a margin of error due to floating point math/comparisons).
+    // I created a truth table to figure out this logic with useReversedDirection set to false.
+    // At different yaw positions, I tested whether pitch went in the correct direction.
+    // I recorded whether it worked as well as the values of dotProduct, currentForwardAxis, forwardUnitVector.x > 0, and forwardUnitVector.z > 0.
+    // Key: {less than or greater than +-0.7} {value of currentFowardAxis} {has positive or negative forwardUnitVector.x} {has positive or negative forwardUnitVector.z}
+    // With a negative dot product, it worked with (> Z -+), (< X --), and (< X -+). It did not work with (> Z --).
+    // With a positive dot product, it worked with (< Z ++). It did not work with (< Z +-), (> X ++), or (> X +-). 
+    const useReversedDirection =
+      (dotProduct > -0.7 &&
+        dotProduct < 0 &&
+        forwardUnitVector.x < 0 &&
+        forwardUnitVector.z < 0) ||
+      (dotProduct > 0 &&
+        !(
+          currentForwardAxis === "z" &&
+          forwardUnitVector.x > 0 &&
+          forwardUnitVector.z > 0
+        ));
 
     // Accelerating/Reversing
     if (
@@ -376,13 +378,13 @@ export class Vehicle {
       const existingVelocity = this.#physicsVehicle.chassisBody.angularVelocity;
       const newPitch = useReversedDirection
         ? Math.max(
-            existingVelocity[currentRightAxis] - this.#aerialPitchSpeed,
-            -this.#maxAerialPitchSpeed,
-          )
+          existingVelocity[currentRightAxis] - this.#aerialPitchSpeed,
+          -this.#maxAerialPitchSpeed,
+        )
         : Math.min(
-            existingVelocity[currentRightAxis] + this.#aerialPitchSpeed,
-            this.#maxAerialPitchSpeed,
-          );
+          existingVelocity[currentRightAxis] + this.#aerialPitchSpeed,
+          this.#maxAerialPitchSpeed,
+        );
       this.#physicsVehicle.chassisBody.angularVelocity[currentRightAxis] =
         newPitch;
     }
@@ -390,13 +392,13 @@ export class Vehicle {
       const existingVelocity = this.#physicsVehicle.chassisBody.angularVelocity;
       const newPitch = useReversedDirection
         ? Math.min(
-            existingVelocity[currentRightAxis] + this.#aerialPitchSpeed,
-            this.#maxAerialPitchSpeed,
-          )
+          existingVelocity[currentRightAxis] + this.#aerialPitchSpeed,
+          this.#maxAerialPitchSpeed,
+        )
         : Math.max(
-            existingVelocity[currentRightAxis] - this.#aerialPitchSpeed,
-            -this.#maxAerialPitchSpeed,
-          );
+          existingVelocity[currentRightAxis] - this.#aerialPitchSpeed,
+          -this.#maxAerialPitchSpeed,
+        );
       this.#physicsVehicle.chassisBody.angularVelocity[currentRightAxis] =
         newPitch;
     }
@@ -427,13 +429,13 @@ export class Vehicle {
       const existingVelocity = this.#physicsVehicle.chassisBody.angularVelocity;
       const newRoll = useReversedDirection
         ? Math.max(
-            existingVelocity[currentForwardAxis] - this.#aerialRollSpeed,
-            -this.#maxAerialRollSpeed,
-          )
+          existingVelocity[currentForwardAxis] - this.#aerialRollSpeed,
+          -this.#maxAerialRollSpeed,
+        )
         : Math.min(
-            existingVelocity[currentForwardAxis] + this.#aerialRollSpeed,
-            this.#maxAerialRollSpeed,
-          );
+          existingVelocity[currentForwardAxis] + this.#aerialRollSpeed,
+          this.#maxAerialRollSpeed,
+        );
       this.#physicsVehicle.chassisBody.angularVelocity[currentForwardAxis] =
         newRoll;
     }
@@ -444,13 +446,13 @@ export class Vehicle {
       const existingVelocity = this.#physicsVehicle.chassisBody.angularVelocity;
       const newRoll = useReversedDirection
         ? Math.min(
-            existingVelocity[currentForwardAxis] + this.#aerialRollSpeed,
-            this.#maxAerialRollSpeed,
-          )
+          existingVelocity[currentForwardAxis] + this.#aerialRollSpeed,
+          this.#maxAerialRollSpeed,
+        )
         : Math.max(
-            existingVelocity[currentForwardAxis] - this.#aerialRollSpeed,
-            -this.#maxAerialRollSpeed,
-          );
+          existingVelocity[currentForwardAxis] - this.#aerialRollSpeed,
+          -this.#maxAerialRollSpeed,
+        );
       this.#physicsVehicle.chassisBody.angularVelocity[currentForwardAxis] =
         newRoll;
     }
@@ -498,7 +500,7 @@ export class Vehicle {
       !wheelsAreOnGround &&
       this.#physicsVehicle.chassisBody.position.y < 2 &&
       this.#physicsVehicle.chassisBody.angularVelocity[currentRightAxis] <
-        0.5 &&
+      0.5 &&
       this.#hasStoppedJumping
     ) {
       this.#lastJumpTime = Date.now();
