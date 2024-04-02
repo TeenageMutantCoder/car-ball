@@ -45,6 +45,7 @@ export class Vehicle {
   readonly #boostForceAmount = 8000;
   readonly #brakeForceAmount = 100;
   readonly #jumpForceAmount = 2000;
+  readonly #maxAngularVelocity = 5;
   readonly #maxDoubleJumpTimeMilliseconds = 1500;
   readonly #minDoubleJumpTimeMilliseconds = 100;
   readonly #aerialPitchTorque = 7000;
@@ -221,7 +222,7 @@ export class Vehicle {
       -Math.min(
         this.#maxDownforceAmount,
         this.#downforceAmount *
-        this.#physicsVehicle.chassisBody.velocity.length(),
+          this.#physicsVehicle.chassisBody.velocity.length(),
       ),
       0,
     );
@@ -469,6 +470,18 @@ export class Vehicle {
     if (this.#inputMap.ArrowUp === KeyboardEventTypes.KEYDOWN) {
       this.#physicsVehicle.chassisBody.applyForce(
         forwardUnitVector.scale(this.#boostForceAmount),
+      );
+    }
+
+    // Limit angular velocity
+    if (
+      this.#physicsVehicle.chassisBody.angularVelocity.length() >
+      this.#maxAngularVelocity
+    ) {
+      this.#physicsVehicle.chassisBody.angularVelocity.copy(
+        this.#physicsVehicle.chassisBody.angularVelocity
+          .unit()
+          .scale(this.#maxAngularVelocity),
       );
     }
   }
