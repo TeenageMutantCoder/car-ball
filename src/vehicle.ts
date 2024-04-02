@@ -419,7 +419,6 @@ export class Vehicle {
       this.#hasStoppedJumping = false;
       this.#physicsVehicle.chassisBody.applyImpulse(
         new Vec3(0, this.#jumpForceAmount, 0),
-        new Vec3(0, 0, 0),
       );
     }
 
@@ -435,7 +434,6 @@ export class Vehicle {
       this.#hasStoppedJumping = false;
       this.#physicsVehicle.chassisBody.applyImpulse(
         new Vec3(0, this.#jumpForceAmount * 0.75, 0),
-        new Vec3(0, 0, 0),
       );
     }
 
