@@ -250,16 +250,16 @@ export class Vehicle {
 
   updateFromKeyboard(): void {
     if (this.#physicsVehicle === null) return;
-    const wheelsAreOnGround =
+    const areWheelsOnGround =
       this.#physicsVehicle.numWheelsOnGround ===
       this.#physicsVehicle.wheelInfos.length;
     const forwardUnitVector =
       this.#physicsVehicle.wheelInfos[0].worldTransform.position
         .vsub(this.#physicsVehicle.wheelInfos[2].worldTransform.position)
         .unit();
-    const currentForwardAxis =
+    const forwardAxis =
       Math.abs(forwardUnitVector.x) > Math.abs(forwardUnitVector.z) ? "x" : "z";
-    const currentRightAxis = currentForwardAxis === "x" ? "z" : "x";
+    const rightAxis = forwardAxis === "x" ? "z" : "x";
     const dotProduct = new Vec3(1, 0, 0).dot(forwardUnitVector);
     // This is weird, but it should work most of the time (with a margin of error due to floating point math/comparisons).
     // I created a truth table to figure out this logic with useReversedDirection set to false.
@@ -267,7 +267,7 @@ export class Vehicle {
     // I recorded whether it worked as well as the values of dotProduct, currentForwardAxis, forwardUnitVector.x > 0, and forwardUnitVector.z > 0.
     // Key: {less than or greater than +-0.7} {value of currentFowardAxis} {has positive or negative forwardUnitVector.x} {has positive or negative forwardUnitVector.z}
     // With a negative dot product, it worked with (> Z -+), (< X --), and (< X -+). It did not work with (> Z --).
-    // With a positive dot product, it worked with (< Z ++). It did not work with (< Z +-), (> X ++), or (> X +-). 
+    // With a positive dot product, it worked with (< Z ++). It did not work with (< Z +-), (> X ++), or (> X +-).
     const useReversedDirection =
       (dotProduct > -0.7 &&
         dotProduct < 0 &&
@@ -275,7 +275,7 @@ export class Vehicle {
         forwardUnitVector.z < 0) ||
       (dotProduct > 0 &&
         !(
-          currentForwardAxis === "z" &&
+          forwardAxis === "z" &&
           forwardUnitVector.x > 0 &&
           forwardUnitVector.z > 0
         ));
@@ -374,48 +374,46 @@ export class Vehicle {
     }
 
     // Air Pitch (up/down)
-    if (this.#inputMap.w === KeyboardEventTypes.KEYDOWN && !wheelsAreOnGround) {
-      const existingVelocity = this.#physicsVehicle.chassisBody.angularVelocity;
+    if (this.#inputMap.w === KeyboardEventTypes.KEYDOWN && !areWheelsOnGround) {
+      const currentVelocity = this.#physicsVehicle.chassisBody.angularVelocity;
       const newPitch = useReversedDirection
         ? Math.max(
-          existingVelocity[currentRightAxis] - this.#aerialPitchSpeed,
+          currentVelocity[rightAxis] - this.#aerialPitchSpeed,
           -this.#maxAerialPitchSpeed,
         )
         : Math.min(
-          existingVelocity[currentRightAxis] + this.#aerialPitchSpeed,
+          currentVelocity[rightAxis] + this.#aerialPitchSpeed,
           this.#maxAerialPitchSpeed,
         );
-      this.#physicsVehicle.chassisBody.angularVelocity[currentRightAxis] =
-        newPitch;
+      this.#physicsVehicle.chassisBody.angularVelocity[rightAxis] = newPitch;
     }
-    if (this.#inputMap.s === KeyboardEventTypes.KEYDOWN && !wheelsAreOnGround) {
-      const existingVelocity = this.#physicsVehicle.chassisBody.angularVelocity;
+    if (this.#inputMap.s === KeyboardEventTypes.KEYDOWN && !areWheelsOnGround) {
+      const currentVelocity = this.#physicsVehicle.chassisBody.angularVelocity;
       const newPitch = useReversedDirection
         ? Math.min(
-          existingVelocity[currentRightAxis] + this.#aerialPitchSpeed,
+          currentVelocity[rightAxis] + this.#aerialPitchSpeed,
           this.#maxAerialPitchSpeed,
         )
         : Math.max(
-          existingVelocity[currentRightAxis] - this.#aerialPitchSpeed,
+          currentVelocity[rightAxis] - this.#aerialPitchSpeed,
           -this.#maxAerialPitchSpeed,
         );
-      this.#physicsVehicle.chassisBody.angularVelocity[currentRightAxis] =
-        newPitch;
+      this.#physicsVehicle.chassisBody.angularVelocity[rightAxis] = newPitch;
     }
 
     // Air Yaw (left/right)
-    if (this.#inputMap.a === KeyboardEventTypes.KEYDOWN && !wheelsAreOnGround) {
-      const existingVelocity = this.#physicsVehicle.chassisBody.angularVelocity;
+    if (this.#inputMap.a === KeyboardEventTypes.KEYDOWN && !areWheelsOnGround) {
+      const currentVelocity = this.#physicsVehicle.chassisBody.angularVelocity;
       const newYaw = Math.max(
-        existingVelocity.y - this.#aerialYawSpeed,
+        currentVelocity.y - this.#aerialYawSpeed,
         -this.#maxAerialYawSpeed,
       );
       this.#physicsVehicle.chassisBody.angularVelocity.y = newYaw;
     }
-    if (this.#inputMap.d === KeyboardEventTypes.KEYDOWN && !wheelsAreOnGround) {
-      const existingVelocity = this.#physicsVehicle.chassisBody.angularVelocity;
+    if (this.#inputMap.d === KeyboardEventTypes.KEYDOWN && !areWheelsOnGround) {
+      const currentVelocity = this.#physicsVehicle.chassisBody.angularVelocity;
       const newYaw = Math.min(
-        existingVelocity.y + this.#aerialYawSpeed,
+        currentVelocity.y + this.#aerialYawSpeed,
         this.#maxAerialYawSpeed,
       );
       this.#physicsVehicle.chassisBody.angularVelocity.y = newYaw;
@@ -424,41 +422,39 @@ export class Vehicle {
     // Air Roll (twisting)
     if (
       this.#inputMap.ArrowLeft === KeyboardEventTypes.KEYDOWN &&
-      !wheelsAreOnGround
+      !areWheelsOnGround
     ) {
-      const existingVelocity = this.#physicsVehicle.chassisBody.angularVelocity;
+      const currentVelocity = this.#physicsVehicle.chassisBody.angularVelocity;
       const newRoll = useReversedDirection
         ? Math.max(
-          existingVelocity[currentForwardAxis] - this.#aerialRollSpeed,
+          currentVelocity[forwardAxis] - this.#aerialRollSpeed,
           -this.#maxAerialRollSpeed,
         )
         : Math.min(
-          existingVelocity[currentForwardAxis] + this.#aerialRollSpeed,
+          currentVelocity[forwardAxis] + this.#aerialRollSpeed,
           this.#maxAerialRollSpeed,
         );
-      this.#physicsVehicle.chassisBody.angularVelocity[currentForwardAxis] =
-        newRoll;
+      this.#physicsVehicle.chassisBody.angularVelocity[forwardAxis] = newRoll;
     }
     if (
       this.#inputMap.ArrowRight === KeyboardEventTypes.KEYDOWN &&
-      !wheelsAreOnGround
+      !areWheelsOnGround
     ) {
-      const existingVelocity = this.#physicsVehicle.chassisBody.angularVelocity;
+      const currentVelocity = this.#physicsVehicle.chassisBody.angularVelocity;
       const newRoll = useReversedDirection
         ? Math.min(
-          existingVelocity[currentForwardAxis] + this.#aerialRollSpeed,
+          currentVelocity[forwardAxis] + this.#aerialRollSpeed,
           this.#maxAerialRollSpeed,
         )
         : Math.max(
-          existingVelocity[currentForwardAxis] - this.#aerialRollSpeed,
+          currentVelocity[forwardAxis] - this.#aerialRollSpeed,
           -this.#maxAerialRollSpeed,
         );
-      this.#physicsVehicle.chassisBody.angularVelocity[currentForwardAxis] =
-        newRoll;
+      this.#physicsVehicle.chassisBody.angularVelocity[forwardAxis] = newRoll;
     }
 
     // Jumping
-    if (wheelsAreOnGround) {
+    if (areWheelsOnGround) {
       this.#hasUsedDoubleJump = false;
     }
     if (this.#inputMap[" "] === KeyboardEventTypes.KEYUP) {
@@ -467,7 +463,7 @@ export class Vehicle {
 
     if (
       this.#inputMap[" "] === KeyboardEventTypes.KEYDOWN &&
-      wheelsAreOnGround &&
+      areWheelsOnGround &&
       this.#hasStoppedJumping
     ) {
       this.#lastJumpTime = Date.now();
@@ -479,7 +475,7 @@ export class Vehicle {
     }
 
     const canDoubleJump =
-      !wheelsAreOnGround &&
+      !areWheelsOnGround &&
       !this.#hasUsedDoubleJump &&
       this.#hasStoppedJumping &&
       this.#lastJumpTime !== null &&
@@ -497,10 +493,9 @@ export class Vehicle {
     // Self-righting (get back onto wheels after being stuck upside down)
     if (
       this.#inputMap[" "] === KeyboardEventTypes.KEYDOWN &&
-      !wheelsAreOnGround &&
+      !areWheelsOnGround &&
       this.#physicsVehicle.chassisBody.position.y < 2 &&
-      this.#physicsVehicle.chassisBody.angularVelocity[currentRightAxis] <
-      0.5 &&
+      this.#physicsVehicle.chassisBody.angularVelocity[rightAxis] < 0.5 &&
       this.#hasStoppedJumping
     ) {
       this.#lastJumpTime = Date.now();
