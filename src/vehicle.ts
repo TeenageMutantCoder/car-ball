@@ -220,14 +220,19 @@ export class Vehicle {
       return;
     }
 
-    const downforce = this.#up.scale(
-      -Math.min(
-        this.#maxDownforceAmount,
-        this.#downforceAmount *
-        this.#physicsVehicle.chassisBody.velocity.length(),
-      ),
-    );
-    this.#physicsVehicle.chassisBody.applyForce(downforce);
+    const areWheelsOnGround =
+      this.#physicsVehicle.numWheelsOnGround ===
+      this.#physicsVehicle.wheelInfos.length;
+    if (areWheelsOnGround) {
+      const downforce = this.#up.scale(
+        -Math.min(
+          this.#maxDownforceAmount,
+          this.#downforceAmount *
+          this.#physicsVehicle.chassisBody.velocity.length(),
+        ),
+      );
+      this.#physicsVehicle.chassisBody.applyForce(downforce);
+    }
 
     const physicsCarPosition = Vector3.FromArray(
       this.#physicsVehicle.chassisBody.position.toArray(),
@@ -442,9 +447,9 @@ export class Vehicle {
     if (this.#inputMap[" "] === KeyboardEventTypes.KEYDOWN && canDoubleJump) {
       this.#hasUsedDoubleJump = true;
       this.#hasStoppedJumping = false;
-        this.#physicsVehicle.chassisBody.applyImpulse(
-          this.#up.scale(this.#jumpForceAmount * 0.75),
-        );
+      this.#physicsVehicle.chassisBody.applyImpulse(
+        this.#up.scale(this.#jumpForceAmount * 0.75),
+      );
     }
 
     // Self-righting (get back onto wheels after being stuck upside down)
