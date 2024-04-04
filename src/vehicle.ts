@@ -35,19 +35,23 @@ export class Vehicle {
   #hasStoppedJumping = true;
   #hasUsedDoubleJump = false;
   #isSelfRighting = false;
-  #selfRightingProgress = 0;
-  readonly #numOfSelfRightingSteps = 100;
+  #isJumping = false;
   readonly #sizeX = 6;
   readonly #sizeY = 3;
   readonly #sizeZ = 12;
   readonly #mass = 100;
   readonly #maxSteerValue = 0.7;
-  readonly #downforceAmount = 700;
+  readonly #downforceAmount = 70;
   readonly #maxDownforceAmount = 3000;
   readonly #maxForceAmount = 2000;
   readonly #boostForceAmount = 8000;
+  readonly #selfRightingForceAmount = 7000;
+  readonly #selfRightingTorqueAmount = 1000000;
   readonly #brakeForceAmount = 100;
-  readonly #jumpForceAmount = 2000;
+  readonly #jumpForceAmount = 20000;
+  readonly #maxjumpDuration = 100;
+  readonly #doubleJumpForceAmount = 1000;
+  readonly #selfRightingTorqueDelayAmountMilliseconds = 200;
   readonly #maxAngularVelocity = 5;
   readonly #maxDoubleJumpTimeMilliseconds = 1500;
   readonly #minDoubleJumpTimeMilliseconds = 100;
@@ -415,25 +419,30 @@ export class Vehicle {
     }
 
     // Jumping
+    const timeSinceLastJump =
+      this.#lastJumpTime === null ? Infinity : Date.now() - this.#lastJumpTime;
+
     if (areWheelsOnGround) {
       this.#hasUsedDoubleJump = false;
-      this.#isSelfRighting = false;
-      this.#selfRightingProgress = 0;
     }
     if (this.#inputMap[" "] === KeyboardEventTypes.KEYUP) {
       this.#hasStoppedJumping = true;
+      this.#isJumping = false;
     }
 
+    if (this.#isJumping && timeSinceLastJump < this.#maxjumpDuration) {
+      this.#physicsVehicle.chassisBody.applyForce(
+        this.#up.scale(this.#jumpForceAmount),
+      );
+    }
     if (
       this.#inputMap[" "] === KeyboardEventTypes.KEYDOWN &&
       areWheelsOnGround &&
       this.#hasStoppedJumping
     ) {
+      this.#isJumping = true;
       this.#lastJumpTime = Date.now();
       this.#hasStoppedJumping = false;
-      this.#physicsVehicle.chassisBody.applyImpulse(
-        this.#up.scale(this.#jumpForceAmount),
-      );
     }
 
     const canDoubleJump =
@@ -441,31 +450,29 @@ export class Vehicle {
       !isStuckUpsideDown &&
       !this.#hasUsedDoubleJump &&
       this.#hasStoppedJumping &&
-      this.#lastJumpTime !== null &&
-      Date.now() - this.#lastJumpTime > this.#minDoubleJumpTimeMilliseconds &&
-      Date.now() - this.#lastJumpTime < this.#maxDoubleJumpTimeMilliseconds;
+      timeSinceLastJump > this.#minDoubleJumpTimeMilliseconds &&
+      timeSinceLastJump < this.#maxDoubleJumpTimeMilliseconds;
     if (this.#inputMap[" "] === KeyboardEventTypes.KEYDOWN && canDoubleJump) {
       this.#hasUsedDoubleJump = true;
       this.#hasStoppedJumping = false;
-      this.#physicsVehicle.chassisBody.applyImpulse(
-        this.#up.scale(this.#jumpForceAmount * 0.75),
-      );
+      if (
+        this.#inputMap.w !== KeyboardEventTypes.KEYDOWN &&
+        this.#inputMap.s !== KeyboardEventTypes.KEYDOWN &&
+        this.#inputMap.a !== KeyboardEventTypes.KEYDOWN &&
+        this.#inputMap.d !== KeyboardEventTypes.KEYDOWN
+      ) {
+        this.#physicsVehicle.chassisBody.applyImpulse(
+          this.#up.scale(this.#doubleJumpForceAmount),
+        );
+      }
     }
 
     // Self-righting (get back onto wheels after being stuck upside down)
-    if (this.#isSelfRighting && this.#selfRightingProgress <= 1) {
-      const currentRotation = new Vec3();
-      this.#physicsVehicle.chassisBody.quaternion.toEuler(currentRotation);
-      const newQuaternion = new CannonQuaternion();
-      newQuaternion.setFromEuler(0, currentRotation.y, 0);
-      this.#physicsVehicle.chassisBody.torque = new Vec3(0, 0, 0)
-      this.#physicsVehicle.chassisBody.angularVelocity = new Vec3(0, 0, 0)
-      this.#physicsVehicle.chassisBody.quaternion.slerp(
-        newQuaternion,
-        this.#selfRightingProgress,
-        this.#physicsVehicle.chassisBody.quaternion,
-      );
-      this.#selfRightingProgress += 1 / this.#numOfSelfRightingSteps;
+    const isFacingUpwards = this.#up.almostEquals(new Vec3(0, 1, 0), 0.2);
+    if (this.#isSelfRighting && isFacingUpwards) {
+      this.#physicsVehicle.chassisBody.torque = new Vec3(0, 0, 0);
+      this.#physicsVehicle.chassisBody.angularVelocity = new Vec3(0, 0, 0);
+      this.#isSelfRighting = false;
     }
     if (
       this.#inputMap[" "] === KeyboardEventTypes.KEYDOWN &&
@@ -474,7 +481,14 @@ export class Vehicle {
     ) {
       this.#isSelfRighting = true;
       this.#lastJumpTime = null;
-      this.#selfRightingProgress = 0;
+      this.#physicsVehicle.chassisBody.applyImpulse(
+        this.#up.scale(this.#selfRightingForceAmount),
+      );
+      setTimeout(() => {
+        this.#physicsVehicle?.chassisBody.applyTorque(
+          this.#forward.scale(this.#selfRightingTorqueAmount),
+        );
+      }, this.#selfRightingTorqueDelayAmountMilliseconds);
     }
 
     // Boosting

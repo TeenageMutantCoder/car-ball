@@ -39,7 +39,7 @@ class App {
   readonly #groundSize = 10000;
   readonly #ballRadius = 5;
   readonly #ballMass = 20;
-  readonly #gravityVector = new Vec3(0, -10, 0);
+  readonly #gravityVector = new Vec3(0, -20, 0);
 
   constructor() {
     this.#canvas = this.#createCanvas();
