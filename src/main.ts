@@ -45,9 +45,14 @@ class App {
     this.#canvas = this.#createCanvas();
     this.#engine = new Engine(this.#canvas, true);
     const engine = this.#engine;
-    window.addEventListener("resize", function() {
+    window.addEventListener("resize", function () {
       engine.resize();
     });
+
+    window.onbeforeunload = (ev) => {
+      ev.preventDefault();
+      return true;
+    };
     this.#scene = this.#createScene();
     this.#vehicle = new Vehicle();
   }
@@ -93,6 +98,7 @@ class App {
       this.#vehicle.updateDirectionVectors();
       this.#updateFromKeyboard();
       this.#updateFromPhysics();
+      this.#updateCameraPosition();
     });
 
     return scene;
@@ -115,6 +121,7 @@ class App {
           2.6 * this.#ballRadius,
           2.6 * this.#ballRadius,
         );
+        this.#vehicle.setBall(this.#ball);
       },
     );
 
@@ -193,6 +200,10 @@ class App {
     );
     this.#ball.position.copyFrom(physicsBallPosition);
     this.#ball.rotationQuaternion = physicsBallQuaternion;
+  }
+
+  #updateCameraPosition(): void {
+    this.#vehicle.updateCameraPosition();
   }
 
   #addDebuggers(): void {

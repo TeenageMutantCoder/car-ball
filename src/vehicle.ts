@@ -1,6 +1,5 @@
 import {
   type AbstractMesh,
-  FollowCamera,
   MeshBuilder,
   type Scene,
   Vector3,
@@ -8,6 +7,8 @@ import {
   Space,
   KeyboardEventTypes,
   Quaternion,
+  TransformNode,
+  UniversalCamera,
 } from "@babylonjs/core";
 import {
   type World,
@@ -26,8 +27,11 @@ export class Vehicle {
   readonly #inputMap: Record<string, KeyboardEventTypes | boolean> = {};
   #chassisMesh: AbstractMesh | null = null;
   #wheelMeshes: AbstractMesh[] | null = null;
-  #camera: FollowCamera | null = null;
+  #camera: UniversalCamera | null = null;
+  #cameraTarget: TransformNode | null = null;
+  #cameraTargetType: "car" | "ball" = "car";
   #physicsVehicle: RaycastVehicle | null = null;
+  #ball: AbstractMesh | null = null;
   #up: Vec3 = Vec3.ZERO;
   #right: Vec3 = Vec3.ZERO;
   #forward: Vec3 = Vec3.ZERO;
@@ -73,6 +77,10 @@ export class Vehicle {
     rearRight: new Vec3(3, 0, -4.5),
   };
 
+  setBall(ball: AbstractMesh): void {
+    this.#ball = ball;
+  }
+
   setupScene(scene: Scene): void {
     this.#chassisMesh = MeshBuilder.CreateBox(
       "vehicle",
@@ -105,13 +113,16 @@ export class Vehicle {
       rearRightWheel,
     ];
 
-    this.#camera = new FollowCamera("Camera", new Vector3(0, 10, 0), scene);
-    this.#camera.radius = 27;
-    this.#camera.heightOffset = 10;
-    this.#camera.rotationOffset = 180;
-    this.#camera.cameraAcceleration = 0.125;
-    this.#camera.maxCameraSpeed = 3;
-    this.#camera.lockedTarget = this.#chassisMesh;
+    this.#camera = new UniversalCamera("Camera", new Vector3(0, 10, 0), scene);
+    this.#cameraTarget = new TransformNode("cameraTarget", scene);
+    this.#camera.lockedTarget = this.#cameraTarget;
+
+    document.addEventListener("keydown", (event) => {
+      if (event.ctrlKey) {
+        this.#cameraTargetType =
+          this.#cameraTargetType === "car" ? "ball" : "car";
+      }
+    });
 
     scene.onKeyboardObservable.add((kbInfo) => {
       const keysWithNormalCasing = [
@@ -213,6 +224,59 @@ export class Vehicle {
       friction: 0.01,
     });
     world.addContactMaterial(chassisGround);
+  }
+
+  updateCameraPosition(): void {
+    if (
+      this.#chassisMesh === null ||
+      this.#physicsVehicle === null ||
+      this.#camera === null ||
+      this.#cameraTarget === null ||
+      this.#chassisMesh.rotationQuaternion === null
+    )
+      return;
+
+    const cameraHeight = 8;
+    const cameraDistance = this.#sizeZ * 3;
+
+    if (this.#cameraTargetType === "car") {
+      const velocityVector = new Vector3(
+        ...this.#physicsVehicle.chassisBody.velocity.toArray(),
+      ).normalize();
+      velocityVector.y = 0;
+      const forwardVector = this.#chassisMesh.forward.clone();
+      forwardVector.y = 0;
+      forwardVector.normalize();
+      if (forwardVector.negate().equalsWithEpsilon(velocityVector, 0.1)) {
+        forwardVector.negateInPlace();
+      }
+
+      const updatedCameraPosition = this.#chassisMesh.position.add(
+        forwardVector.scale(-cameraDistance),
+      );
+      updatedCameraPosition.y = this.#chassisMesh.position.y + cameraHeight;
+      this.#camera.position.copyFrom(updatedCameraPosition);
+      const updatedCameraTargetPosition = this.#chassisMesh.position.add(
+        forwardVector.scale((this.#sizeZ / 2) * 5),
+      );
+      updatedCameraTargetPosition.y =
+        this.#chassisMesh.position.y + cameraHeight;
+      this.#cameraTarget.position.copyFrom(updatedCameraTargetPosition);
+
+      return;
+    }
+
+    if (this.#cameraTargetType === "ball" && this.#ball !== null) {
+      const ballDirectionVector = this.#chassisMesh.position
+        .subtract(this.#ball.position)
+        .normalize();
+      const updatedCameraPosition = this.#chassisMesh.position.add(
+        ballDirectionVector.scale(cameraDistance),
+      );
+      updatedCameraPosition.y = this.#chassisMesh.position.y + cameraHeight;
+      this.#camera.position.copyFrom(updatedCameraPosition);
+      this.#cameraTarget.position.copyFrom(this.#ball.position);
+    }
   }
 
   updateFromPhysics(): void {
