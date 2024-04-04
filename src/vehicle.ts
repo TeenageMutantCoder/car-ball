@@ -28,6 +28,9 @@ export class Vehicle {
   #wheelMeshes: AbstractMesh[] | null = null;
   #camera: FollowCamera | null = null;
   #physicsVehicle: RaycastVehicle | null = null;
+  #up: Vec3 = Vec3.ZERO;
+  #right: Vec3 = Vec3.ZERO;
+  #forward: Vec3 = Vec3.ZERO;
   #lastJumpTime: number | null = null;
   #hasStoppedJumping = true;
   #hasUsedDoubleJump = false;
@@ -217,16 +220,14 @@ export class Vehicle {
       return;
     }
 
-    const downforce = new Vec3(
-      0,
+    const downforce = this.#up.scale(
       -Math.min(
         this.#maxDownforceAmount,
         this.#downforceAmount *
-          this.#physicsVehicle.chassisBody.velocity.length(),
+        this.#physicsVehicle.chassisBody.velocity.length(),
       ),
-      0,
     );
-    this.#physicsVehicle.chassisBody.applyForce(downforce, new Vec3(0, 0, 0));
+    this.#physicsVehicle.chassisBody.applyForce(downforce);
 
     const physicsCarPosition = Vector3.FromArray(
       this.#physicsVehicle.chassisBody.position.toArray(),
@@ -252,23 +253,26 @@ export class Vehicle {
     });
   }
 
+  updateDirectionVectors(): void {
+    if (this.#physicsVehicle === null) return;
+
+    this.#forward = this.#physicsVehicle.wheelInfos[0].worldTransform.position
+      .vsub(this.#physicsVehicle.wheelInfos[2].worldTransform.position)
+      .unit();
+    this.#right = this.#physicsVehicle.wheelInfos[1].worldTransform.position
+      .vsub(this.#physicsVehicle.wheelInfos[0].worldTransform.position)
+      .unit();
+    this.#up = this.#forward.cross(this.#right).unit();
+  }
+
   updateFromKeyboard(): void {
     if (this.#physicsVehicle === null) return;
     const areWheelsOnGround =
       this.#physicsVehicle.numWheelsOnGround ===
       this.#physicsVehicle.wheelInfos.length;
-    const forwardUnitVector =
-      this.#physicsVehicle.wheelInfos[0].worldTransform.position
-        .vsub(this.#physicsVehicle.wheelInfos[2].worldTransform.position)
-        .unit();
-    const rightUnitVector =
-      this.#physicsVehicle.wheelInfos[1].worldTransform.position
-        .vsub(this.#physicsVehicle.wheelInfos[0].worldTransform.position)
-        .unit();
-    const upUnitVector = forwardUnitVector.cross(rightUnitVector).unit();
     const isStuckUpsideDown =
       this.#physicsVehicle.chassisBody.position.y < 1.5 &&
-      upUnitVector.almostEquals(new Vec3(0, -1, 0), 0.2);
+      this.#up.almostEquals(new Vec3(0, -1, 0), 0.2);
 
     // Accelerating/Reversing
     if (
@@ -366,24 +370,24 @@ export class Vehicle {
     // Air Pitch (up/down)
     if (this.#inputMap.w === KeyboardEventTypes.KEYDOWN && !areWheelsOnGround) {
       this.#physicsVehicle.chassisBody.applyTorque(
-        rightUnitVector.scale(this.#aerialPitchTorque),
+        this.#right.scale(this.#aerialPitchTorque),
       );
     }
     if (this.#inputMap.s === KeyboardEventTypes.KEYDOWN && !areWheelsOnGround) {
       this.#physicsVehicle.chassisBody.applyTorque(
-        rightUnitVector.scale(-this.#aerialPitchTorque),
+        this.#right.scale(-this.#aerialPitchTorque),
       );
     }
 
     // Air Yaw (left/right)
     if (this.#inputMap.a === KeyboardEventTypes.KEYDOWN && !areWheelsOnGround) {
       this.#physicsVehicle.chassisBody.applyTorque(
-        upUnitVector.scale(-this.#aerialYawTorque),
+        this.#up.scale(-this.#aerialYawTorque),
       );
     }
     if (this.#inputMap.d === KeyboardEventTypes.KEYDOWN && !areWheelsOnGround) {
       this.#physicsVehicle.chassisBody.applyTorque(
-        upUnitVector.scale(this.#aerialYawTorque),
+        this.#up.scale(this.#aerialYawTorque),
       );
     }
 
@@ -393,7 +397,7 @@ export class Vehicle {
       !areWheelsOnGround
     ) {
       this.#physicsVehicle.chassisBody.applyTorque(
-        forwardUnitVector.scale(this.#aerialRollTorque),
+        this.#forward.scale(this.#aerialRollTorque),
       );
     }
     if (
@@ -401,7 +405,7 @@ export class Vehicle {
       !areWheelsOnGround
     ) {
       this.#physicsVehicle.chassisBody.applyTorque(
-        forwardUnitVector.scale(-this.#aerialRollTorque),
+        this.#forward.scale(-this.#aerialRollTorque),
       );
     }
 
@@ -423,7 +427,7 @@ export class Vehicle {
       this.#lastJumpTime = Date.now();
       this.#hasStoppedJumping = false;
       this.#physicsVehicle.chassisBody.applyImpulse(
-        upUnitVector.scale(this.#jumpForceAmount),
+        this.#up.scale(this.#jumpForceAmount),
       );
     }
 
@@ -438,9 +442,9 @@ export class Vehicle {
     if (this.#inputMap[" "] === KeyboardEventTypes.KEYDOWN && canDoubleJump) {
       this.#hasUsedDoubleJump = true;
       this.#hasStoppedJumping = false;
-      this.#physicsVehicle.chassisBody.applyImpulse(
-        upUnitVector.scale(this.#jumpForceAmount * 0.75),
-      );
+        this.#physicsVehicle.chassisBody.applyImpulse(
+          this.#up.scale(this.#jumpForceAmount * 0.75),
+        );
     }
 
     // Self-righting (get back onto wheels after being stuck upside down)
@@ -469,7 +473,7 @@ export class Vehicle {
     // Boosting
     if (this.#inputMap.ArrowUp === KeyboardEventTypes.KEYDOWN) {
       this.#physicsVehicle.chassisBody.applyForce(
-        forwardUnitVector.scale(this.#boostForceAmount),
+        this.#forward.scale(this.#boostForceAmount),
       );
     }
 

@@ -90,6 +90,7 @@ class App {
     scene.createDefaultSkybox(skyboxTexture, true, 1000);
 
     scene.onBeforeRenderObservable.add(() => {
+      this.#vehicle.updateDirectionVectors();
       this.#updateFromKeyboard();
       this.#updateFromPhysics();
     });
