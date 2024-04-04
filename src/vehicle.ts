@@ -458,6 +458,8 @@ export class Vehicle {
       this.#physicsVehicle.chassisBody.quaternion.toEuler(currentRotation);
       const newQuaternion = new CannonQuaternion();
       newQuaternion.setFromEuler(0, currentRotation.y, 0);
+      this.#physicsVehicle.chassisBody.torque = new Vec3(0, 0, 0)
+      this.#physicsVehicle.chassisBody.angularVelocity = new Vec3(0, 0, 0)
       this.#physicsVehicle.chassisBody.quaternion.slerp(
         newQuaternion,
         this.#selfRightingProgress,
