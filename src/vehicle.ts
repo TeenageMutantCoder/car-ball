@@ -44,6 +44,8 @@ export class Vehicle {
   readonly #sizeY = 3;
   readonly #sizeZ = 12;
   readonly #mass = 100;
+  readonly #cameraHeight = 8;
+  readonly #cameraDistance = this.#sizeZ * 4;
   readonly #maxSteerValue = 0.7;
   readonly #downforceAmount = 70;
   readonly #maxDownforceAmount = 3000;
@@ -236,9 +238,6 @@ export class Vehicle {
     )
       return;
 
-    const cameraHeight = 8;
-    const cameraDistance = this.#sizeZ * 3;
-
     if (this.#cameraTargetType === "car") {
       const velocityVector = new Vector3(
         ...this.#physicsVehicle.chassisBody.velocity.toArray(),
@@ -252,15 +251,16 @@ export class Vehicle {
       }
 
       const updatedCameraPosition = this.#chassisMesh.position.add(
-        forwardVector.scale(-cameraDistance),
+        forwardVector.scale(-this.#cameraDistance),
       );
-      updatedCameraPosition.y = this.#chassisMesh.position.y + cameraHeight;
+      updatedCameraPosition.y =
+        this.#chassisMesh.position.y + this.#cameraHeight;
       this.#camera.position.copyFrom(updatedCameraPosition);
       const updatedCameraTargetPosition = this.#chassisMesh.position.add(
         forwardVector.scale((this.#sizeZ / 2) * 5),
       );
       updatedCameraTargetPosition.y =
-        this.#chassisMesh.position.y + cameraHeight;
+        this.#chassisMesh.position.y + this.#cameraHeight;
       this.#cameraTarget.position.copyFrom(updatedCameraTargetPosition);
 
       return;
@@ -271,9 +271,10 @@ export class Vehicle {
         .subtract(this.#ball.position)
         .normalize();
       const updatedCameraPosition = this.#chassisMesh.position.add(
-        ballDirectionVector.scale(cameraDistance),
+        ballDirectionVector.scale(this.#cameraDistance),
       );
-      updatedCameraPosition.y = this.#chassisMesh.position.y + cameraHeight;
+      updatedCameraPosition.y =
+        this.#chassisMesh.position.y + this.#cameraHeight;
       this.#camera.position.copyFrom(updatedCameraPosition);
       this.#cameraTarget.position.copyFrom(this.#ball.position);
     }
