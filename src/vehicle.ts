@@ -40,33 +40,34 @@ export class Vehicle {
   #hasUsedDoubleJump = false;
   #isSelfRighting = false;
   #isJumping = false;
-  readonly #sizeX = 6;
-  readonly #sizeY = 3;
-  readonly #sizeZ = 12;
+  readonly #sizeX = 4.5;
+  readonly #sizeY = 2.75;
+  readonly #sizeZ = 8;
   readonly #initialPosition = new Vec3(0, this.#sizeY + 1, 0);
   readonly #mass = 100;
   readonly #cameraHeight = 8;
   readonly #cameraDistance = this.#sizeZ * 4;
-  readonly #maxSteerValue = 0.7;
+  readonly #maxSteerValue = 0.3;
   readonly #downforceAmount = 70;
   readonly #maxDownforceAmount = 3000;
-  readonly #maxForceAmount = 2000;
+  readonly #maxEngineForceAmount = 1000;
   readonly #boostForceAmount = 8000;
   readonly #selfRightingForceAmount = 7000;
   readonly #selfRightingTorqueAmount = 1000000;
-  readonly #brakeForceAmount = 100;
-  readonly #jumpForceAmount = 20000;
-  readonly #maxjumpDuration = 100;
+  readonly #brakeForceAmount = 50;
+  readonly #jumpForceAmount = 26000;
+  readonly #maxjumpDurationMilliseconds = 110;
   readonly #doubleJumpForceAmount = 1000;
   readonly #selfRightingTorqueDelayAmountMilliseconds = 200;
-  readonly #maxAngularVelocity = 5;
+  readonly #maxAngularVelocity = 5.5;
+  readonly #maxVelocity = 150;
   readonly #maxDoubleJumpTimeMilliseconds = 1500;
   readonly #minDoubleJumpTimeMilliseconds = 100;
   readonly #aerialPitchTorque = 7000;
   readonly #aerialYawTorque = 7000;
-  readonly #aerialRollTorque = 7000;
+  readonly #aerialRollTorque = 6000;
   readonly #defaultWheelOptions = {
-    radius: 1.25,
+    radius: 1,
     directionLocal: new Vec3(0, -1, 0),
     axleLocal: new Vec3(-1, 0, 0),
     chassisConnectionPointLocal: new Vec3(),
@@ -74,10 +75,10 @@ export class Vehicle {
   } satisfies WheelInfoOptions;
 
   readonly #wheelPositions = {
-    frontLeft: new Vec3(-3, 0, 4.5),
-    frontRight: new Vec3(3, 0, 4.5),
-    rearLeft: new Vec3(-3, 0, -4.5),
-    rearRight: new Vec3(3, 0, -4.5),
+    frontLeft: new Vec3(-2, 0, 3),
+    frontRight: new Vec3(2, 0, 3),
+    rearLeft: new Vec3(-2, 0, -3),
+    rearRight: new Vec3(2, 0, -3),
   };
 
   setBall(ball: AbstractMesh): void {
@@ -144,7 +145,13 @@ export class Vehicle {
     });
   }
 
-  setupPhysics(world: World, groundMaterial: Material): void {
+  setupPhysics(
+    world: World,
+    {
+      groundMaterial,
+      ballMaterial,
+    }: { groundMaterial: Material; ballMaterial: Material },
+  ): void {
     const chassisShape = new Box(
       new Vec3(this.#sizeX / 2, this.#sizeY / 2, this.#sizeZ / 2),
     );
@@ -224,9 +231,16 @@ export class Vehicle {
     });
 
     const chassisGround = new ContactMaterial(chassisMaterial, groundMaterial, {
-      friction: 0.01,
+      friction: 0.005,
     });
     world.addContactMaterial(chassisGround);
+
+    const chassisBall = new ContactMaterial(chassisMaterial, ballMaterial, {
+      restitution: 1.7,
+    });
+    world.addContactMaterial(chassisBall);
+  }
+
   reset(): void {
     if (this.#physicsVehicle === null) return;
 
@@ -374,15 +388,15 @@ export class Vehicle {
       this.#physicsVehicle.applyEngineForce(0, 2);
       this.#physicsVehicle.applyEngineForce(0, 3);
     } else if (this.#inputMap.w === KeyboardEventTypes.KEYDOWN) {
-      this.#physicsVehicle.applyEngineForce(-this.#maxForceAmount, 0);
-      this.#physicsVehicle.applyEngineForce(-this.#maxForceAmount, 1);
-      this.#physicsVehicle.applyEngineForce(-this.#maxForceAmount, 2);
-      this.#physicsVehicle.applyEngineForce(-this.#maxForceAmount, 3);
+      this.#physicsVehicle.applyEngineForce(-this.#maxEngineForceAmount, 0);
+      this.#physicsVehicle.applyEngineForce(-this.#maxEngineForceAmount, 1);
+      this.#physicsVehicle.applyEngineForce(-this.#maxEngineForceAmount, 2);
+      this.#physicsVehicle.applyEngineForce(-this.#maxEngineForceAmount, 3);
     } else if (this.#inputMap.s === KeyboardEventTypes.KEYDOWN) {
-      this.#physicsVehicle.applyEngineForce(this.#maxForceAmount, 0);
-      this.#physicsVehicle.applyEngineForce(this.#maxForceAmount, 1);
-      this.#physicsVehicle.applyEngineForce(this.#maxForceAmount, 2);
-      this.#physicsVehicle.applyEngineForce(this.#maxForceAmount, 3);
+      this.#physicsVehicle.applyEngineForce(this.#maxEngineForceAmount, 0);
+      this.#physicsVehicle.applyEngineForce(this.#maxEngineForceAmount, 1);
+      this.#physicsVehicle.applyEngineForce(this.#maxEngineForceAmount, 2);
+      this.#physicsVehicle.applyEngineForce(this.#maxEngineForceAmount, 3);
     }
 
     if (this.#inputMap.w === KeyboardEventTypes.KEYUP) {
@@ -511,11 +525,6 @@ export class Vehicle {
       this.#isJumping = false;
     }
 
-    if (this.#isJumping && timeSinceLastJump < this.#maxjumpDuration) {
-      this.#physicsVehicle.chassisBody.applyForce(
-        this.#up.scale(this.#jumpForceAmount),
-      );
-    }
     if (
       this.#inputMap[" "] === KeyboardEventTypes.KEYDOWN &&
       areWheelsOnGround &&
@@ -524,6 +533,14 @@ export class Vehicle {
       this.#isJumping = true;
       this.#lastJumpTime = Date.now();
       this.#hasStoppedJumping = false;
+    }
+    if (
+      this.#isJumping &&
+      timeSinceLastJump < this.#maxjumpDurationMilliseconds
+    ) {
+      this.#physicsVehicle.chassisBody.applyForce(
+        this.#up.scale(this.#jumpForceAmount),
+      );
     }
 
     const canDoubleJump =
@@ -588,6 +605,17 @@ export class Vehicle {
         this.#physicsVehicle.chassisBody.angularVelocity
           .unit()
           .scale(this.#maxAngularVelocity),
+      );
+    }
+
+    // Limit velocity
+    if (
+      this.#physicsVehicle.chassisBody.velocity.length() > this.#maxVelocity
+    ) {
+      this.#physicsVehicle.chassisBody.velocity.copy(
+        this.#physicsVehicle.chassisBody.velocity
+          .unit()
+          .scale(this.#maxVelocity),
       );
     }
   }

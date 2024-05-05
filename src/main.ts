@@ -40,13 +40,13 @@ class App {
   readonly #groundSize = 10000;
   readonly #ballRadius = 5;
   readonly #ballMass = 20;
-  readonly #gravityVector = new Vec3(0, -20, 0);
+  readonly #gravityVector = new Vec3(0, -35, 0);
 
   constructor() {
     this.#canvas = this.#createCanvas();
     this.#engine = new Engine(this.#canvas, true);
     const engine = this.#engine;
-    window.addEventListener("resize", function () {
+    window.addEventListener("resize", function() {
       engine.resize();
     });
 
@@ -176,29 +176,25 @@ class App {
     groundBody.position.set(0, -groundHeight, 0);
     this.#world.addBody(groundBody);
 
-    this.#vehicle.setupPhysics(this.#world, groundMaterial);
-
     // Add the ball
     const ballShape = new Sphere(this.#ballRadius);
-    const ballMaterial = new Material({
-      friction: 0.8,
-      restitution: 0.6,
-    });
+    const ballMaterial = new Material();
     this.#physicsBall = new Body({
       mass: this.#ballMass,
       shape: ballShape,
       material: ballMaterial,
     });
-    this.#physicsBall.position.set(-5, 5, 40);
+    this.#physicsBall.position.set(0, 5, 60);
     this.#world.addBody(this.#physicsBall);
 
     // Define interactions between ball and ground
     const ballGround = new ContactMaterial(ballMaterial, groundMaterial, {
       friction: 0.8,
       restitution: 0.6,
-      contactEquationStiffness: 1000,
     });
     this.#world.addContactMaterial(ballGround);
+
+    this.#vehicle.setupPhysics(this.#world, { groundMaterial, ballMaterial });
   }
 
   #updateFromKeyboard(): void {
