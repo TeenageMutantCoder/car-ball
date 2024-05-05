@@ -101,7 +101,7 @@ class App {
     light1.intensity = 0.7;
 
     const skyboxTexture = new CubeTexture("./Skybox/skybox", scene);
-    scene.createDefaultSkybox(skyboxTexture, true, 1000);
+    scene.createDefaultSkybox(skyboxTexture, true, 10 ** 5);
 
     scene.onBeforeRenderObservable.add(() => {
       this.#vehicle.updateDirectionVectors();
