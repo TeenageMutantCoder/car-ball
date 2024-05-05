@@ -66,6 +66,16 @@ class App {
     document.addEventListener("keydown", (ev) => {
       if (ev.key === "Escape") {
         this.#paused = !this.#paused;
+      } else if (ev.key === "Backspace") {
+        this.#vehicle.reset();
+        if (this.#physicsBall !== null) {
+          this.#physicsBall.quaternion.copy(this.#physicsBall.initQuaternion);
+          this.#physicsBall.velocity.copy(this.#physicsBall.initVelocity);
+          this.#physicsBall.angularVelocity.copy(
+            this.#physicsBall.initAngularVelocity,
+          );
+          this.#physicsBall.position.copy(this.#physicsBall.initPosition);
+        }
       }
     });
   }

@@ -43,6 +43,7 @@ export class Vehicle {
   readonly #sizeX = 6;
   readonly #sizeY = 3;
   readonly #sizeZ = 12;
+  readonly #initialPosition = new Vec3(0, this.#sizeY + 1, 0);
   readonly #mass = 100;
   readonly #cameraHeight = 8;
   readonly #cameraDistance = this.#sizeZ * 4;
@@ -153,7 +154,7 @@ export class Vehicle {
       material: chassisMaterial,
     });
     chassisBody.addShape(chassisShape);
-    chassisBody.position.set(0, this.#sizeY, 0);
+    chassisBody.position.copy(this.#initialPosition);
     chassisBody.inertia.set(0, 0, 0);
 
     this.#physicsVehicle = new RaycastVehicle({
@@ -226,6 +227,21 @@ export class Vehicle {
       friction: 0.01,
     });
     world.addContactMaterial(chassisGround);
+  reset(): void {
+    if (this.#physicsVehicle === null) return;
+
+    this.#physicsVehicle.chassisBody.quaternion.copy(
+      this.#physicsVehicle.chassisBody.initQuaternion,
+    );
+    this.#physicsVehicle.chassisBody.velocity.copy(
+      this.#physicsVehicle.chassisBody.initVelocity,
+    );
+    this.#physicsVehicle.chassisBody.angularVelocity.copy(
+      this.#physicsVehicle.chassisBody.initAngularVelocity,
+    );
+    this.#physicsVehicle.chassisBody.position.copy(
+      this.#physicsVehicle.chassisBody.initPosition,
+    );
   }
 
   updateCameraPosition(): void {
