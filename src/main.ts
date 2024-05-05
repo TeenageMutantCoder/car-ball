@@ -36,6 +36,7 @@ class App {
   #ball: AbstractMesh | null = null;
   #physicsBall: Body | null = null;
   #shouldShowPhysicsDebugger = false;
+  #paused = false;
   readonly #groundSize = 10000;
   readonly #ballRadius = 5;
   readonly #ballMass = 20;
@@ -61,13 +62,21 @@ class App {
     this.#addObjects();
     this.#addPhysics();
     this.#addDebuggers();
+
+    document.addEventListener("keydown", (ev) => {
+      if (ev.key === "Escape") {
+        this.#paused = !this.#paused;
+      }
+    });
   }
 
   run(): void {
     if (this.#world === null) throw new Error("Physics world not initialized");
 
     this.#engine.runRenderLoop(() => {
-      this.#world?.fixedStep();
+      if (!this.#paused) {
+        this.#world?.fixedStep();
+      }
       if (this.#shouldShowPhysicsDebugger) {
         this.#physicsDebugger?.update();
       }
