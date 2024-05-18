@@ -25,6 +25,13 @@ import {
 
 export class Vehicle {
   readonly #inputMap: Record<string, KeyboardEventTypes | boolean> = {};
+
+  // Relative direction vectors
+  #up: Vec3 = Vec3.ZERO;
+  #right: Vec3 = Vec3.ZERO;
+  #forward: Vec3 = Vec3.ZERO;
+
+  // Object referencees
   #chassisMesh: AbstractMesh | null = null;
   #wheelMeshes: AbstractMesh[] | null = null;
   #camera: UniversalCamera | null = null;
@@ -32,40 +39,8 @@ export class Vehicle {
   #cameraTargetType: "car" | "ball" = "car";
   #physicsVehicle: RaycastVehicle | null = null;
   #ball: AbstractMesh | null = null;
-  #up: Vec3 = Vec3.ZERO;
-  #right: Vec3 = Vec3.ZERO;
-  #forward: Vec3 = Vec3.ZERO;
-  #lastJumpTime: number | null = null;
-  #hasStoppedJumping = true;
-  #hasUsedDoubleJump = false;
-  #isSelfRighting = false;
-  #isJumping = false;
-  readonly #sizeX = 4.5;
-  readonly #sizeY = 2.75;
-  readonly #sizeZ = 8;
-  readonly #initialPosition = new Vec3(0, this.#sizeY + 1, 0);
-  readonly #mass = 100;
-  readonly #cameraHeight = 8;
-  readonly #cameraDistance = this.#sizeZ * 4;
-  readonly #maxSteerValue = 0.3;
-  readonly #downforceAmount = 70;
-  readonly #maxDownforceAmount = 3000;
-  readonly #maxEngineForceAmount = 1000;
-  readonly #boostForceAmount = 8000;
-  readonly #selfRightingForceAmount = 7000;
-  readonly #selfRightingTorqueAmount = 1000000;
-  readonly #brakeForceAmount = 50;
-  readonly #jumpForceAmount = 26000;
-  readonly #maxjumpDurationMilliseconds = 110;
-  readonly #doubleJumpForceAmount = 1000;
-  readonly #selfRightingTorqueDelayAmountMilliseconds = 200;
-  readonly #maxAngularVelocity = 5.5;
-  readonly #maxVelocity = 150;
-  readonly #maxDoubleJumpTimeMilliseconds = 1500;
-  readonly #minDoubleJumpTimeMilliseconds = 100;
-  readonly #aerialPitchTorque = 7000;
-  readonly #aerialYawTorque = 7000;
-  readonly #aerialRollTorque = 6000;
+
+  // Wheel properties
   readonly #defaultWheelOptions = {
     radius: 1,
     directionLocal: new Vec3(0, -1, 0),
@@ -80,6 +55,57 @@ export class Vehicle {
     rearLeft: new Vec3(-2, 0, -3),
     rearRight: new Vec3(2, 0, -3),
   };
+
+  // Jumping/Flipping states
+  #lastJumpTime: number | null = null;
+  #lastFlipTime: number | null = null;
+  #hasStoppedJumping = true;
+  #hasUsedDoubleJump = false;
+  #isSelfRighting = false;
+  #isJumping = false;
+
+  // Physical properties
+  readonly #sizeX = 4.5;
+  readonly #sizeY = 2.75;
+  readonly #sizeZ = 8;
+  readonly #initialPosition = new Vec3(0, this.#sizeY + 1, 0);
+  readonly #mass = 100;
+
+  // Camera properties
+  readonly #cameraHeight = 8;
+  readonly #cameraDistance = this.#sizeZ * 4;
+
+  // General movement properties
+  readonly #maxSteerValue = 0.3;
+  readonly #downforceAmount = 70;
+  readonly #maxDownforceAmount = 3000;
+  readonly #maxEngineForceAmount = 1000;
+  readonly #boostForceAmount = 8000;
+  readonly #brakeForceAmount = 50;
+  readonly #maxAngularVelocity = 5.5;
+  readonly #maxVelocity = 150;
+
+  // Aerial movement properties
+  readonly #aerialPitchTorque = 7000;
+  readonly #aerialYawTorque = 7000;
+  readonly #aerialRollTorque = 6000;
+
+  // Jump properties
+  readonly #jumpForceAmount = 26000;
+  readonly #maxjumpDurationMilliseconds = 110;
+  readonly #doubleJumpForceAmount = 1000;
+  readonly #minDoubleJumpDurationMilliseconds = 100;
+  readonly #maxDoubleJumpDurationMilliseconds = 1500;
+  readonly #selfRightingForceAmount = 7000;
+  readonly #selfRightingTorqueAmount = 1000000;
+  readonly #selfRightingTorqueDelayAmountMilliseconds = 200;
+
+  // Flip properties
+  readonly #flipTorque = 370000;
+  readonly #flipForce = 7000;
+  readonly #sideFlipTorque = 200000;
+  readonly #sideFlipHorizontalForce = 1500;
+  readonly #flipImmobillityDurationMilliseconds = 200;
 
   setBall(ball: AbstractMesh): void {
     this.#ball = ball;
@@ -327,7 +353,7 @@ export class Vehicle {
         -Math.min(
           this.#maxDownforceAmount,
           this.#downforceAmount *
-          this.#physicsVehicle.chassisBody.velocity.length(),
+            this.#physicsVehicle.chassisBody.velocity.length(),
         ),
       );
       this.#physicsVehicle.chassisBody.applyForce(downforce);
@@ -371,12 +397,25 @@ export class Vehicle {
 
   updateFromKeyboard(): void {
     if (this.#physicsVehicle === null) return;
+
     const areWheelsOnGround =
       this.#physicsVehicle.numWheelsOnGround ===
       this.#physicsVehicle.wheelInfos.length;
+    const isFacingUpwards = this.#up.almostEquals(new Vec3(0, 1, 0), 0.2);
     const isStuckUpsideDown =
       this.#physicsVehicle.chassisBody.position.y < 1.5 &&
       this.#up.almostEquals(new Vec3(0, -1, 0), 0.2);
+    const timeSinceLastFlip =
+      this.#lastFlipTime === null ? Infinity : Date.now() - this.#lastFlipTime;
+    const timeSinceLastJump =
+      this.#lastJumpTime === null ? Infinity : Date.now() - this.#lastJumpTime;
+    const canDoubleJump =
+      !areWheelsOnGround &&
+      !isStuckUpsideDown &&
+      !this.#hasUsedDoubleJump &&
+      this.#hasStoppedJumping &&
+      timeSinceLastJump > this.#minDoubleJumpDurationMilliseconds &&
+      timeSinceLastJump < this.#maxDoubleJumpDurationMilliseconds;
 
     // Accelerating/Reversing
     if (
@@ -470,24 +509,40 @@ export class Vehicle {
     }
 
     // Air Pitch (up/down)
-    if (this.#inputMap.w === KeyboardEventTypes.KEYDOWN && !areWheelsOnGround) {
+    if (
+      this.#inputMap.w === KeyboardEventTypes.KEYDOWN &&
+      !areWheelsOnGround &&
+      timeSinceLastFlip > this.#flipImmobillityDurationMilliseconds
+    ) {
       this.#physicsVehicle.chassisBody.applyTorque(
         this.#right.scale(this.#aerialPitchTorque),
       );
     }
-    if (this.#inputMap.s === KeyboardEventTypes.KEYDOWN && !areWheelsOnGround) {
+    if (
+      this.#inputMap.s === KeyboardEventTypes.KEYDOWN &&
+      !areWheelsOnGround &&
+      timeSinceLastFlip > this.#flipImmobillityDurationMilliseconds
+    ) {
       this.#physicsVehicle.chassisBody.applyTorque(
         this.#right.scale(-this.#aerialPitchTorque),
       );
     }
 
     // Air Yaw (left/right)
-    if (this.#inputMap.a === KeyboardEventTypes.KEYDOWN && !areWheelsOnGround) {
+    if (
+      this.#inputMap.a === KeyboardEventTypes.KEYDOWN &&
+      !areWheelsOnGround &&
+      timeSinceLastFlip > this.#flipImmobillityDurationMilliseconds
+    ) {
       this.#physicsVehicle.chassisBody.applyTorque(
         this.#up.scale(-this.#aerialYawTorque),
       );
     }
-    if (this.#inputMap.d === KeyboardEventTypes.KEYDOWN && !areWheelsOnGround) {
+    if (
+      this.#inputMap.d === KeyboardEventTypes.KEYDOWN &&
+      !areWheelsOnGround &&
+      timeSinceLastFlip > this.#flipImmobillityDurationMilliseconds
+    ) {
       this.#physicsVehicle.chassisBody.applyTorque(
         this.#up.scale(this.#aerialYawTorque),
       );
@@ -496,7 +551,8 @@ export class Vehicle {
     // Air Roll (twisting)
     if (
       this.#inputMap.ArrowLeft === KeyboardEventTypes.KEYDOWN &&
-      !areWheelsOnGround
+      !areWheelsOnGround &&
+      timeSinceLastFlip > this.#flipImmobillityDurationMilliseconds
     ) {
       this.#physicsVehicle.chassisBody.applyTorque(
         this.#forward.scale(this.#aerialRollTorque),
@@ -504,7 +560,8 @@ export class Vehicle {
     }
     if (
       this.#inputMap.ArrowRight === KeyboardEventTypes.KEYDOWN &&
-      !areWheelsOnGround
+      !areWheelsOnGround &&
+      timeSinceLastFlip > this.#flipImmobillityDurationMilliseconds
     ) {
       this.#physicsVehicle.chassisBody.applyTorque(
         this.#forward.scale(-this.#aerialRollTorque),
@@ -512,9 +569,6 @@ export class Vehicle {
     }
 
     // Jumping
-    const timeSinceLastJump =
-      this.#lastJumpTime === null ? Infinity : Date.now() - this.#lastJumpTime;
-
     if (areWheelsOnGround) {
       this.#hasUsedDoubleJump = false;
     }
@@ -541,13 +595,7 @@ export class Vehicle {
       );
     }
 
-    const canDoubleJump =
-      !areWheelsOnGround &&
-      !isStuckUpsideDown &&
-      !this.#hasUsedDoubleJump &&
-      this.#hasStoppedJumping &&
-      timeSinceLastJump > this.#minDoubleJumpTimeMilliseconds &&
-      timeSinceLastJump < this.#maxDoubleJumpTimeMilliseconds;
+    // Double jumping and flipping
     if (this.#inputMap[" "] === KeyboardEventTypes.KEYDOWN && canDoubleJump) {
       this.#hasUsedDoubleJump = true;
       this.#hasStoppedJumping = false;
@@ -561,10 +609,50 @@ export class Vehicle {
           this.#up.scale(this.#doubleJumpForceAmount),
         );
       }
+
+      if (this.#inputMap.w === KeyboardEventTypes.KEYDOWN) {
+        this.#lastFlipTime = Date.now();
+
+        this.#physicsVehicle.chassisBody.applyImpulse(
+          this.#forward.scale(this.#flipForce),
+        );
+        this.#physicsVehicle?.chassisBody.applyTorque(
+          this.#right.scale(this.#flipTorque),
+        );
+      }
+      if (this.#inputMap.s === KeyboardEventTypes.KEYDOWN) {
+        this.#lastFlipTime = Date.now();
+
+        this.#physicsVehicle.chassisBody.applyImpulse(
+          this.#forward.scale(-this.#flipForce),
+        );
+        this.#physicsVehicle.chassisBody.applyTorque(
+          this.#right.scale(-this.#flipTorque),
+        );
+      }
+      if (this.#inputMap.a === KeyboardEventTypes.KEYDOWN) {
+        this.#lastFlipTime = Date.now();
+
+        this.#physicsVehicle.chassisBody.applyImpulse(
+          this.#right.scale(-this.#sideFlipHorizontalForce),
+        );
+        this.#physicsVehicle.chassisBody.applyTorque(
+          this.#forward.scale(this.#sideFlipTorque),
+        );
+      }
+      if (this.#inputMap.d === KeyboardEventTypes.KEYDOWN) {
+        this.#lastFlipTime = Date.now();
+
+        this.#physicsVehicle.chassisBody.applyImpulse(
+          this.#right.scale(this.#sideFlipHorizontalForce),
+        );
+        this.#physicsVehicle.chassisBody.applyTorque(
+          this.#forward.scale(-this.#sideFlipTorque),
+        );
+      }
     }
 
     // Self-righting (get back onto wheels after being stuck upside down)
-    const isFacingUpwards = this.#up.almostEquals(new Vec3(0, 1, 0), 0.2);
     if (this.#isSelfRighting && isFacingUpwards) {
       this.#physicsVehicle.chassisBody.torque = new Vec3(0, 0, 0);
       this.#physicsVehicle.chassisBody.angularVelocity = new Vec3(0, 0, 0);
@@ -595,7 +683,7 @@ export class Vehicle {
       );
     }
 
-    // Limit angular velocity
+    // Limiting angular velocity
     if (
       this.#physicsVehicle.chassisBody.angularVelocity.length() >
       this.#maxAngularVelocity
@@ -607,7 +695,7 @@ export class Vehicle {
       );
     }
 
-    // Limit velocity
+    // Limiting velocity
     if (
       this.#physicsVehicle.chassisBody.velocity.length() > this.#maxVelocity
     ) {
