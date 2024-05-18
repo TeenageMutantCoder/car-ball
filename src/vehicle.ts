@@ -467,8 +467,6 @@ export class Vehicle {
       this.#physicsVehicle.setBrake(0, 1);
       this.#physicsVehicle.setBrake(0, 2);
       this.#physicsVehicle.setBrake(0, 3);
-
-      delete this.#inputMap.b;
     }
 
     // Air Pitch (up/down)
