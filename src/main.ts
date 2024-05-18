@@ -64,6 +64,7 @@ class App {
     this.#addDebuggers();
 
     document.addEventListener("keydown", (ev) => {
+      ev.preventDefault();
       if (ev.key === "Escape") {
         this.#paused = !this.#paused;
       } else if (ev.key === "Backspace") {
