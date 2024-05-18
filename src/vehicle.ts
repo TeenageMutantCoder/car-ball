@@ -573,7 +573,8 @@ export class Vehicle {
     if (
       this.#inputMap[" "] === KeyboardEventTypes.KEYDOWN &&
       isStuckUpsideDown &&
-      this.#hasStoppedJumping
+      this.#hasStoppedJumping &&
+      !this.#isSelfRighting
     ) {
       this.#isSelfRighting = true;
       this.#lastJumpTime = null;
