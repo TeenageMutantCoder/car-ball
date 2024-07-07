@@ -353,7 +353,7 @@ export class Vehicle {
         -Math.min(
           this.#maxDownforceAmount,
           this.#downforceAmount *
-            this.#physicsVehicle.chassisBody.velocity.length(),
+          this.#physicsVehicle.chassisBody.velocity.length(),
         ),
       );
       this.#physicsVehicle.chassisBody.applyForce(downforce);
@@ -610,26 +610,37 @@ export class Vehicle {
         );
       }
 
+      // Front flip
       if (this.#inputMap.w === KeyboardEventTypes.KEYDOWN) {
         this.#lastFlipTime = Date.now();
 
+        const horizontalForwardVector = this.#forward.clone();
+        horizontalForwardVector.y = 0;
+
         this.#physicsVehicle.chassisBody.applyImpulse(
-          this.#forward.scale(this.#flipForce),
+          horizontalForwardVector.scale(this.#flipForce),
         );
         this.#physicsVehicle?.chassisBody.applyTorque(
           this.#right.scale(this.#flipTorque),
         );
       }
+
+      // Back flip
       if (this.#inputMap.s === KeyboardEventTypes.KEYDOWN) {
         this.#lastFlipTime = Date.now();
 
+        const horizontalForwardVector = this.#forward.clone();
+        horizontalForwardVector.y = 0;
+
         this.#physicsVehicle.chassisBody.applyImpulse(
-          this.#forward.scale(-this.#flipForce),
+          horizontalForwardVector.scale(-this.#flipForce),
         );
         this.#physicsVehicle.chassisBody.applyTorque(
           this.#right.scale(-this.#flipTorque),
         );
       }
+
+      // Left side flip
       if (this.#inputMap.a === KeyboardEventTypes.KEYDOWN) {
         this.#lastFlipTime = Date.now();
 
@@ -640,6 +651,8 @@ export class Vehicle {
           this.#forward.scale(this.#sideFlipTorque),
         );
       }
+
+      // Right side flip
       if (this.#inputMap.d === KeyboardEventTypes.KEYDOWN) {
         this.#lastFlipTime = Date.now();
 
