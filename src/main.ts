@@ -46,7 +46,7 @@ class App {
     this.#canvas = this.#createCanvas();
     this.#engine = new Engine(this.#canvas, true);
     const engine = this.#engine;
-    window.addEventListener("resize", function() {
+    window.addEventListener("resize", function () {
       engine.resize();
     });
 
@@ -64,7 +64,10 @@ class App {
     this.#addDebuggers();
 
     document.addEventListener("keydown", (ev) => {
-      ev.preventDefault();
+      if (!this.#shouldShowPhysicsDebugger) {
+        ev.preventDefault();
+      }
+
       if (ev.key === "Escape") {
         this.#paused = !this.#paused;
       } else if (ev.key === "Backspace") {
