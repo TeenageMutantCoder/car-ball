@@ -353,7 +353,7 @@ export class Vehicle {
         -Math.min(
           this.#maxDownforceAmount,
           this.#downforceAmount *
-          this.#physicsVehicle.chassisBody.velocity.length(),
+            this.#physicsVehicle.chassisBody.velocity.length(),
         ),
       );
       this.#physicsVehicle.chassisBody.applyForce(downforce);
@@ -644,8 +644,15 @@ export class Vehicle {
       if (this.#inputMap.a === KeyboardEventTypes.KEYDOWN) {
         this.#lastFlipTime = Date.now();
 
+        const horizontalForwardVector = this.#forward.clone();
+        horizontalForwardVector.y = 0;
+        const worldUpVector = new Vec3(0, 1, 0);
+        const horizontalLeftVector = horizontalForwardVector
+          .cross(worldUpVector)
+          .unit();
+
         this.#physicsVehicle.chassisBody.applyImpulse(
-          this.#right.scale(-this.#sideFlipHorizontalForce),
+          horizontalLeftVector.scale(this.#sideFlipHorizontalForce),
         );
         this.#physicsVehicle.chassisBody.applyTorque(
           this.#forward.scale(this.#sideFlipTorque),
@@ -656,8 +663,15 @@ export class Vehicle {
       if (this.#inputMap.d === KeyboardEventTypes.KEYDOWN) {
         this.#lastFlipTime = Date.now();
 
+        const horizontalForwardVector = this.#forward.clone();
+        horizontalForwardVector.y = 0;
+        const worldUpVector = new Vec3(0, 1, 0);
+        const horizontalRightVector = worldUpVector
+          .cross(horizontalForwardVector)
+          .unit();
+
         this.#physicsVehicle.chassisBody.applyImpulse(
-          this.#right.scale(this.#sideFlipHorizontalForce),
+          horizontalRightVector.scale(this.#sideFlipHorizontalForce),
         );
         this.#physicsVehicle.chassisBody.applyTorque(
           this.#forward.scale(-this.#sideFlipTorque),
