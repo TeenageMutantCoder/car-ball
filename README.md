@@ -30,26 +30,6 @@ Ctrl - Switch camera target (forward or ball)
 
 Backspace - Reset car and ball position
 
-## How to run
-
-### From website
-
-Not currently available.
-
-### From source code
-
-Prerequisites:
-1. Node (https://nodejs.org/en)
-2. Git (https://git-scm.com/)
-
-Steps:
-1. Open a terminal.
-2. Clone the repository using `git clone git@github.com:TeenageMutantCoder/car-ball.git` or `git clone https://github.com/TeenageMutantCoder/car-ball.git`
-3. Make the repository your current working directory using `cd car-ball`
-4. Install dependencies using `npm install`
-5. Run the web app using `npm run dev`
-5. Visit the web app at http://localhost:5173/ 
-
 ## Extra details
 
 End goal: An online, 3D multiplayer game with gameplay similar to Rocket League.
@@ -61,17 +41,6 @@ End goal: An online, 3D multiplayer game with gameplay similar to Rocket League.
 3. Adding a menu and online multiplayer
 4. Adding more customization options
 5. ??? (if I get this far, think of something else to do)
-
-### Steps for single player portion
-
-1. Put a car on the ground.
-2. Make that car drivable (with realistic physics) using the keyboard and/or game controller.
-3. Allow the car to jump and boost.
-4. Allow the car to flip (and flip-cancel).
-5. Add a ball that can be moved when hit by the car.
-6. Add a goal where the ball can be scored.
-7. Allow the car to air roll.
-8. Turn the ground into a field with walls and a ceiling.
 
 ### Sources of inspiration:
 
