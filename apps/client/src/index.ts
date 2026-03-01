@@ -7,6 +7,7 @@ export * from "./input/frameEmitter.ts";
 export * from "./net/reconciliation.ts";
 export * from "./net/prediction.ts";
 export * from "./net/impairment.ts";
+export * from "./net/inprocess.ts";
 export * from "./render/camera.ts";
 export * from "./render/rendererBridge.ts";
 

@@ -46,6 +46,22 @@ Chronological append-only implementation log. Add one entry per meaningful updat
   - Assign owners and start WS-A-001.
 - related_pr_or_commit: n/a
 
+### 2026-03-01T05:50:00Z | Agent: copilot
+
+- changed_tasks: []
+- summary: Added minimal in-process E2E runtime coverage (protocol input to authoritative snapshot path), introduced client in-process net adapter tests, and closed immediate docs drift by adding netcode roadmap and fixing stale progress-board evidence path.
+- blockers: []
+- evidence:
+  - path: apps/server/src/inprocess.e2e.test.ts
+  - path: apps/client/src/net/inprocess.ts
+  - path: apps/client/src/net/inprocess.test.ts
+  - path: docs/netcode-roadmap.md
+  - path: docs/progress-board.md
+- next_actions:
+  - Implement live transport (minimal socket wiring) using the netcode roadmap Phase 1 slice.
+  - Route authoritative snapshots through client reconciliation telemetry in runtime loop.
+- related_pr_or_commit: n/a
+
 ### 2026-02-28T00:30:00Z | Agent: copilot
 
 - changed_tasks:
@@ -272,4 +288,18 @@ Chronological append-only implementation log. Add one entry per meaningful updat
   - path: docs/implementation-plan-parallel.md
 - next_actions:
   - Keep all status updates in docs/agent-task-registry.yaml first, then sync board.
+- related_pr_or_commit: n/a
+
+### 2026-03-01T06:00:00Z | Agent: copilot
+
+- changed_tasks: []
+- summary: Removed insufficient smoke-style in-process E2E test and added a stronger state-transition-focused in-process E2E test plan with roadmap alignment updates.
+- blockers: []
+- evidence:
+  - path: apps/server/src/inprocess.e2e.test.ts
+  - path: docs/inprocess-e2e-test-plan.md
+  - path: docs/netcode-roadmap.md
+- next_actions:
+  - Implement Phase 1 from docs/inprocess-e2e-test-plan.md with before/after authoritative state assertions.
+  - Reintroduce server in-process E2E tests that validate accepted and rejected input state transitions.
 - related_pr_or_commit: n/a
