@@ -7,3 +7,4 @@ export function bootstrapServer(): string {
 }
 
 export * from "./room.ts";
+export * from "./runtime.ts";

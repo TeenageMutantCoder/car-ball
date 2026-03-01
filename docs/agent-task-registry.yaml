@@ -5,7 +5,7 @@ meta:
   project: CarBall
   source_plan: docs/implementation-plan-parallel.md
   version: 2
-  last_updated: 2026-02-28T00:30:00Z
+  last_updated: 2026-02-28T01:00:00Z
   allowed_statuses: [TODO, IN_PROGRESS, BLOCKED, DONE]
   allowed_priorities: [P0, P1, P2]
   status_flow:
@@ -250,16 +250,19 @@ tasks:
   - id: WS-C-003
     workstream: WS-C
     title: Implement controls jump flip boost
-    status: TODO
+    status: DONE
     priority: P0
     owner: unassigned
     dependencies: [WS-C-002, WS-A-001]
     started_at: null
     target_date: null
-    completed_at: null
+    completed_at: 2026-02-28T01:00:00Z
     blocked_by: null
     unblock_plan: null
-    evidence: []
+    evidence:
+      - packages/sim/src/tick.ts
+      - packages/sim/src/constants.ts
+      - packages/sim/src/tick.jump.test.ts
     notes: Implement throttle steer brake jump double-jump flip and boost resource behavior.
     acceptance:
       - Gameplay windows match contract values.
@@ -304,16 +307,19 @@ tasks:
   - id: WS-D-001
     workstream: WS-D
     title: Initialize Babylon client shell and render bridge
-    status: TODO
+    status: DONE
     priority: P0
     owner: unassigned
     dependencies: [WS-A-004, WS-B-002]
     started_at: null
     target_date: null
-    completed_at: null
+    completed_at: 2026-02-28T01:00:00Z
     blocked_by: null
     unblock_plan: null
-    evidence: []
+    evidence:
+      - apps/client/src/main.ts
+      - apps/client/src/render/rendererBridge.ts
+      - apps/client/src/render/rendererBridge.test.ts
     notes: Build scene input camera toggle and interpolation-only render bridge.
     acceptance:
       - Local scene runs at target FPS on test hardware.
@@ -397,16 +403,19 @@ tasks:
   - id: WS-E-002
     workstream: WS-E
     title: Implement server tick and snapshot loop
-    status: TODO
+    status: DONE
     priority: P0
     owner: unassigned
     dependencies: [WS-E-001, WS-C-002, WS-A-001]
     started_at: null
     target_date: null
-    completed_at: null
+    completed_at: 2026-02-28T01:00:00Z
     blocked_by: null
     unblock_plan: null
-    evidence: []
+    evidence:
+      - apps/server/src/runtime.ts
+      - apps/server/src/runtime.test.ts
+      - apps/server/src/index.ts
     notes: Implement authoritative tick and snapshot broadcast cadence.
     acceptance:
       - Snapshot stream is stable at configured rate.

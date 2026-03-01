@@ -14,8 +14,9 @@ Build an MVP Rocket League-style web game for desktop browsers with:
 Current completed tasks (see `docs/agent-task-registry.yaml` for authoritative state):
 - `WS-A-001`, `WS-A-002`, `WS-A-003`, `WS-A-004`, `WS-A-005`
 - `WS-B-001`, `WS-B-002`, `WS-B-003`
-- `WS-C-001`, `WS-C-002`
-- `WS-E-001`
+- `WS-C-001`, `WS-C-002`, `WS-C-003`
+- `WS-D-001`
+- `WS-E-001`, `WS-E-002`
 - `WS-G-001`
 
 Completed artifacts aligned to those tasks:
@@ -24,6 +25,9 @@ Completed artifacts aligned to those tasks:
 - `docs/protocol-envelope.md`
 - `docs/telemetry-schema.md`
 - `.github/workflows/ci.yml`
+- `apps/client/src/main.ts`
+- `apps/server/src/runtime.ts`
+- `packages/sim/src/tick.jump.test.ts`
 
 ## 2) Parallelization Strategy
 

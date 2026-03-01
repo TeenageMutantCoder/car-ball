@@ -1,5 +1,10 @@
 import type { InputControls, InputFrame } from "@car-ball/protocol";
-import { FIXED_STEP_SECONDS } from "./constants.ts";
+import {
+  DOUBLE_JUMP_DIRECTIONAL_IMPULSE,
+  DOUBLE_JUMP_VERTICAL_IMPULSE,
+  DOUBLE_JUMP_WINDOW_TICKS,
+  FIXED_STEP_SECONDS
+} from "./constants.ts";
 import type { WorldState } from "./state.ts";
 
 const DEFAULT_CONTROLS: InputControls = {
@@ -63,13 +68,33 @@ export function tickWorld(world: WorldState, inputFrames: InputFrame[], dtSecond
 
     const boostEnabled = controls.boost && car.boost > 0;
     const accel = throttle * ACCELERATION + (boostEnabled ? BOOST_ACCELERATION : 0);
+    const jumpPressed = controls.jump;
+    const jumpEdge = jumpPressed && !car.jumpPressedLastTick;
 
     car.velocity.x += forwardX * accel * dtSeconds;
     car.velocity.y += forwardY * accel * dtSeconds;
 
-    if (controls.jump && car.onGround) {
+    if (jumpEdge && car.onGround) {
       car.velocity.z = JUMP_IMPULSE;
       car.onGround = false;
+      car.jumpCount = 1;
+      car.jumpWindowTicksRemaining = DOUBLE_JUMP_WINDOW_TICKS;
+    } else if (jumpEdge && !car.onGround && car.jumpCount === 1 && car.jumpWindowTicksRemaining > 0) {
+      const rightX = -Math.sin(car.heading);
+      const rightY = Math.cos(car.heading);
+      const directionX = forwardX * throttle + rightX * steer;
+      const directionY = forwardY * throttle + rightY * steer;
+      const directionMagnitude = Math.hypot(directionX, directionY);
+
+      if (directionMagnitude > 0) {
+        const scale = DOUBLE_JUMP_DIRECTIONAL_IMPULSE / directionMagnitude;
+        car.velocity.x += directionX * scale;
+        car.velocity.y += directionY * scale;
+      }
+
+      car.velocity.z += DOUBLE_JUMP_VERTICAL_IMPULSE;
+      car.jumpCount = 2;
+      car.jumpWindowTicksRemaining = 0;
     }
 
     car.velocity.z -= 9.81 * dtSeconds;
@@ -90,7 +115,13 @@ export function tickWorld(world: WorldState, inputFrames: InputFrame[], dtSecond
       car.position.z = 0;
       car.velocity.z = 0;
       car.onGround = true;
+      car.jumpCount = 0;
+      car.jumpWindowTicksRemaining = 0;
+    } else if (car.jumpCount === 1 && car.jumpWindowTicksRemaining > 0) {
+      car.jumpWindowTicksRemaining -= 1;
     }
+
+    car.jumpPressedLastTick = jumpPressed;
 
     car.boost = boostEnabled
       ? clamp(car.boost - BOOST_DRAIN_PER_SECOND * dtSeconds, 0, 100)

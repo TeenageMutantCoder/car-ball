@@ -27,6 +27,9 @@ test("createInitialWorldState includes arena and goal volume defaults", () => {
   assert.ok(car2);
   assert.equal(car1.teamId, TEAM_BLUE_ID);
   assert.equal(car2.teamId, TEAM_ORANGE_ID);
+  assert.equal(car1.jumpCount, 0);
+  assert.equal(car1.jumpWindowTicksRemaining, 0);
+  assert.equal(car1.jumpPressedLastTick, false);
 });
 
 test("worldToProtocolSnapshot maps world state deterministically", () => {

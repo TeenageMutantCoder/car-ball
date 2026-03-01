@@ -4,11 +4,12 @@
   "private": true,
   "type": "module",
   "dependencies": {
+    "@babylonjs/core": "^8.8.0",
     "@car-ball/protocol": "0.1.0"
   },
   "scripts": {
     "build": "npx tsc -p tsconfig.json",
     "typecheck": "npx tsc --noEmit -p tsconfig.json",
-    "test": "echo \"No tests yet for @car-ball/client\""
+    "test": "node --experimental-strip-types --test src/**/*.test.ts"
   }
 }

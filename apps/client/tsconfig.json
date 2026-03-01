@@ -2,6 +2,12 @@
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "composite": true,
+    "allowImportingTsExtensions": true,
+    "rewriteRelativeImportExtensions": true,
+    "lib": [
+      "ES2022",
+      "DOM"
+    ],
     "rootDir": "src",
     "outDir": "dist",
     "tsBuildInfoFile": ".tsbuildinfo"

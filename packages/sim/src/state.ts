@@ -17,6 +17,9 @@ export interface CarState {
   heading: number;
   boost: number;
   onGround: boolean;
+  jumpCount: number;
+  jumpWindowTicksRemaining: number;
+  jumpPressedLastTick: boolean;
 }
 
 export interface BallState {
@@ -79,7 +82,10 @@ function createCarState(playerId: PlayerId, teamId: TeamId, spawnX: number): Car
     velocity: vec3(),
     heading: 0,
     boost: 100,
-    onGround: true
+    onGround: true,
+    jumpCount: 0,
+    jumpWindowTicksRemaining: 0,
+    jumpPressedLastTick: false
   };
 }
 
