@@ -1,3 +1,4 @@
+// TODO: Do something with this unused file.
 export interface NetworkImpairmentProfile {
   latencyMs: number;
   jitterMs: number;

@@ -1,3 +1,4 @@
+// TODO: Do something with this partially-used functionality.
 import type { InputFrame, Sequence, Tick } from "@car-ball/protocol";
 
 const DEFAULT_CAPACITY = 256;
