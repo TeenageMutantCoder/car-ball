@@ -5,7 +5,7 @@ meta:
   project: CarBall
   source_plan: docs/implementation-plan-parallel.md
   version: 2
-  last_updated: 2026-03-01T06:20:00Z
+  last_updated: 2026-03-01T06:40:00Z
   allowed_statuses: [TODO, IN_PROGRESS, BLOCKED, DONE]
   allowed_priorities: [P0, P1, P2]
   status_flow:
@@ -650,16 +650,21 @@ tasks:
   - id: WS-C-007
     workstream: WS-C
     title: Add Rapier ball and arena colliders
-    status: TODO
+    status: DONE
     priority: P0
     owner: unassigned
     dependencies: [WS-C-006]
-    started_at: null
+    started_at: 2026-03-01T06:25:00Z
     target_date: null
-    completed_at: null
+    completed_at: 2026-03-01T06:40:00Z
     blocked_by: null
     unblock_plan: null
-    evidence: []
+    evidence:
+      - packages/sim/src/rapierColliders.ts
+      - packages/sim/src/rapierColliders.test.ts
+      - packages/sim/src/rapierShadow.ts
+      - packages/sim/src/simulation.ts
+      - packages/sim/src/simulation.rapierShadow.test.ts
     notes: Create arena and ball colliders with initial material tuning table for collision response.
     acceptance:
       - Arena and ball collider setup is deterministic per tick order.

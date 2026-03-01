@@ -327,3 +327,24 @@ Chronological append-only implementation log. Add one entry per meaningful updat
   - Continue WS-E-005 to integrate Rapier ball authority into runtime snapshot/validation paths.
   - Extend benchmark/gate telemetry for hybrid metrics before WS-G-005.
 - related_pr_or_commit: n/a
+
+### 2026-03-01T06:40:00Z | Agent: copilot
+
+- changed_tasks:
+  - id: WS-C-007
+    from: TODO
+    to: DONE
+- summary: Implemented deterministic arena/ball collider + material setup for Rapier shadow initialization and added focused test coverage for collider invariants and lifecycle telemetry.
+- blockers: []
+- evidence:
+  - path: packages/sim/src/rapierColliders.ts
+  - path: packages/sim/src/rapierColliders.test.ts
+  - path: packages/sim/src/rapierShadow.ts
+  - path: packages/sim/src/simulation.ts
+  - path: packages/sim/src/simulation.rapierShadow.test.ts
+  - path: apps/server/src/runtime.test.ts
+- next_actions:
+  - Start WS-C-008 by mapping Rapier-authoritative ball state into server snapshots.
+  - Advance WS-E-005 validation paths for authority toggle behavior.
+  - Extend hybrid telemetry fields needed by WS-G-005 gates.
+- related_pr_or_commit: n/a

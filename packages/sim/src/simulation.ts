@@ -1,5 +1,6 @@
 import type { InputFrame, PlayerId } from "@car-ball/protocol";
 import { DEFAULT_MAX_SUBSTEPS, FIXED_STEP_MS } from "./constants.ts";
+import { createRapierShadowInitContext } from "./rapierColliders.ts";
 import { RapierShadowWorld, type RapierShadowConfig, type RapierShadowMetrics } from "./rapierShadow.ts";
 import { createInitialWorldState, type WorldState } from "./state.ts";
 import { tickWorld } from "./tick.ts";
@@ -34,7 +35,10 @@ export class SimulationCore {
       playerIds,
       matchDurationSeconds: config.matchDurationSeconds
     });
-    this.rapierShadow = new RapierShadowWorld(config.rapierShadow);
+    this.rapierShadow = new RapierShadowWorld({
+      ...config.rapierShadow,
+      initContext: config.rapierShadow?.initContext ?? createRapierShadowInitContext(this.world)
+    });
   }
 
   enqueueInput(frame: InputFrame): void {

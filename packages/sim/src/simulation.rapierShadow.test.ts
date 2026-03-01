@@ -68,7 +68,9 @@ test("rapier shadow lifecycle initializes and steps when enabled", () => {
     init: 0,
     step: 0,
     reset: 0,
-    lastDt: 0
+    lastDt: 0,
+    colliderCount: 0,
+    materialPresetCount: 0
   };
 
   const sim = new SimulationCore(["player-1"], {
@@ -78,12 +80,18 @@ test("rapier shadow lifecycle initializes and steps when enabled", () => {
       enabled: true,
       shadowMode: true,
       createBackend: () => ({
-        init(): void {
+        init(context): void {
           calls.init += 1;
+          calls.colliderCount = context.colliders.length;
+          calls.materialPresetCount = Object.keys(context.materials).length;
         },
-        step(dtSeconds: number): void {
+        step(dtSeconds: number) {
           calls.step += 1;
           calls.lastDt = dtSeconds;
+          return {
+            contactCount: 2,
+            maxPenetrationDepthCm: 3.5
+          };
         },
         reset(): void {
           calls.reset += 1;
@@ -96,6 +104,10 @@ test("rapier shadow lifecycle initializes and steps when enabled", () => {
   assert.equal(initialMetrics.enabled, true);
   assert.equal(initialMetrics.shadowMode, true);
   assert.equal(initialMetrics.initialized, true);
+  assert.equal(initialMetrics.colliderCount, 7);
+  assert.equal(initialMetrics.materialPresetCount, 2);
+  assert.equal(calls.colliderCount, 7);
+  assert.equal(calls.materialPresetCount, 2);
   assert.equal(calls.init, 1);
 
   sim.advance(10);
@@ -105,6 +117,9 @@ test("rapier shadow lifecycle initializes and steps when enabled", () => {
   assert.equal(calls.lastDt, 0.01);
   assert.equal(steppedMetrics.stepCount, 1);
   assert.equal(steppedMetrics.lastStepDtSeconds, 0.01);
+  assert.equal(steppedMetrics.lastContactCount, 2);
+  assert.equal(steppedMetrics.contactCountTotal, 2);
+  assert.equal(steppedMetrics.maxPenetrationDepthCmP95Approx, 3.5);
 
   sim.resetRapierShadow();
 
@@ -113,6 +128,8 @@ test("rapier shadow lifecycle initializes and steps when enabled", () => {
   assert.equal(resetMetrics.stepCount, 0);
   assert.equal(resetMetrics.resetCount, 1);
   assert.equal(resetMetrics.lastStepDtSeconds, null);
+  assert.equal(resetMetrics.lastContactCount, 0);
+  assert.equal(resetMetrics.contactCountTotal, 0);
 });
 
 test("rapier shadow does not step when disabled", () => {
