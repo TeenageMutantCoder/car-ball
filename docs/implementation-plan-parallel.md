@@ -12,13 +12,15 @@ Build an MVP Rocket League-style web game for desktop browsers with:
 ## 1.1) Status Snapshot (Synced with Registry)
 
 Current completed tasks (see `docs/agent-task-registry.yaml` for authoritative state):
-- `WS-A-001`, `WS-A-003`, `WS-A-004`, `WS-A-005`
+- `WS-A-001`, `WS-A-002`, `WS-A-003`, `WS-A-004`, `WS-A-005`
 - `WS-B-001`, `WS-B-002`, `WS-B-003`
-- `WS-C-001`
+- `WS-C-001`, `WS-C-002`
+- `WS-E-001`
 - `WS-G-001`
 
 Completed artifacts aligned to those tasks:
 - `docs/runtime-constants.md`
+- `docs/entity-ownership.md`
 - `docs/protocol-envelope.md`
 - `docs/telemetry-schema.md`
 - `.github/workflows/ci.yml`
@@ -32,7 +34,7 @@ Work is split into independent workstreams with explicit contracts. Teams can mo
 - `G0 Contract Freeze` (day 0-2)
    - Freeze runtime constants: `tickRate`, `snapshotRate`, `inputRate`, `maxSubsteps`, `reconcileThreshold`.
    - Freeze protocol envelope: sequence/timestamp/version and message headers.
-   - Freeze entity identity model: player/car/ball/team/goal IDs and ownership semantics.
+   - Freeze entity identity model: player/car/ball/team/goal IDs and ownership semantics (see `docs/entity-ownership.md`).
    - Freeze telemetry schema: frame, physics, render, correction, server tick metrics.
 
 - `G1 Build Graph Ready` (day 2-4)

@@ -46,6 +46,37 @@ Chronological append-only implementation log. Add one entry per meaningful updat
   - Assign owners and start WS-A-001.
 - related_pr_or_commit: n/a
 
+### 2026-02-28T00:30:00Z | Agent: copilot
+
+- changed_tasks:
+  - id: WS-A-002
+    from: TODO
+    to: DONE
+  - id: WS-C-002
+    from: TODO
+    to: DONE
+  - id: WS-E-001
+    from: TODO
+    to: DONE
+- summary: Used parallel subagents to complete entity ownership contract, server room lifecycle, and sim world entity model with snapshot mapping.
+- blockers: []
+- evidence:
+  - path: docs/entity-ownership.md
+  - path: apps/server/src/room.ts
+  - path: apps/server/src/room.test.ts
+  - path: packages/sim/src/state.ts
+  - path: packages/sim/src/snapshot.ts
+  - path: packages/sim/src/state.test.ts
+  - path: docs/agent-task-registry.yaml
+  - path: docs/progress-board.md
+  - path: docs/implementation-plan-parallel.md
+  - path: docs/plan-v2-architecture.md
+- next_actions:
+  - Implement WS-E-002 server tick and snapshot loop.
+  - Implement WS-D-001 Babylon client shell and render bridge.
+  - Implement WS-C-003 control windows for jump/flip/boost.
+- related_pr_or_commit: n/a
+
 ### 2026-02-28T00:00:00Z | Agent: copilot
 
 - changed_tasks:

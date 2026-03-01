@@ -10,6 +10,6 @@
   "scripts": {
     "build": "npx tsc -p tsconfig.json",
     "typecheck": "npx tsc --noEmit -p tsconfig.json",
-    "test": "echo \"No tests yet for @car-ball/server\""
+    "test": "node --experimental-strip-types --test src/**/*.test.ts"
   }
 }

@@ -5,3 +5,5 @@ export function bootstrapServer(): string {
   const initial = sim.advance(sim.fixedStepMs);
   return `Server initialized at tick: ${initial.tick}`;
 }
+
+export * from "./room.ts";

@@ -11,13 +11,15 @@ Target scope: desktop browser, 1v1/2v2, RL-like control feel.
 ## Current Status (Synced)
 
 Completed from registry:
-- WS-A-001, WS-A-003, WS-A-004, WS-A-005
+- WS-A-001, WS-A-002, WS-A-003, WS-A-004, WS-A-005
 - WS-B-001, WS-B-002, WS-B-003
-- WS-C-001
+- WS-C-001, WS-C-002
+- WS-E-001
 - WS-G-001
 
 Primary artifacts already created:
 - `docs/runtime-constants.md`
+- `docs/entity-ownership.md`
 - `docs/protocol-envelope.md`
 - `docs/telemetry-schema.md`
 - `.github/workflows/ci.yml`

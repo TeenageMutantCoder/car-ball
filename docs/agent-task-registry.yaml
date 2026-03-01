@@ -5,7 +5,7 @@ meta:
   project: CarBall
   source_plan: docs/implementation-plan-parallel.md
   version: 2
-  last_updated: 2026-02-28T00:00:00Z
+  last_updated: 2026-02-28T00:30:00Z
   allowed_statuses: [TODO, IN_PROGRESS, BLOCKED, DONE]
   allowed_priorities: [P0, P1, P2]
   status_flow:
@@ -62,16 +62,18 @@ tasks:
   - id: WS-A-002
     workstream: WS-A
     title: Freeze entity ID ownership semantics
-    status: TODO
+    status: DONE
     priority: P0
     owner: unassigned
     dependencies: []
     started_at: null
     target_date: null
-    completed_at: null
+    completed_at: 2026-02-28T00:30:00Z
     blocked_by: null
     unblock_plan: null
-    evidence: []
+    evidence:
+      - docs/entity-ownership.md
+      - docs/implementation-plan-parallel.md
     notes: Freeze player car ball team goal identifiers and ownership rules.
     acceptance:
       - Entity ownership model is documented and referenced by protocol and sim.
@@ -227,16 +229,19 @@ tasks:
   - id: WS-C-002
     workstream: WS-C
     title: Implement world entity model
-    status: TODO
+    status: DONE
     priority: P0
     owner: unassigned
     dependencies: [WS-C-001, WS-A-002, WS-B-002]
     started_at: null
     target_date: null
-    completed_at: null
+    completed_at: 2026-02-28T00:30:00Z
     blocked_by: null
     unblock_plan: null
-    evidence: []
+    evidence:
+      - packages/sim/src/state.ts
+      - packages/sim/src/snapshot.ts
+      - packages/sim/src/state.test.ts
     notes: Implement car ball arena and goal volume state models.
     acceptance:
       - Sim state includes all core entities and IDs.
@@ -371,16 +376,19 @@ tasks:
   - id: WS-E-001
     workstream: WS-E
     title: Build server room lifecycle
-    status: TODO
+    status: DONE
     priority: P0
     owner: unassigned
     dependencies: [WS-A-004, WS-B-002]
     started_at: null
     target_date: null
-    completed_at: null
+    completed_at: 2026-02-28T00:30:00Z
     blocked_by: null
     unblock_plan: null
-    evidence: []
+    evidence:
+      - apps/server/src/room.ts
+      - apps/server/src/room.test.ts
+      - apps/server/package.json
     notes: Implement create join leave ready start end match flow.
     acceptance:
       - Two clients can complete full room lifecycle.
