@@ -1,0 +1,11 @@
+{
+  "name": "@car-ball/server",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "npx tsc -p tsconfig.json",
+    "typecheck": "npx tsc --noEmit -p tsconfig.json",
+    "test": "echo \"No tests yet for @car-ball/server\""
+  }
+}

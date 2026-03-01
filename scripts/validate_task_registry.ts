@@ -1,13 +1,5 @@
 type TaskStatus = 'TODO' | 'IN_PROGRESS' | 'BLOCKED' | 'DONE';
 
-declare const process: {
-  argv: string[];
-  cwd(): string;
-  exit(code?: number): never;
-};
-
-declare function require(moduleName: string): any;
-
 type TaskRecord = {
   id?: string;
   status?: string;
