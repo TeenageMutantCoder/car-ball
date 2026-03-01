@@ -25,6 +25,7 @@ To support concurrent AI agents safely:
    - Sync dashboard rows/counts
    - Append progress log entry
 5. Agents must only edit task IDs they touched and must not rename IDs.
+6. Agents must run `node --experimental-strip-types scripts/validate_task_registry.ts` before handoff or merge.
 
 This protocol minimizes merge conflicts and makes status machine-readable.
 
