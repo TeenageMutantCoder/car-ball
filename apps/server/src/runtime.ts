@@ -131,9 +131,9 @@ export class ServerRuntime {
     this.fixedStepMs = 1000 / tickRateHz;
     this.snapshotEveryTicks = tickRateHz / snapshotRateHz;
     this.minInputTickDelta = minInputTickDelta(tickRateHz);
-    this.rapierEnabled = config.rapierEnabled ?? false;
+    this.rapierEnabled = config.rapierEnabled ?? true;
     this.rapierShadowMode = config.rapierShadowMode ?? true;
-    this.rapierBallAuthority = config.rapierBallAuthority ?? false;
+    this.rapierBallAuthority = config.rapierBallAuthority ?? true;
     this.now = config.now ?? Date.now;
   }
 
@@ -332,6 +332,7 @@ export class ServerRuntime {
 
   private createInternalRoom(roomId: string, playerIds: PlayerId[]): RuntimeRoomInternal {
     const normalizedPlayerIds = uniqueSortedPlayerIds(playerIds);
+    const enableRapierForRoom = this.rapierEnabled && normalizedPlayerIds.length > 0;
 
     return {
       roomId,
@@ -339,9 +340,9 @@ export class ServerRuntime {
       sim: new SimulationCore(normalizedPlayerIds, {
         fixedStepMs: this.fixedStepMs,
         rapierShadow: {
-          enabled: this.rapierEnabled,
+          enabled: enableRapierForRoom,
           shadowMode: this.rapierShadowMode,
-          ballAuthority: this.rapierBallAuthority
+          ballAuthority: enableRapierForRoom ? this.rapierBallAuthority : false
         }
       }),
       sequence: 1,

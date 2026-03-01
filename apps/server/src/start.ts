@@ -70,10 +70,10 @@ export async function startLiveServer(config: StartLiveServerConfig = {}): Promi
   const port = config.port ?? parsePort(process.env.PORT);
   const path = config.path ?? process.env.CAR_BALL_WS_PATH ?? DEFAULT_PATH;
   const playerIds = config.playerIds ?? parsePlayerIds(process.env.CAR_BALL_PLAYER_IDS);
-  const rapierEnabled = config.rapierEnabled ?? parseBoolean(process.env.CAR_BALL_RAPIER_ENABLED, false);
+  const rapierEnabled = config.rapierEnabled ?? parseBoolean(process.env.CAR_BALL_RAPIER_ENABLED, true);
   const rapierShadowMode = config.rapierShadowMode ?? parseBoolean(process.env.CAR_BALL_RAPIER_SHADOW_MODE, true);
   const rapierBallAuthority =
-    config.rapierBallAuthority ?? parseBoolean(process.env.CAR_BALL_RAPIER_BALL_AUTHORITY, false);
+    config.rapierBallAuthority ?? parseBoolean(process.env.CAR_BALL_RAPIER_BALL_AUTHORITY, true);
 
   const runtime = createServerRuntime({
     rapierEnabled,

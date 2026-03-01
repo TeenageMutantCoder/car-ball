@@ -40,7 +40,7 @@ export class SimulationCore {
       ...config.rapierShadow,
       initContext: config.rapierShadow?.initContext ?? createRapierShadowInitContext(this.world)
     });
-    this.rapierBallAuthority = config.rapierShadow?.ballAuthority ?? false;
+    this.rapierBallAuthority = config.rapierShadow?.ballAuthority ?? true;
   }
 
   enqueueInput(frame: InputFrame): void {

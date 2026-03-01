@@ -1,6 +1,20 @@
 import type { Vec3 } from "@car-ball/protocol";
 import type { default as RAPIER } from "@dimforge/rapier3d";
 
+let rapierModulePromise: Promise<typeof RAPIER> | null = null;
+
+async function getRapierModule(): Promise<typeof RAPIER> {
+  if (!rapierModulePromise) {
+    rapierModulePromise = (async () => {
+      const imported = await import("@dimforge/rapier3d-compat");
+      await imported.default.init();
+      return imported.default as typeof RAPIER;
+    })();
+  }
+
+  return rapierModulePromise;
+}
+
 export interface RapierShadowBackend {
   init(context: RapierShadowInitContext): void;
   step(dtSeconds: number): RapierShadowStepReport | undefined;
@@ -192,9 +206,7 @@ class RapierCompatBackend implements RapierShadowBackend {
   }
 
   private async initializeWorld(context: RapierShadowInitContext): Promise<void> {
-    const imported = await import("@dimforge/rapier3d-compat");
-    await imported.default.init();
-    const rapier: typeof RAPIER = imported.default;
+    const rapier = await getRapierModule();
 
     const world = new rapier.World({ x: 0, y: 0, z: -9.81 });
     this.world = world;
