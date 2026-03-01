@@ -5,7 +5,7 @@ meta:
   project: CarBall
   source_plan: docs/implementation-plan-parallel.md
   version: 2
-  last_updated: 2026-02-28T03:00:00Z
+  last_updated: 2026-03-01T00:00:00Z
   allowed_statuses: [TODO, IN_PROGRESS, BLOCKED, DONE]
   allowed_priorities: [P0, P1, P2]
   status_flow:
@@ -623,3 +623,129 @@ tasks:
     acceptance:
       - Two consecutive soak cycles pass for 1v1 and 2v2.
       - Release decision includes artifact links and gate summary.
+
+  - id: WS-C-006
+    workstream: WS-C
+    title: Add Rapier world shadow bootstrap
+    status: TODO
+    priority: P0
+    owner: unassigned
+    dependencies: [WS-C-005, WS-B-002]
+    started_at: null
+    target_date: null
+    completed_at: null
+    blocked_by: null
+    unblock_plan: null
+    evidence: []
+    notes: Add Rapier world lifecycle in shadow mode without changing authoritative outputs.
+    acceptance:
+      - Rapier world can be initialized stepped and reset behind feature flag.
+      - Existing simulation snapshots remain unchanged when shadow mode is enabled.
+
+  - id: WS-C-007
+    workstream: WS-C
+    title: Add Rapier ball and arena colliders
+    status: TODO
+    priority: P0
+    owner: unassigned
+    dependencies: [WS-C-006]
+    started_at: null
+    target_date: null
+    completed_at: null
+    blocked_by: null
+    unblock_plan: null
+    evidence: []
+    notes: Create arena and ball colliders with initial material tuning table for collision response.
+    acceptance:
+      - Arena and ball collider setup is deterministic per tick order.
+      - Contact telemetry exposes collision counts for benchmark scenarios.
+
+  - id: WS-C-008
+    workstream: WS-C
+    title: Shift server ball authority to Rapier
+    status: TODO
+    priority: P0
+    owner: unassigned
+    dependencies: [WS-C-007, WS-E-002]
+    started_at: null
+    target_date: null
+    completed_at: null
+    blocked_by: null
+    unblock_plan: null
+    evidence: []
+    notes: Use Rapier as authoritative source for ball state while retaining custom car authority.
+    acceptance:
+      - Server snapshots publish Rapier-authoritative ball position and velocity.
+      - Existing car control and traction behavior remains functionally stable.
+
+  - id: WS-E-005
+    workstream: WS-E
+    title: Integrate Rapier ball authority in runtime
+    status: TODO
+    priority: P0
+    owner: unassigned
+    dependencies: [WS-C-008, WS-E-003]
+    started_at: null
+    target_date: null
+    completed_at: null
+    blocked_by: null
+    unblock_plan: null
+    evidence: []
+    notes: Wire runtime tick snapshot and validation paths for Rapier-authoritative ball behavior.
+    acceptance:
+      - Runtime tick path supports feature-flag switch between legacy and Rapier ball authority.
+      - Validation rejects impossible ball-authority transitions and emits telemetry.
+
+  - id: WS-F-004
+    workstream: WS-F
+    title: Tune reconciliation for hybrid collisions
+    status: TODO
+    priority: P1
+    owner: unassigned
+    dependencies: [WS-E-005, WS-F-002]
+    started_at: null
+    target_date: null
+    completed_at: null
+    blocked_by: null
+    unblock_plan: null
+    evidence: []
+    notes: Re-tune deadzone smoothing and correction thresholds for Rapier-authoritative ball snapshots.
+    acceptance:
+      - Correction spikes remain within target bounds in clean and loss profiles.
+      - Reconciliation metrics are emitted per existing telemetry schema plus additive Rapier fields.
+
+  - id: WS-G-005
+    workstream: WS-G
+    title: Add hybrid Rapier benchmark gate suite
+    status: TODO
+    priority: P1
+    owner: unassigned
+    dependencies: [WS-F-004, WS-G-003]
+    started_at: null
+    target_date: null
+    completed_at: null
+    blocked_by: null
+    unblock_plan: null
+    evidence: []
+    notes: Extend benchmark and SLO automation with hybrid Rapier scenarios and shadow/authority comparisons.
+    acceptance:
+      - Benchmark artifacts include Rapier-specific telemetry fields.
+      - Gate reports evaluate hybrid scenarios against MVP thresholds.
+
+  - id: WS-G-006
+    workstream: WS-G
+    title: Run hybrid soak cycles and recommendation
+    status: TODO
+    priority: P1
+    owner: unassigned
+    dependencies: [WS-G-005]
+    started_at: null
+    target_date: null
+    completed_at: null
+    blocked_by: null
+    unblock_plan: null
+    evidence: []
+    notes: Run two consecutive hybrid soak cycles and publish go/no-go recommendation.
+    acceptance:
+      - Two consecutive soak cycles pass with hybrid configuration.
+      - Release recommendation includes fallback decision and risk summary.

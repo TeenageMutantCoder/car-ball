@@ -45,7 +45,10 @@ Completed artifacts aligned to those tasks:
 - `scripts/evaluate_slo_gates.ts`
 - `scripts/soak_release_check.ts`
 
-All tasks in `docs/agent-task-registry.yaml` are currently `DONE`.
+All baseline tasks in `docs/agent-task-registry.yaml` are currently `DONE`.
+
+Hybrid migration follow-up tasks are tracked as new `TODO` items in the registry and detailed in:
+- `docs/rapier-hybrid-migration-plan.md`
 
 ## 2) Parallelization Strategy
 
@@ -488,3 +491,25 @@ These slices are intended for 1-2 day execution units and should be mirrored in 
 - `T-G4-003` Implement server validation checks (deps: `T-G3-002`, `T-G2-003`)
 - `T-G4-004` Implement reconnect/resync flow (deps: `T-G3-002`, `T-G1-004`)
 - `T-G4-005` Add impairment matrix + automated SLO checks (deps: `T-G4-002`, `T-G3-004`, `T-G1-003`)
+
+## 9.1) Hybrid Rapier Migration Task Slices
+
+Detailed standalone plan:
+- `docs/rapier-hybrid-migration-plan.md`
+
+Execution slices (1-2 day units, registry-backed):
+
+- `T-HYB-001` Add Rapier world bootstrap in shadow mode (deps: `T-G2-005`, `T-G1-004`)
+- `T-HYB-002` Add arena/ball colliders and material table (deps: `T-HYB-001`)
+- `T-HYB-003` Emit Rapier shadow telemetry and divergence metrics (deps: `T-HYB-001`, `T-G0-004`)
+- `T-HYB-004` Shift ball authority to Rapier on server tick path (deps: `T-HYB-002`, `T-G3-002`)
+- `T-HYB-005` Extend server validation for Rapier-authoritative ball states (deps: `T-HYB-004`, `T-G4-003`)
+- `T-HYB-006` Tune reconciliation thresholds for hybrid collision profile (deps: `T-HYB-004`, `T-G4-002`)
+- `T-HYB-007` Add hybrid benchmark and SLO gate variants (deps: `T-HYB-003`, `T-HYB-006`, `T-G4-005`)
+- `T-HYB-008` Run two-cycle hybrid soak and release recommendation (deps: `T-HYB-007`)
+
+Mapping to workstreams:
+- Simulation-heavy: `T-HYB-001`, `T-HYB-002`, `T-HYB-004`
+- Server-heavy: `T-HYB-005`
+- Netcode-heavy: `T-HYB-006`
+- QA/Perf-heavy: `T-HYB-003`, `T-HYB-007`, `T-HYB-008`
