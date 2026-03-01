@@ -123,7 +123,7 @@ Chronological append-only implementation log. Add one entry per meaningful updat
 - summary: Completed wall/ceiling traction model, client input binding + frame emitter, and server-side validation checks with telemetry counters.
 - blockers: []
 - evidence:
-  - path: packages/sim/src/traction.test.ts
+  - path: packages/sim/src/tick.traction.test.ts
   - path: apps/client/src/input/frameEmitter.ts
   - path: apps/client/src/input/frameEmitter.test.ts
   - path: apps/server/src/validation.ts

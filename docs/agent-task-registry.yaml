@@ -198,7 +198,7 @@ tasks:
     blocked_by: null
     unblock_plan: null
     evidence:
-      - packages/protocol/tests/codec.test.ts
+      - packages/protocol/src/codec.test.ts
       - packages/protocol/package.json
     notes: Add encode decode unknown-field and version mismatch tests.
     acceptance:
@@ -219,7 +219,7 @@ tasks:
     unblock_plan: null
     evidence:
       - packages/sim/src/simulation.ts
-      - packages/sim/tests/simulation.accumulator.test.ts
+      - packages/sim/src/simulation.accumulator.test.ts
       - packages/sim/src/constants.ts
     notes: Implement tick accumulator max substep cap and replay harness.
     acceptance:
@@ -283,7 +283,7 @@ tasks:
     evidence:
       - packages/sim/src/tick.ts
       - packages/sim/src/constants.ts
-      - packages/sim/src/traction.test.ts
+      - packages/sim/src/tick.traction.test.ts
     notes: Implement adhesion detach and normal alignment logic for floor wall and ceiling transitions.
     acceptance:
       - Scripted transition tests pass.

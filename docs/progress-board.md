@@ -63,7 +63,6 @@ Update this section first.
 
 | ID | Workstream | Task | Priority | Dependency |
 |---|---|---|---|---|
-| WS-D-003 | WS-D | Implement interpolation and camera modes | P1 | WS-D-001, WS-E-002 |
 | - | - | - | - | - |
 
 ## Done
@@ -77,11 +76,11 @@ Update this section first.
 | WS-A-005 | WS-A | Add CI typecheck test build | 2026-02-28 | .github/workflows/ci.yml | PASS |
 | WS-B-001 | WS-B | Freeze protocol envelope and versioning policy | 2026-02-28 | docs/protocol-envelope.md | PASS |
 | WS-B-002 | WS-B | Define protocol v1 payload types | 2026-02-28 | packages/protocol/src/contracts.ts | PASS |
-| WS-B-003 | WS-B | Add protocol roundtrip compatibility tests | 2026-02-28 | packages/protocol/tests/codec.test.ts | PASS |
+| WS-B-003 | WS-B | Add protocol roundtrip compatibility tests | 2026-02-28 | packages/protocol/src/codec.test.ts | PASS |
 | WS-C-001 | WS-C | Build fixed-step simulation loop | 2026-02-28 | packages/sim/src/simulation.ts | PASS |
 | WS-C-002 | WS-C | Implement world entity model | 2026-02-28 | packages/sim/src/state.ts | PASS |
 | WS-C-003 | WS-C | Implement controls jump flip boost | 2026-02-28 | packages/sim/src/tick.jump.test.ts | PASS |
-| WS-C-004 | WS-C | Implement wall and ceiling traction model | 2026-02-28 | packages/sim/src/traction.test.ts | PASS |
+| WS-C-004 | WS-C | Implement wall and ceiling traction model | 2026-02-28 | packages/sim/src/tick.traction.test.ts | PASS |
 | WS-C-005 | WS-C | Add replay hash and drift assertions | 2026-02-28 | packages/sim/src/replayDrift.test.ts | PASS |
 | WS-D-001 | WS-D | Initialize Babylon client shell and render bridge | 2026-02-28 | apps/client/src/main.ts | PASS |
 | WS-D-002 | WS-D | Implement input bindings and frame emitter | 2026-02-28 | apps/client/src/input/frameEmitter.ts | PASS |

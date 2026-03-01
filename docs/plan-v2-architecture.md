@@ -37,7 +37,7 @@ Primary artifacts already created:
 - `apps/server/src/validation.ts`
 - `apps/server/src/runtime.reconnect.test.ts`
 - `packages/sim/src/tick.jump.test.ts`
-- `packages/sim/src/traction.test.ts`
+- `packages/sim/src/tick.traction.test.ts`
 - `packages/sim/src/replayDrift.test.ts`
 - `scripts/benchmark_harness.ts`
 - `scripts/evaluate_slo_gates.ts`
