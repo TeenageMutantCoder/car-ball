@@ -8,7 +8,12 @@
   ],
   "scripts": {
     "build": "tsc -b",
-    "clean": "find . -type d -name dist -prune -exec rm -rf {} + && find . -type f -name '*.tsbuildinfo' -delete",
+    "clean": "npm run clean:dist && npm run clean:tsbuildinfo && npm run clean:node_modules",
+    "clean:dist": "find . -type d -name dist -prune -exec rm -rf {} +",
+    "clean:tsbuildinfo": "find . -type f -name '*.tsbuildinfo' -delete",
+    "clean:node_modules": "find . -type d -name node_modules -prune -exec rm -rf {} +",
+    "dev": "npm --workspace @car-ball/server run dev & npm --workspace @car-ball/client run dev",
+    "start": "npm --workspace @car-ball/server run start & npm --workspace @car-ball/client run start",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "test": "npm run test --workspaces --if-present",
     "lint": "echo \"lint placeholder\"",
@@ -18,6 +23,7 @@
   },
   "devDependencies": {
     "@types/node": "^22.14.1",
-    "typescript": "^5.8.2"
+    "typescript": "^5.8.2",
+    "vite": "^6.2.0"
   }
 }

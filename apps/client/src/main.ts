@@ -10,7 +10,12 @@ import type { InputFrame, Snapshot } from "@car-ball/protocol";
 
 import { createInputBindings, type InputBindings } from "./input/bindings.ts";
 import { createInputFrameEmitter, type InputFrameEmitter } from "./input/frameEmitter.ts";
+import { createLiveClientNet, type LiveClientNet } from "./net/live.ts";
 import { createPredictionHistory, type PredictionHistory } from "./net/prediction.ts";
+import {
+  createWebSocketClientTransport,
+  type WebSocketClientTransport,
+} from "./net/websocket.ts";
 import {
   createCameraController,
   resolveCameraPose,
@@ -58,6 +63,20 @@ export interface BabylonSceneBootstrap {
   start: () => void;
   stop: () => void;
   dispose: () => void;
+}
+
+export interface NetworkedBabylonSceneBootstrapOptions extends BabylonSceneBootstrapOptions {
+  websocketUrl: string;
+  websocketProtocols?: string | string[];
+  reconnectThresholdCm?: number;
+}
+
+export interface NetworkedBabylonSceneBootstrap extends BabylonSceneBootstrap {
+  net: LiveClientNet<RenderSnapshotState>;
+  transport: WebSocketClientTransport;
+  connectNetwork: () => void;
+  disconnectNetwork: (code?: number, reason?: string) => void;
+  isNetworkConnected: () => boolean;
 }
 
 export function bootstrapBabylonScene(options: BabylonSceneBootstrapOptions): BabylonSceneBootstrap {
@@ -174,6 +193,77 @@ export function bootstrapBabylonScene(options: BabylonSceneBootstrapOptions): Ba
       inputBindings.dispose();
       scene.dispose();
       engine.dispose();
+    },
+  };
+}
+
+export function bootstrapNetworkedBabylonScene(
+  options: NetworkedBabylonSceneBootstrapOptions,
+): NetworkedBabylonSceneBootstrap {
+  const inputFrameContext = options.inputFrameContext ?? {
+    playerId: "player-1",
+    carId: "car:player-1",
+  };
+
+  let transport: WebSocketClientTransport | null = null;
+
+  const base = bootstrapBabylonScene({
+    ...options,
+    inputFrameContext,
+    onInputFrame(frame): void {
+      transport?.sendInputFrame(frame);
+      options.onInputFrame?.(frame);
+    },
+  });
+
+  const net = createLiveClientNet<RenderSnapshotState>(
+    {
+      applySnapshot(snapshot): RenderSnapshotState {
+        const applied = base.applySnapshot(snapshot);
+        const correctionMetrics = net.getCorrectionMetrics();
+        base.debugHud.setCorrectionCount(correctionMetrics.correctionsPerMinuteWindow);
+        return applied;
+      },
+    },
+    {
+      playerId: inputFrameContext.playerId,
+      carId: inputFrameContext.carId,
+      reconcileThresholdCm: options.reconnectThresholdCm,
+      getPredictedPosition: () => {
+        const latest = base.rendererBridge.getLatestSnapshot();
+        if (!latest) {
+          return null;
+        }
+
+        const predictedCar = latest.cars.find((car) => car.id === inputFrameContext.carId);
+        return predictedCar ? predictedCar.position : null;
+      },
+    },
+  );
+
+  const websocketTransport = createWebSocketClientTransport({
+    url: options.websocketUrl,
+    protocols: options.websocketProtocols,
+    net,
+  });
+  transport = websocketTransport;
+
+  return {
+    ...base,
+    net,
+    transport: websocketTransport,
+    connectNetwork(): void {
+      websocketTransport.connect();
+    },
+    disconnectNetwork(code?: number, reason?: string): void {
+      websocketTransport.disconnect(code, reason);
+    },
+    isNetworkConnected(): boolean {
+      return websocketTransport.isConnected();
+    },
+    dispose(): void {
+      websocketTransport.disconnect(1000, "client dispose");
+      base.dispose();
     },
   };
 }

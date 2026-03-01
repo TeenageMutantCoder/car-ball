@@ -8,4 +8,6 @@ export function bootstrapServer(): string {
 
 export * from "./room.ts";
 export * from "./runtime.ts";
+export * from "./start.ts";
+export * from "./transport.ts";
 export * from "./validation.ts";

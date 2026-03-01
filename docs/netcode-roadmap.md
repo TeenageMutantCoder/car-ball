@@ -8,8 +8,11 @@ Owner: WS-F / WS-E
 
 - Implemented today: in-process server runtime loop with protocol envelope encode/decode coverage and deterministic snapshot emission.
 - Implemented today: client prediction/reconciliation/impairment modules with unit tests.
-- In-process E2E smoke path was removed pending stronger state-transition-focused coverage.
-- Not yet implemented: live socket transport wiring between browser client and server process.
+- Implemented today: refreshed in-process E2E suite with explicit authoritative state-transition assertions.
+- Implemented today: minimal live socket transport wiring between client and server with envelope validation and snapshot fanout.
+- Implemented today: transport-path session/ownership enforcement and inbound monotonic cadence checks.
+- Implemented today: runnable server entrypoint script that boots runtime + transport and binds a room/player set.
+- Implemented today: client WebSocket transport module and networked Babylon bootstrap wiring for live input/snapshot flow.
 
 ## Migration Gate Metrics
 
@@ -33,31 +36,43 @@ Move from client-authoritative+validation toward server-authoritative simulation
 
 ## Phased Delivery
 
-### Phase 0: In-Process E2E Baseline (Planned Refresh)
+### Phase 0: In-Process E2E Baseline (Completed)
 
-- Reintroduce in-process E2E with explicit before/after authoritative state assertions.
-- Track implementation from `docs/inprocess-e2e-test-plan.md`.
+- Reintroduced in-process E2E with explicit before/after authoritative state assertions.
+- Coverage includes accepted input mutation, rejected input no-op guarantees, and snapshot monotonic sequencing checks.
 
-### Phase 1: Minimal Live Transport
+### Phase 1: Minimal Live Transport (Completed)
 
-- Add minimal server network listener with protocol envelope validation.
-- Add client transport adapter that forwards emitted input frames and ingests server snapshots.
-- Preserve existing protocol types and runtime contracts.
+- Added server network listener with protocol envelope validation (`server.error` on malformed/version-mismatch input).
+- Added client live transport adapter that forwards encoded input frames and ingests server snapshots.
+- Added runnable server startup command (`@car-ball/server` `npm run start`).
+- Added client WebSocket transport implementation and networked scene bootstrap helper.
+- Preserved existing protocol event types and runtime contracts.
 
-### Phase 2: Authoritative Reconciliation Enforcement
+### Phase 2: Authoritative Reconciliation Enforcement (Partial)
 
-- Ensure snapshot ingestion path feeds reconciliation metrics in live loop.
-- Gate release on correction/error thresholds from this document.
+- Snapshot ingestion now records correction telemetry (thresholded) in the live client adapter path.
+- Release gating remains tied to benchmark and soak artifacts evaluated by existing SLO scripts.
 
-### Phase 3: Competitive Hardening
+### Phase 3: Competitive Hardening (Partial)
 
-- Add anti-abuse ownership/session enforcement and stricter cadence checks in transport path.
-- Extend reconnect/resync coverage to multi-client impairment scenarios.
+- Added anti-abuse session binding enforcement (`session playerId` and `playerId -> carId` ownership checks) in transport path.
+- Added stricter transport cadence checks (monotonic inbound sequence and timestamp validation).
+- Multi-client reconnect/resync impairment expansion remains open.
 
 ## Evidence Links
 
 - `docs/inprocess-e2e-test-plan.md`
 - `apps/client/src/net/inprocess.ts`
 - `apps/client/src/net/inprocess.test.ts`
+- `apps/client/src/net/live.ts`
+- `apps/client/src/net/live.test.ts`
+- `apps/client/src/net/websocket.ts`
+- `apps/client/src/net/websocket.test.ts`
+- `apps/client/src/main.ts`
 - `scripts/evaluate_slo_gates.ts`
 - `scripts/soak_release_check.ts`
+- `apps/server/src/inprocess.e2e.test.ts`
+- `apps/server/src/transport.ts`
+- `apps/server/src/transport.test.ts`
+- `apps/server/src/start.ts`
