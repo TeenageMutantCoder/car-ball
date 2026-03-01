@@ -11,7 +11,10 @@
     "clean": "find . -type d -name dist -prune -exec rm -rf {} + && find . -type f -name '*.tsbuildinfo' -delete",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "test": "npm run test --workspaces --if-present",
-    "lint": "echo \"lint placeholder\""
+    "lint": "echo \"lint placeholder\"",
+    "benchmark": "node --experimental-strip-types scripts/benchmark_harness.ts",
+    "slo:gates": "node --experimental-strip-types scripts/evaluate_slo_gates.ts --sample-if-empty",
+    "soak:check": "node --experimental-strip-types scripts/soak_release_check.ts"
   },
   "devDependencies": {
     "@types/node": "^22.14.1",

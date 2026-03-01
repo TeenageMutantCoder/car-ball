@@ -5,7 +5,7 @@ meta:
   project: CarBall
   source_plan: docs/implementation-plan-parallel.md
   version: 2
-  last_updated: 2026-02-28T02:30:00Z
+  last_updated: 2026-02-28T03:00:00Z
   allowed_statuses: [TODO, IN_PROGRESS, BLOCKED, DONE]
   allowed_priorities: [P0, P1, P2]
   status_flow:
@@ -523,16 +523,19 @@ tasks:
   - id: WS-F-003
     workstream: WS-F
     title: Add network impairment simulation controls
-    status: TODO
+    status: DONE
     priority: P1
     owner: unassigned
     dependencies: [WS-F-002]
     started_at: null
     target_date: null
-    completed_at: null
+    completed_at: 2026-02-28T03:00:00Z
     blocked_by: null
     unblock_plan: null
-    evidence: []
+    evidence:
+      - apps/client/src/net/impairment.ts
+      - apps/client/src/net/impairment.test.ts
+      - apps/client/src/index.ts
     notes: Add latency jitter and packet loss simulation profiles for test runs.
     acceptance:
       - Impairment profiles can be toggled and reproduced.
@@ -561,16 +564,19 @@ tasks:
   - id: WS-G-002
     workstream: WS-G
     title: Build benchmark scenarios and harness
-    status: TODO
+    status: DONE
     priority: P1
     owner: unassigned
     dependencies: [WS-G-001, WS-D-004, WS-E-002, WS-F-003]
     started_at: null
     target_date: null
-    completed_at: null
+    completed_at: 2026-02-28T03:00:00Z
     blocked_by: null
     unblock_plan: null
-    evidence: []
+    evidence:
+      - scripts/benchmark_harness.ts
+      - package.json
+      - artifacts/benchmarks
     notes: Implement 1v1 baseline 2v2 collision-heavy wall-ceiling stress and impairment matrix scenarios.
     acceptance:
       - Required benchmark scenarios run automatically.
@@ -579,16 +585,19 @@ tasks:
   - id: WS-G-003
     workstream: WS-G
     title: Implement SLO gate evaluation
-    status: TODO
+    status: DONE
     priority: P1
     owner: unassigned
     dependencies: [WS-G-002]
     started_at: null
     target_date: null
-    completed_at: null
+    completed_at: 2026-02-28T03:00:00Z
     blocked_by: null
     unblock_plan: null
-    evidence: []
+    evidence:
+      - scripts/evaluate_slo_gates.ts
+      - package.json
+      - artifacts/gates/slo-gate-report.json
     notes: Evaluate benchmark output against go/no-go thresholds and publish gate status.
     acceptance:
       - SLO pass/fail status is generated per run.
@@ -597,16 +606,19 @@ tasks:
   - id: WS-G-004
     workstream: WS-G
     title: Run soak tests and release check
-    status: TODO
+    status: DONE
     priority: P1
     owner: unassigned
     dependencies: [WS-G-003]
     started_at: null
     target_date: null
-    completed_at: null
+    completed_at: 2026-02-28T03:00:00Z
     blocked_by: null
     unblock_plan: null
-    evidence: []
+    evidence:
+      - scripts/soak_release_check.ts
+      - package.json
+      - artifacts/releases/soak-release-decision.json
     notes: Run 20-minute soak sessions and enforce two consecutive passing cycles for MVP.
     acceptance:
       - Two consecutive soak cycles pass for 1v1 and 2v2.

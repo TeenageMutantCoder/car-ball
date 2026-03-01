@@ -24,17 +24,17 @@ Update this section first.
 - Last updated: YYYY-MM-DD
  - Last updated: 2026-02-28
 - Sprint / Milestone: MVP-1
-- Overall completion: 86%
+- Overall completion: 100%
 - P0 gate pass rate: 0/0
 - Last full benchmark date: YYYY-MM-DD
 - Last soak date: YYYY-MM-DD
 
 ### Counts
 
-- TODO: 4
+- TODO: 0
 - IN PROGRESS: 0
 - BLOCKED: 0
-- DONE: 24
+- DONE: 28
 
 ## Release Gate Summary
 
@@ -64,10 +64,7 @@ Update this section first.
 | ID | Workstream | Task | Priority | Dependency |
 |---|---|---|---|---|
 | WS-D-003 | WS-D | Implement interpolation and camera modes | P1 | WS-D-001, WS-E-002 |
-| WS-F-003 | WS-F | Add network impairment simulation controls | P1 | WS-F-002 |
-| WS-G-002 | WS-G | Build benchmark scenarios and harness | P1 | WS-G-001, WS-D-004, WS-E-002, WS-F-003 |
-| WS-G-003 | WS-G | Implement SLO gate evaluation | P1 | WS-G-002 |
-| WS-G-004 | WS-G | Run soak tests and release check | P1 | WS-G-003 |
+| - | - | - | - | - |
 
 ## Done
 
@@ -96,7 +93,11 @@ Update this section first.
 | WS-E-004 | WS-E | Implement reconnect and resync flow | 2026-02-28 | apps/server/src/runtime.reconnect.test.ts | PASS |
 | WS-F-001 | WS-F | Implement client prediction history buffer | 2026-02-28 | apps/client/src/net/prediction.test.ts | PASS |
 | WS-F-002 | WS-F | Implement reconciliation smoothing metrics | 2026-02-28 | apps/client/src/net/reconciliation.test.ts | PASS |
+| WS-F-003 | WS-F | Add network impairment simulation controls | 2026-02-28 | apps/client/src/net/impairment.test.ts | PASS |
 | WS-G-001 | WS-G | Freeze telemetry schema and benchmark fields | 2026-02-28 | docs/telemetry-schema.md | PASS |
+| WS-G-002 | WS-G | Build benchmark scenarios and harness | 2026-02-28 | scripts/benchmark_harness.ts | PASS |
+| WS-G-003 | WS-G | Implement SLO gate evaluation | 2026-02-28 | scripts/evaluate_slo_gates.ts | PASS |
+| WS-G-004 | WS-G | Run soak tests and release check | 2026-02-28 | scripts/soak_release_check.ts | PASS |
 
 ## Workstream Rollup
 
@@ -107,8 +108,8 @@ Update this section first.
 | WS-C Simulation | DONE | 100 | TBD | - | Completed |
 | WS-D Client | DONE | 100 | TBD | - | Completed |
 | WS-E Server | DONE | 100 | TBD | - | Completed |
-| WS-F Netcode | IN PROGRESS | 67 | TBD | Impairment simulation controls | Corrections within threshold |
-| WS-G QA/Perf | IN PROGRESS | 25 | TBD | Benchmark harness setup | MVP gates automated |
+| WS-F Netcode | DONE | 100 | TBD | - | Completed |
+| WS-G QA/Perf | DONE | 100 | TBD | - | Completed |
 
 ## Update Rules (2-minute routine)
 

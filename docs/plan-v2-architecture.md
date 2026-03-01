@@ -17,8 +17,8 @@ Completed from registry:
 - WS-C-005
 - WS-D-001, WS-D-002, WS-D-003, WS-D-004
 - WS-E-001, WS-E-002, WS-E-003, WS-E-004
-- WS-F-001, WS-F-002
-- WS-G-001
+- WS-F-001, WS-F-002, WS-F-003
+- WS-G-001, WS-G-002, WS-G-003, WS-G-004
 
 Primary artifacts already created:
 - `docs/runtime-constants.md`
@@ -32,12 +32,16 @@ Primary artifacts already created:
 - `apps/client/src/debug/hud.ts`
 - `apps/client/src/net/prediction.ts`
 - `apps/client/src/net/reconciliation.ts`
+- `apps/client/src/net/impairment.ts`
 - `apps/server/src/runtime.ts`
 - `apps/server/src/validation.ts`
 - `apps/server/src/runtime.reconnect.test.ts`
 - `packages/sim/src/tick.jump.test.ts`
 - `packages/sim/src/traction.test.ts`
 - `packages/sim/src/replayDrift.test.ts`
+- `scripts/benchmark_harness.ts`
+- `scripts/evaluate_slo_gates.ts`
+- `scripts/soak_release_check.ts`
 
 ## Steps (Architecture to Implementation Mapping)
 
