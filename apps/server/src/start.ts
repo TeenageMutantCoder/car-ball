@@ -17,6 +17,7 @@ export interface StartLiveServerConfig {
   playerIds?: string[];
   rapierEnabled?: boolean;
   rapierShadowMode?: boolean;
+  rapierBallAuthority?: boolean;
 }
 
 function parseBoolean(value: string | undefined, defaultValue: boolean): boolean {
@@ -71,10 +72,13 @@ export async function startLiveServer(config: StartLiveServerConfig = {}): Promi
   const playerIds = config.playerIds ?? parsePlayerIds(process.env.CAR_BALL_PLAYER_IDS);
   const rapierEnabled = config.rapierEnabled ?? parseBoolean(process.env.CAR_BALL_RAPIER_ENABLED, false);
   const rapierShadowMode = config.rapierShadowMode ?? parseBoolean(process.env.CAR_BALL_RAPIER_SHADOW_MODE, true);
+  const rapierBallAuthority =
+    config.rapierBallAuthority ?? parseBoolean(process.env.CAR_BALL_RAPIER_BALL_AUTHORITY, false);
 
   const runtime = createServerRuntime({
     rapierEnabled,
-    rapierShadowMode
+    rapierShadowMode,
+    rapierBallAuthority
   });
   runtime.createRoomRuntime(roomId);
   runtime.attachPlayerIds(roomId, playerIds);
@@ -92,7 +96,9 @@ export async function startLiveServer(config: StartLiveServerConfig = {}): Promi
     `car-ball live server started: ws://${endpoint.host}:${endpoint.port}${endpoint.path}?roomId=${roomId}&playerId=<player-id>\n`,
   );
   process.stdout.write(`room=${roomId} players=${playerIds.join(",")}\n`);
-  process.stdout.write(`rapier.enabled=${rapierEnabled} rapier.shadowMode=${rapierShadowMode}\n`);
+  process.stdout.write(
+    `rapier.enabled=${rapierEnabled} rapier.shadowMode=${rapierShadowMode} rapier.ballAuthority=${rapierBallAuthority}\n`
+  );
 
   let stopping = false;
   const stop = async (): Promise<void> => {

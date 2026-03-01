@@ -1,6 +1,8 @@
+import type { Vec3 } from "@car-ball/protocol";
+
 export interface RapierShadowBackend {
   init(context: RapierShadowInitContext): void;
-  step(dtSeconds: number): RapierShadowStepReport | void;
+  step(dtSeconds: number): RapierShadowStepReport | undefined;
   reset(): void;
 }
 
@@ -47,11 +49,16 @@ export interface RapierShadowInitContext {
 export interface RapierShadowStepReport {
   contactCount?: number;
   maxPenetrationDepthCm?: number;
+  authoritativeBallState?: {
+    position: Vec3;
+    velocity: Vec3;
+  };
 }
 
 export interface RapierShadowConfig {
   enabled?: boolean;
   shadowMode?: boolean;
+  ballAuthority?: boolean;
   initContext?: RapierShadowInitContext;
   createBackend?: () => RapierShadowBackend;
 }
@@ -59,6 +66,7 @@ export interface RapierShadowConfig {
 export interface RapierShadowMetrics {
   enabled: boolean;
   shadowMode: boolean;
+  ballAuthority: boolean;
   initialized: boolean;
   colliderCount: number;
   materialPresetCount: number;
@@ -75,8 +83,8 @@ function createNoopBackend(): RapierShadowBackend {
     init(): void {
       return;
     },
-    step(): void {
-      return;
+    step(): undefined {
+      return undefined;
     },
     reset(): void {
       return;
@@ -87,6 +95,7 @@ function createNoopBackend(): RapierShadowBackend {
 export class RapierShadowWorld {
   private readonly enabled: boolean;
   private readonly shadowMode: boolean;
+  private readonly ballAuthority: boolean;
   private readonly backend: RapierShadowBackend;
   private readonly initContext: RapierShadowInitContext;
   private initialized = false;
@@ -102,6 +111,7 @@ export class RapierShadowWorld {
   constructor(config: RapierShadowConfig = {}) {
     this.enabled = config.enabled ?? false;
     this.shadowMode = config.shadowMode ?? true;
+    this.ballAuthority = config.ballAuthority ?? false;
     this.initContext = config.initContext ?? { colliders: [], materials: defaultMaterialTable() };
     this.backend = config.createBackend ? config.createBackend() : createNoopBackend();
 
@@ -113,9 +123,13 @@ export class RapierShadowWorld {
     }
   }
 
-  step(dtSeconds: number): void {
-    if (!this.enabled || !this.shadowMode || !this.initialized) {
-      return;
+  step(dtSeconds: number): RapierShadowStepReport | undefined {
+    if (!this.enabled || !this.initialized) {
+      return undefined;
+    }
+
+    if (!this.shadowMode && !this.ballAuthority) {
+      return undefined;
     }
 
     const report = this.backend.step(dtSeconds);
@@ -132,6 +146,8 @@ export class RapierShadowWorld {
         this.penetrationSamplesCm.shift();
       }
     }
+
+    return report;
   }
 
   reset(): void {
@@ -152,6 +168,7 @@ export class RapierShadowWorld {
     return {
       enabled: this.enabled,
       shadowMode: this.shadowMode,
+      ballAuthority: this.ballAuthority,
       initialized: this.initialized,
       colliderCount: this.colliderCount,
       materialPresetCount: this.materialPresetCount,

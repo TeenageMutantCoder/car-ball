@@ -23,17 +23,17 @@ Update this section first.
 
 - Last updated: 2026-03-01
 - Sprint / Milestone: MVP-1
-- Overall completion: 86%
+- Overall completion: 89%
 - P0 gate pass rate: 0/0
 - Last full benchmark date: YYYY-MM-DD
 - Last soak date: YYYY-MM-DD
 
 ### Counts
 
-- TODO: 4
+- TODO: 3
 - IN PROGRESS: 1
 - BLOCKED: 0
-- DONE: 30
+- DONE: 31
 
 ## Release Gate Summary
 
@@ -62,7 +62,6 @@ Update this section first.
 
 | ID | Workstream | Task | Priority | Dependency |
 |---|---|---|---|---|
-| WS-C-008 | WS-C | Shift server ball authority to Rapier | P0 | WS-C-007, WS-E-002 |
 | WS-F-004 | WS-F | Tune reconciliation for hybrid collisions | P1 | WS-E-005, WS-F-002 |
 | WS-G-005 | WS-G | Add hybrid Rapier benchmark gate suite | P1 | WS-F-004, WS-G-003 |
 | WS-G-006 | WS-G | Run hybrid soak cycles and recommendation | P1 | WS-G-005 |
@@ -86,6 +85,7 @@ Update this section first.
 | WS-C-005 | WS-C | Add replay hash and drift assertions | 2026-02-28 | packages/sim/src/replayDrift.test.ts | PASS |
 | WS-C-006 | WS-C | Add Rapier world shadow bootstrap | 2026-03-01 | packages/sim/src/simulation.rapierShadow.test.ts | PASS |
 | WS-C-007 | WS-C | Add Rapier ball and arena colliders | 2026-03-01 | packages/sim/src/rapierColliders.test.ts | PASS |
+| WS-C-008 | WS-C | Shift server ball authority to Rapier | 2026-03-01 | packages/sim/src/simulation.rapierShadow.test.ts | PASS |
 | WS-D-001 | WS-D | Initialize Babylon client shell and render bridge | 2026-02-28 | apps/client/src/main.ts | PASS |
 | WS-D-002 | WS-D | Implement input bindings and frame emitter | 2026-02-28 | apps/client/src/input/frameEmitter.ts | PASS |
 | WS-D-003 | WS-D | Implement interpolation and camera modes | 2026-02-28 | apps/client/src/render/camera.test.ts | PASS |
@@ -108,7 +108,7 @@ Update this section first.
 |---|---|---:|---|---|---|
 | WS-A Foundation | DONE | 100 | TBD | - | Completed |
 | WS-B Protocol | DONE | 100 | TBD | - | Completed |
-| WS-C Simulation | IN PROGRESS | 88 | TBD | Shadow + collider/material slices complete | WS-C-008 |
+| WS-C Simulation | DONE | 100 | TBD | Hybrid sim authority toggle integrated | Completed |
 | WS-D Client | DONE | 100 | TBD | - | Completed |
 | WS-E Server | IN PROGRESS | 80 | TBD | Runtime feature-flag path for hybrid authority | WS-E-005 |
 | WS-F Netcode | TODO | 75 | TBD | Reconciliation retune pending hybrid authority | WS-F-004 |

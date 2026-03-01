@@ -27,6 +27,7 @@ export class SimulationCore {
   private accumulatorMs = 0;
   private readonly pendingInputsByTick = new Map<number, InputFrame[]>();
   private readonly rapierShadow: RapierShadowWorld;
+  private readonly rapierBallAuthority: boolean;
 
   constructor(playerIds: PlayerId[], config: SimulationConfig = {}) {
     this.fixedStepMs = config.fixedStepMs ?? FIXED_STEP_MS;
@@ -39,6 +40,7 @@ export class SimulationCore {
       ...config.rapierShadow,
       initContext: config.rapierShadow?.initContext ?? createRapierShadowInitContext(this.world)
     });
+    this.rapierBallAuthority = config.rapierShadow?.ballAuthority ?? false;
   }
 
   enqueueInput(frame: InputFrame): void {
@@ -77,7 +79,22 @@ export class SimulationCore {
       this.pendingInputsByTick.delete(nextTick);
 
       tickWorld(this.world, tickInputs, this.fixedStepMs / 1000);
-      this.rapierShadow.step(this.fixedStepMs / 1000);
+      const rapierReport = this.rapierShadow.step(this.fixedStepMs / 1000);
+      if (this.rapierBallAuthority && rapierReport?.authoritativeBallState) {
+        const { position, velocity } = rapierReport.authoritativeBallState;
+        if (isFiniteVec3(position) && isFiniteVec3(velocity)) {
+          this.world.ball.position = {
+            x: position.x,
+            y: position.y,
+            z: position.z
+          };
+          this.world.ball.velocity = {
+            x: velocity.x,
+            y: velocity.y,
+            z: velocity.z
+          };
+        }
+      }
 
       this.accumulatorMs -= this.fixedStepMs;
       substeps += 1;
@@ -98,4 +115,8 @@ export class SimulationCore {
   getRapierShadowMetrics(): RapierShadowMetrics {
     return this.rapierShadow.getMetrics();
   }
+}
+
+function isFiniteVec3(value: { x: number; y: number; z: number }): boolean {
+  return Number.isFinite(value.x) && Number.isFinite(value.y) && Number.isFinite(value.z);
 }

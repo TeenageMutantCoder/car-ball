@@ -20,6 +20,7 @@ export interface RuntimeConfig {
   snapshotRateHz?: number;
   rapierEnabled?: boolean;
   rapierShadowMode?: boolean;
+  rapierBallAuthority?: boolean;
   now?: () => number;
 }
 
@@ -109,6 +110,7 @@ export class ServerRuntime {
   private readonly minInputTickDelta: number;
   private readonly rapierEnabled: boolean;
   private readonly rapierShadowMode: boolean;
+  private readonly rapierBallAuthority: boolean;
   private readonly now: () => number;
   private readonly rooms = new Map<string, RuntimeRoomInternal>();
   private metrics: RuntimeMetrics = {
@@ -131,6 +133,7 @@ export class ServerRuntime {
     this.minInputTickDelta = minInputTickDelta(tickRateHz);
     this.rapierEnabled = config.rapierEnabled ?? false;
     this.rapierShadowMode = config.rapierShadowMode ?? true;
+    this.rapierBallAuthority = config.rapierBallAuthority ?? false;
     this.now = config.now ?? Date.now;
   }
 
@@ -154,7 +157,8 @@ export class ServerRuntime {
       fixedStepMs: this.fixedStepMs,
       rapierShadow: {
         enabled: this.rapierEnabled,
-        shadowMode: this.rapierShadowMode
+        shadowMode: this.rapierShadowMode,
+        ballAuthority: this.rapierBallAuthority
       }
     });
     room.matchPhase = "playing";
@@ -336,7 +340,8 @@ export class ServerRuntime {
         fixedStepMs: this.fixedStepMs,
         rapierShadow: {
           enabled: this.rapierEnabled,
-          shadowMode: this.rapierShadowMode
+          shadowMode: this.rapierShadowMode,
+          ballAuthority: this.rapierBallAuthority
         }
       }),
       sequence: 1,

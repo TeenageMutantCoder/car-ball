@@ -201,3 +201,20 @@ test("runtime keeps rapier shadow disabled by default", () => {
   assert.equal(metrics.shadowMode, true);
   assert.equal(metrics.initialized, false);
 });
+
+test("runtime propagates rapier ball authority flag", () => {
+  const runtime = createServerRuntime({
+    rapierEnabled: true,
+    rapierShadowMode: false,
+    rapierBallAuthority: true,
+    now: createMonotonicNow(60_000, 1)
+  });
+
+  runtime.createRoomRuntime("room-rapier-c");
+  const room = runtime.attachPlayerIds("room-rapier-c", ["player-1"]);
+
+  const metrics = room.sim.getRapierShadowMetrics();
+  assert.equal(metrics.enabled, true);
+  assert.equal(metrics.shadowMode, false);
+  assert.equal(metrics.ballAuthority, true);
+});

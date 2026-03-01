@@ -348,3 +348,24 @@ Chronological append-only implementation log. Add one entry per meaningful updat
   - Advance WS-E-005 validation paths for authority toggle behavior.
   - Extend hybrid telemetry fields needed by WS-G-005 gates.
 - related_pr_or_commit: n/a
+
+### 2026-03-01T07:05:00Z | Agent: copilot
+
+- changed_tasks:
+  - id: WS-C-008
+    from: TODO
+    to: DONE
+- summary: Added Rapier-authoritative ball-state toggle path through sim/runtime/startup and verified authority application + guardrails with focused sim and runtime tests.
+- blockers: []
+- evidence:
+  - path: packages/sim/src/rapierShadow.ts
+  - path: packages/sim/src/simulation.ts
+  - path: packages/sim/src/simulation.rapierShadow.test.ts
+  - path: apps/server/src/runtime.ts
+  - path: apps/server/src/runtime.test.ts
+  - path: apps/server/src/start.ts
+- next_actions:
+  - Continue WS-E-005 by adding validation + telemetry for impossible ball-authority transitions.
+  - Implement WS-F-004 reconciliation threshold tuning for hybrid authority mode.
+  - Prepare WS-G-005 hybrid benchmark/gate variants using new authority flags.
+- related_pr_or_commit: n/a

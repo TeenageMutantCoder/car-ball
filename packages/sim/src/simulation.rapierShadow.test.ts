@@ -149,8 +149,9 @@ test("rapier shadow does not step when disabled", () => {
         init(): void {
           calls.init += 1;
         },
-        step(): void {
+        step(): undefined {
           calls.step += 1;
+          return undefined;
         },
         reset(): void {
           calls.reset += 1;
@@ -188,8 +189,9 @@ test("rapier shadow does not step when shadow mode is disabled", () => {
         init(): void {
           calls.init += 1;
         },
-        step(): void {
+        step(): undefined {
           calls.step += 1;
+          return undefined;
         },
         reset(): void {
           calls.reset += 1;
@@ -206,4 +208,76 @@ test("rapier shadow does not step when shadow mode is disabled", () => {
   assert.equal(metrics.enabled, true);
   assert.equal(metrics.shadowMode, false);
   assert.equal(metrics.stepCount, 0);
+});
+
+test("rapier authoritative ball state applies when ball authority is enabled", () => {
+  const sim = new SimulationCore(["player-1"], {
+    fixedStepMs: 10,
+    maxSubsteps: 1,
+    rapierShadow: {
+      enabled: true,
+      shadowMode: false,
+      ballAuthority: true,
+      createBackend: () => ({
+        init(): void {
+          return;
+        },
+        step() {
+          return {
+            authoritativeBallState: {
+              position: { x: 11, y: -2, z: 3 },
+              velocity: { x: 4, y: 5, z: -1 }
+            }
+          };
+        },
+        reset(): void {
+          return;
+        }
+      })
+    }
+  });
+
+  sim.advance(10);
+
+  assert.deepEqual(sim.world.ball.position, { x: 11, y: -2, z: 3 });
+  assert.deepEqual(sim.world.ball.velocity, { x: 4, y: 5, z: -1 });
+  assert.equal(sim.getRapierShadowMetrics().stepCount, 1);
+});
+
+test("invalid authoritative ball state is ignored", () => {
+  const sim = new SimulationCore(["player-1"], {
+    fixedStepMs: 10,
+    maxSubsteps: 1,
+    rapierShadow: {
+      enabled: true,
+      shadowMode: false,
+      ballAuthority: true,
+      createBackend: () => ({
+        init(): void {
+          return;
+        },
+        step() {
+          return {
+            authoritativeBallState: {
+              position: { x: Number.NaN, y: 1, z: 1 },
+              velocity: { x: 1, y: 1, z: 1 }
+            }
+          };
+        },
+        reset(): void {
+          return;
+        }
+      })
+    }
+  });
+
+  const before = {
+    position: { ...sim.world.ball.position },
+    velocity: { ...sim.world.ball.velocity }
+  };
+
+  sim.advance(10);
+
+  assert.deepEqual(sim.world.ball.position, before.position);
+  assert.deepEqual(sim.world.ball.velocity, before.velocity);
 });
