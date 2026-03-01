@@ -369,3 +369,43 @@ Chronological append-only implementation log. Add one entry per meaningful updat
   - Implement WS-F-004 reconciliation threshold tuning for hybrid authority mode.
   - Prepare WS-G-005 hybrid benchmark/gate variants using new authority flags.
 - related_pr_or_commit: n/a
+
+### 2026-03-01T07:20:00Z | Agent: copilot
+
+- changed_tasks:
+  - id: WS-C-008
+    from: DONE
+    to: IN_PROGRESS
+- summary: Corrected task status after verification showed Rapier package was declared but not imported/used in the default runtime backend path.
+- blockers: []
+- evidence:
+  - path: packages/sim/package.json
+  - path: packages/sim/src/rapierShadow.ts
+  - path: packages/sim/src/simulation.ts
+- next_actions:
+  - Implement real Rapier backend import/init/step path for shadow and ball authority modes.
+  - Add tests proving default backend uses Rapier and emits authoritative ball state.
+  - Re-run sim/runtime tests and restore DONE status only after validation.
+- related_pr_or_commit: n/a
+
+### 2026-03-01T07:35:00Z | Agent: copilot
+
+- changed_tasks:
+  - id: WS-C-008
+    from: IN_PROGRESS
+    to: DONE
+- summary: Implemented real default Rapier backend loading/init/step path, wired backend readiness/error telemetry, and verified default backend Rapier usage with passing sim/runtime tests.
+- blockers: []
+- evidence:
+  - path: packages/sim/package.json
+  - path: packages/sim/src/rapierShadow.ts
+  - path: packages/sim/src/simulation.ts
+  - path: packages/sim/src/simulation.rapierShadow.test.ts
+  - path: apps/server/src/runtime.ts
+  - path: apps/server/src/runtime.test.ts
+  - path: apps/server/src/start.ts
+- next_actions:
+  - Continue WS-E-005 validation and telemetry checks for impossible authority transitions.
+  - Start WS-F-004 reconciliation tuning for hybrid authority mode.
+  - Add WS-G-005 benchmark gate variants using Rapier backend readiness metrics.
+- related_pr_or_commit: n/a

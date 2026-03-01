@@ -5,7 +5,7 @@ meta:
   project: CarBall
   source_plan: docs/implementation-plan-parallel.md
   version: 2
-  last_updated: 2026-03-01T07:05:00Z
+  last_updated: 2026-03-01T07:35:00Z
   allowed_statuses: [TODO, IN_PROGRESS, BLOCKED, DONE]
   allowed_priorities: [P0, P1, P2]
   status_flow:
@@ -679,13 +679,15 @@ tasks:
     dependencies: [WS-C-007, WS-E-002]
     started_at: 2026-03-01T06:45:00Z
     target_date: null
-    completed_at: 2026-03-01T07:05:00Z
+    completed_at: 2026-03-01T07:35:00Z
     blocked_by: null
     unblock_plan: null
     evidence:
+      - packages/sim/package.json
       - packages/sim/src/rapierShadow.ts
       - packages/sim/src/simulation.ts
       - packages/sim/src/simulation.rapierShadow.test.ts
+      - packages/sim/src/rapierColliders.test.ts
       - apps/server/src/runtime.ts
       - apps/server/src/runtime.test.ts
       - apps/server/src/start.ts

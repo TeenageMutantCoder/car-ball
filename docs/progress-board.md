@@ -108,7 +108,7 @@ Update this section first.
 |---|---|---:|---|---|---|
 | WS-A Foundation | DONE | 100 | TBD | - | Completed |
 | WS-B Protocol | DONE | 100 | TBD | - | Completed |
-| WS-C Simulation | DONE | 100 | TBD | Hybrid sim authority toggle integrated | Completed |
+| WS-C Simulation | DONE | 100 | TBD | Real Rapier backend integrated and verified | Completed |
 | WS-D Client | DONE | 100 | TBD | - | Completed |
 | WS-E Server | IN PROGRESS | 80 | TBD | Runtime feature-flag path for hybrid authority | WS-E-005 |
 | WS-F Netcode | TODO | 75 | TBD | Reconciliation retune pending hybrid authority | WS-F-004 |

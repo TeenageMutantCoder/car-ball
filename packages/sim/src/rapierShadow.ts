@@ -1,9 +1,14 @@
 import type { Vec3 } from "@car-ball/protocol";
+import type RAPIER from "@dimforge/rapier3d-compat";
 
 export interface RapierShadowBackend {
   init(context: RapierShadowInitContext): void;
   step(dtSeconds: number): RapierShadowStepReport | undefined;
   reset(): void;
+  getStatus?(): {
+    ready: boolean;
+    error: string | null;
+  };
 }
 
 export type RapierMaterialPreset = "arena-static" | "ball-dynamic";
@@ -67,6 +72,9 @@ export interface RapierShadowMetrics {
   enabled: boolean;
   shadowMode: boolean;
   ballAuthority: boolean;
+  backend: "rapier" | "custom";
+  backendReady: boolean;
+  backendError: string | null;
   initialized: boolean;
   colliderCount: number;
   materialPresetCount: number;
@@ -92,10 +100,169 @@ function createNoopBackend(): RapierShadowBackend {
   };
 }
 
+class RapierCompatBackend implements RapierShadowBackend {
+  private context: RapierShadowInitContext | null = null;
+  private world: RAPIER.World | null = null;
+  private ballBody: RAPIER.RigidBody | null = null;
+  private ballCollider: RAPIER.Collider | null = null;
+  private ready = false;
+  private error: string | null = null;
+  private initializePromise: Promise<void> | null = null;
+
+  init(context: RapierShadowInitContext): void {
+    this.context = context;
+    this.error = null;
+
+    if (this.initializePromise) {
+      return;
+    }
+
+    this.initializePromise = this.initializeWorld(context)
+      .then(() => {
+        this.ready = true;
+      })
+      .catch((error: unknown) => {
+        this.ready = false;
+        this.world = null;
+        this.ballBody = null;
+        this.ballCollider = null;
+        this.error = error instanceof Error ? error.message : String(error);
+      });
+  }
+
+  step(dtSeconds: number): RapierShadowStepReport | undefined {
+    if (!this.ready || !this.world) {
+      return undefined;
+    }
+
+    if (typeof this.world.timestep === "number") {
+      this.world.timestep = dtSeconds;
+    } else if (this.world.integrationParameters && typeof this.world.integrationParameters.dt === "number") {
+      this.world.integrationParameters.dt = dtSeconds;
+    }
+
+    this.world.step();
+
+    const report: RapierShadowStepReport = {
+      contactCount: this.countBallContacts(),
+      maxPenetrationDepthCm: 0
+    };
+
+    if (this.ballBody && typeof this.ballBody.translation === "function" && typeof this.ballBody.linvel === "function") {
+      const position = this.ballBody.translation();
+      const velocity = this.ballBody.linvel();
+
+      if (isFiniteVec3(position) && isFiniteVec3(velocity)) {
+        report.authoritativeBallState = {
+          position: {
+            x: position.x,
+            y: position.y,
+            z: position.z
+          },
+          velocity: {
+            x: velocity.x,
+            y: velocity.y,
+            z: velocity.z
+          }
+        };
+      }
+    }
+
+    return report;
+  }
+
+  reset(): void {
+    this.ready = false;
+    this.error = null;
+    this.world = null;
+    this.ballBody = null;
+    this.ballCollider = null;
+    this.initializePromise = null;
+
+    if (this.context) {
+      this.init(this.context);
+    }
+  }
+
+  getStatus(): { ready: boolean; error: string | null } {
+    return {
+      ready: this.ready,
+      error: this.error
+    };
+  }
+
+  private async initializeWorld(context: RapierShadowInitContext): Promise<void> {
+    const imported = await import("@dimforge/rapier3d-compat");
+    const rapier: RAPIER = imported.default;
+
+    if (typeof rapier.init === "function") {
+      await rapier.init();
+    }
+
+    const world = new rapier.World({ x: 0, y: 0, z: -9.81 });
+    this.world = world;
+
+    for (const collider of context.colliders) {
+      const bodyDesc =
+        collider.bodyType === "dynamic" ? rapier.RigidBodyDesc.dynamic() : rapier.RigidBodyDesc.fixed();
+
+      if (typeof bodyDesc.setTranslation === "function") {
+        bodyDesc.setTranslation(collider.translation.x, collider.translation.y, collider.translation.z);
+      }
+
+      const body = world.createRigidBody(bodyDesc);
+
+      const colliderDesc =
+        collider.shape.kind === "sphere"
+          ? rapier.ColliderDesc.ball(collider.shape.radius)
+          : rapier.ColliderDesc.cuboid(
+              collider.shape.halfExtents.x,
+              collider.shape.halfExtents.y,
+              collider.shape.halfExtents.z
+            );
+
+      const material = context.materials[collider.materialPreset];
+      if (material) {
+        if (typeof colliderDesc.setFriction === "function") {
+          colliderDesc.setFriction(material.friction);
+        }
+        if (typeof colliderDesc.setRestitution === "function") {
+          colliderDesc.setRestitution(material.restitution);
+        }
+      }
+
+      const createdCollider = world.createCollider(colliderDesc, body);
+
+      if (collider.id.startsWith("ball:")) {
+        this.ballBody = body;
+        this.ballCollider = createdCollider;
+      }
+    }
+  }
+
+  private countBallContacts(): number {
+    if (!this.world || !this.ballCollider) {
+      return 0;
+    }
+
+    if (typeof this.world.contactPairsWith !== "function") {
+      return 0;
+    }
+
+    let count = 0;
+    this.world.contactPairsWith(this.ballCollider, () => {
+      count += 1;
+    });
+
+    return count;
+  }
+}
+
 export class RapierShadowWorld {
   private readonly enabled: boolean;
   private readonly shadowMode: boolean;
   private readonly ballAuthority: boolean;
+  private readonly backendType: "rapier" | "custom";
   private readonly backend: RapierShadowBackend;
   private readonly initContext: RapierShadowInitContext;
   private initialized = false;
@@ -113,7 +280,8 @@ export class RapierShadowWorld {
     this.shadowMode = config.shadowMode ?? true;
     this.ballAuthority = config.ballAuthority ?? false;
     this.initContext = config.initContext ?? { colliders: [], materials: defaultMaterialTable() };
-    this.backend = config.createBackend ? config.createBackend() : createNoopBackend();
+    this.backendType = config.createBackend ? "custom" : "rapier";
+    this.backend = config.createBackend ? config.createBackend() : new RapierCompatBackend();
 
     if (this.enabled) {
       this.backend.init(this.initContext);
@@ -165,10 +333,15 @@ export class RapierShadowWorld {
   }
 
   getMetrics(): RapierShadowMetrics {
+    const backendStatus = this.backend.getStatus?.() ?? { ready: false, error: null };
+
     return {
       enabled: this.enabled,
       shadowMode: this.shadowMode,
       ballAuthority: this.ballAuthority,
+      backend: this.backendType,
+      backendReady: backendStatus.ready,
+      backendError: backendStatus.error,
       initialized: this.initialized,
       colliderCount: this.colliderCount,
       materialPresetCount: this.materialPresetCount,
@@ -180,6 +353,10 @@ export class RapierShadowWorld {
       maxPenetrationDepthCmP95Approx: approximateP95(this.penetrationSamplesCm)
     };
   }
+}
+
+function isFiniteVec3(value: { x: number; y: number; z: number }): boolean {
+  return Number.isFinite(value.x) && Number.isFinite(value.y) && Number.isFinite(value.z);
 }
 
 function defaultMaterialTable(): RapierMaterialTable {

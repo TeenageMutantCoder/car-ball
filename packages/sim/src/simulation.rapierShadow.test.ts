@@ -3,6 +3,12 @@ import test from "node:test";
 
 import { SimulationCore } from "./simulation.ts";
 
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
+}
+
 test("rapier shadow mode preserves authoritative world outputs", () => {
   const baseline = new SimulationCore(["player-1"], {
     fixedStepMs: 8,
@@ -280,4 +286,35 @@ test("invalid authoritative ball state is ignored", () => {
 
   assert.deepEqual(sim.world.ball.position, before.position);
   assert.deepEqual(sim.world.ball.velocity, before.velocity);
+});
+
+test("default backend uses Rapier and becomes ready", async () => {
+  const sim = new SimulationCore(["player-1"], {
+    fixedStepMs: 8,
+    maxSubsteps: 1,
+    rapierShadow: {
+      enabled: true,
+      shadowMode: true
+    }
+  });
+
+  let ready = false;
+
+  for (let index = 0; index < 100; index += 1) {
+    sim.advance(8);
+    const metrics = sim.getRapierShadowMetrics();
+    if (metrics.backend === "rapier" && metrics.backendReady) {
+      ready = true;
+      break;
+    }
+
+    await sleep(5);
+  }
+
+  const metrics = sim.getRapierShadowMetrics();
+  assert.equal(metrics.backend, "rapier");
+  assert.equal(metrics.enabled, true);
+  assert.equal(metrics.initialized, true);
+  assert.equal(metrics.backendError, null);
+  assert.equal(ready, true);
 });
