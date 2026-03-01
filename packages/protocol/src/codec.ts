@@ -1,5 +1,5 @@
-import type { AnyEvent, Envelope } from "./contracts.js";
-import { PROTOCOL_VERSION } from "./contracts.js";
+import type { AnyEvent, Envelope } from "./contracts.ts";
+import { PROTOCOL_VERSION } from "./contracts.ts";
 
 export class ProtocolVersionError extends Error {
   readonly expected: number;

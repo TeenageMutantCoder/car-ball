@@ -2,12 +2,11 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
-  PROTOCOL_VERSION,
   ProtocolVersionError,
   decodeEvent,
   encodeEvent,
-  type ClientEvent,
-} from "../dist/index.js";
+} from "./codec.ts";
+import { PROTOCOL_VERSION, type ClientEvent } from "./contracts.ts";
 
 test("encodes and decodes v1 client input event roundtrip", () => {
   const event: ClientEvent = {

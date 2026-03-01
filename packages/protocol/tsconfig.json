@@ -3,8 +3,10 @@
   "compilerOptions": {
     "rootDir": "src",
     "composite": true,
+    "allowImportingTsExtensions": true,
+    "rewriteRelativeImportExtensions": true,
     "outDir": "dist",
-    "tsBuildInfoFile": "dist/.tsbuildinfo",
+    "tsBuildInfoFile": ".tsbuildinfo",
     "types": ["node"]
   },
   "include": ["src/**/*.ts"]

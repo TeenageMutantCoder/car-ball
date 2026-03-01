@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import type { InputFrame } from "@car-ball/protocol";
-import { runReplayHashSnapshots } from "../src/replayHash.ts";
+import { runReplayHashSnapshots } from "./replayHash.ts";
 
 function buildScript(totalTicks: number): InputFrame[] {
   const frames: InputFrame[] = [];

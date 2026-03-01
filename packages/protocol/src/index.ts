@@ -1,2 +1,2 @@
-export * from "./contracts.js";
-export * from "./codec.js";
+export * from "./contracts.ts";
+export * from "./codec.ts";

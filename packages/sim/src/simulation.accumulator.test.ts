@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { SimulationCore } from "../src/simulation.ts";
+import { SimulationCore } from "./simulation.ts";
 
 test("advance caps accumulator by max substeps", () => {
   const sim = new SimulationCore(["player-1"], {
