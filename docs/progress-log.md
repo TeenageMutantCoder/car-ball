@@ -136,6 +136,34 @@ Chronological append-only implementation log. Add one entry per meaningful updat
   - Implement WS-C-005 replay drift assertions automation.
 - related_pr_or_commit: n/a
 
+### 2026-02-28T02:00:00Z | Agent: copilot
+
+- changed_tasks:
+  - id: WS-C-005
+    from: TODO
+    to: DONE
+  - id: WS-D-003
+    from: TODO
+    to: DONE
+  - id: WS-E-004
+    from: TODO
+    to: DONE
+- summary: Completed replay drift reporting/assertions, client interpolation + camera modes, and server reconnect/resync flow.
+- blockers: []
+- evidence:
+  - path: packages/sim/src/replayDrift.ts
+  - path: packages/sim/src/replayDrift.test.ts
+  - path: apps/client/src/render/camera.ts
+  - path: apps/client/src/render/camera.test.ts
+  - path: apps/server/src/runtime.reconnect.test.ts
+  - path: docs/agent-task-registry.yaml
+  - path: docs/progress-board.md
+- next_actions:
+  - Implement WS-D-004 client debug HUD metrics.
+  - Implement WS-F-001 client prediction history buffer.
+  - Implement WS-F-002 reconciliation smoothing metrics.
+- related_pr_or_commit: n/a
+
 ### 2026-02-28T00:00:00Z | Agent: copilot
 
 - changed_tasks:

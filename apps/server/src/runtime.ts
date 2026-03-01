@@ -37,7 +37,18 @@ export interface RuntimeMetrics {
   roomCount: number;
 }
 
-export type EnqueueInputFrameResult = InputValidationResult;
+export interface RuntimeInputReject {
+  ok: false;
+  code: "PLAYER_DISCONNECTED" | "PLAYER_NOT_IN_ROOM";
+  reason: string;
+}
+
+export type EnqueueInputFrameResult = InputValidationResult | RuntimeInputReject;
+
+export interface ReconnectPlayerResult {
+  snapshot: Snapshot;
+  events: ServerEvent[];
+}
 
 interface RuntimeRoomInternal {
   roomId: string;
@@ -45,6 +56,7 @@ interface RuntimeRoomInternal {
   sim: SimulationCore;
   sequence: number;
   pendingInputs: InputFrame[];
+  disconnectedPlayerIds: Set<PlayerId>;
   validationState: InputValidationRoomState;
   validationTelemetry: InputValidationTelemetry;
 }
@@ -115,6 +127,7 @@ export class ServerRuntime {
       fixedStepMs: this.fixedStepMs
     });
     room.pendingInputs = [];
+    room.disconnectedPlayerIds = new Set<PlayerId>();
     room.validationState = createInputValidationRoomState();
     room.validationTelemetry = createInputValidationTelemetry();
 
@@ -123,6 +136,22 @@ export class ServerRuntime {
 
   enqueueInputFrame(roomId: string, frame: InputFrame): EnqueueInputFrameResult {
     const room = this.requireRoom(roomId);
+
+    if (!room.playerIds.includes(frame.playerId)) {
+      return {
+        ok: false,
+        code: "PLAYER_NOT_IN_ROOM",
+        reason: `player ${frame.playerId} is not attached to room ${roomId}.`
+      };
+    }
+
+    if (room.disconnectedPlayerIds.has(frame.playerId)) {
+      return {
+        ok: false,
+        code: "PLAYER_DISCONNECTED",
+        reason: `player ${frame.playerId} is disconnected in room ${roomId}.`
+      };
+    }
 
     const validationResult = validateInputFrame({
       frame,
@@ -139,6 +168,44 @@ export class ServerRuntime {
 
     room.pendingInputs.push(frame);
     return validationResult;
+  }
+
+  disconnectPlayer(roomId: string, playerId: PlayerId): void {
+    const room = this.requireRoom(roomId);
+
+    if (!room.playerIds.includes(playerId)) {
+      throw new Error(`Player ${playerId} is not attached to room ${roomId}.`);
+    }
+
+    room.disconnectedPlayerIds.add(playerId);
+    room.pendingInputs = room.pendingInputs.filter((pendingFrame) => pendingFrame.playerId !== playerId);
+  }
+
+  reconnectPlayer(roomId: string, playerId: PlayerId): ReconnectPlayerResult {
+    const room = this.requireRoom(roomId);
+
+    if (!room.playerIds.includes(playerId)) {
+      throw new Error(`Player ${playerId} is not attached to room ${roomId}.`);
+    }
+
+    room.disconnectedPlayerIds.delete(playerId);
+
+    const snapshot = worldToProtocolSnapshot(room.sim.world, {
+      sequence: room.sequence,
+      timestamp: Math.round(this.now()),
+      matchId: `${roomId}:match:runtime`,
+      phase: room.sim.world.clock.isOver ? "finished" : "playing"
+    });
+
+    return {
+      snapshot,
+      events: [
+        {
+          type: "server.snapshot",
+          ...snapshot
+        }
+      ]
+    };
   }
 
   tickOnce(stepMs = this.fixedStepMs): TickResult {
@@ -228,6 +295,7 @@ export class ServerRuntime {
       }),
       sequence: 1,
       pendingInputs: [],
+      disconnectedPlayerIds: new Set<PlayerId>(),
       validationState: createInputValidationRoomState(),
       validationTelemetry: createInputValidationTelemetry()
     };

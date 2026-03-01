@@ -15,8 +15,9 @@ Current completed tasks (see `docs/agent-task-registry.yaml` for authoritative s
 - `WS-A-001`, `WS-A-002`, `WS-A-003`, `WS-A-004`, `WS-A-005`
 - `WS-B-001`, `WS-B-002`, `WS-B-003`
 - `WS-C-001`, `WS-C-002`, `WS-C-003`, `WS-C-004`
-- `WS-D-001`, `WS-D-002`
-- `WS-E-001`, `WS-E-002`, `WS-E-003`
+- `WS-C-005`
+- `WS-D-001`, `WS-D-002`, `WS-D-003`
+- `WS-E-001`, `WS-E-002`, `WS-E-003`, `WS-E-004`
 - `WS-G-001`
 
 Completed artifacts aligned to those tasks:
@@ -27,10 +28,13 @@ Completed artifacts aligned to those tasks:
 - `.github/workflows/ci.yml`
 - `apps/client/src/main.ts`
 - `apps/client/src/input/frameEmitter.ts`
+- `apps/client/src/render/camera.ts`
 - `apps/server/src/runtime.ts`
 - `apps/server/src/validation.ts`
+- `apps/server/src/runtime.reconnect.test.ts`
 - `packages/sim/src/tick.jump.test.ts`
 - `packages/sim/src/traction.test.ts`
+- `packages/sim/src/replayDrift.test.ts`
 
 ## 2) Parallelization Strategy
 

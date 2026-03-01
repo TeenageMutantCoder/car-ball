@@ -10,6 +10,11 @@ import type { InputFrame, Snapshot } from "@car-ball/protocol";
 
 import { createInputBindings, type InputBindings } from "./input/bindings.ts";
 import { createInputFrameEmitter, type InputFrameEmitter } from "./input/frameEmitter.ts";
+import {
+  createCameraController,
+  resolveCameraPose,
+  type CameraMode,
+} from "./render/camera.ts";
 import { RendererBridge, type RenderSnapshotState } from "./render/rendererBridge.ts";
 
 const INPUT_RATE_HZ = 60;
@@ -27,6 +32,7 @@ export interface BabylonSceneBootstrapOptions {
   inputBindings?: InputBindings;
   inputFrameEmitter?: InputFrameEmitter;
   inputFrameContext?: InputFrameContext;
+  initialCameraMode?: CameraMode;
   onInputFrame?: (frame: InputFrame) => void;
   onFrame?: (context: { scene: Scene; deltaMs: number; rendererBridge: RendererBridge }) => void;
 }
@@ -38,7 +44,11 @@ export interface BabylonSceneBootstrap {
   rendererBridge: RendererBridge;
   inputBindings: InputBindings;
   inputFrameEmitter: InputFrameEmitter;
+  getCameraMode: () => CameraMode;
+  setCameraMode: (mode: CameraMode) => CameraMode;
+  toggleCamera: () => CameraMode;
   applySnapshot: (snapshot: Snapshot) => RenderSnapshotState;
+  getRenderSnapshot: (alpha: number) => RenderSnapshotState | null;
   start: () => void;
   stop: () => void;
   dispose: () => void;
@@ -66,6 +76,7 @@ export function bootstrapBabylonScene(options: BabylonSceneBootstrapOptions): Ba
 
   const camera = new ArcRotateCamera("camera", Math.PI / 2, Math.PI / 3, 24, Vector3.Zero(), scene);
   camera.attachControl(options.canvas, true);
+  const cameraController = createCameraController({ initialMode: options.initialCameraMode });
 
   const light = new HemisphericLight("sun", new Vector3(0, 1, 0), scene);
   light.intensity = 0.95;
@@ -95,6 +106,16 @@ export function bootstrapBabylonScene(options: BabylonSceneBootstrapOptions): Ba
       inputTick += 1;
     }
 
+    const interpolationAlpha = Math.min(Math.max(inputAccumulatorMs / INPUT_EMIT_INTERVAL_MS, 0), 1);
+    const renderSnapshot = rendererBridge.getInterpolatedSnapshot(interpolationAlpha);
+    if (renderSnapshot !== null) {
+      const cameraPose = resolveCameraPose(cameraController.getMode(), renderSnapshot, inputFrameContext.carId);
+      camera.alpha = cameraPose.alpha;
+      camera.beta = cameraPose.beta;
+      camera.radius = cameraPose.radius;
+      camera.setTarget(new Vector3(cameraPose.target.x, cameraPose.target.y, cameraPose.target.z));
+    }
+
     options.onFrame?.({ scene, deltaMs, rendererBridge });
     scene.render();
   };
@@ -112,8 +133,20 @@ export function bootstrapBabylonScene(options: BabylonSceneBootstrapOptions): Ba
     rendererBridge,
     inputBindings,
     inputFrameEmitter,
+    getCameraMode(): CameraMode {
+      return cameraController.getMode();
+    },
+    setCameraMode(mode: CameraMode): CameraMode {
+      return cameraController.setMode(mode);
+    },
+    toggleCamera(): CameraMode {
+      return cameraController.toggleMode();
+    },
     applySnapshot(snapshot: Snapshot): RenderSnapshotState {
       return rendererBridge.applySnapshot(snapshot);
+    },
+    getRenderSnapshot(alpha: number): RenderSnapshotState | null {
+      return rendererBridge.getInterpolatedSnapshot(alpha);
     },
     start(): void {
       previousFrameTime = performance.now();

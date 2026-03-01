@@ -5,7 +5,7 @@ meta:
   project: CarBall
   source_plan: docs/implementation-plan-parallel.md
   version: 2
-  last_updated: 2026-02-28T01:30:00Z
+  last_updated: 2026-02-28T02:00:00Z
   allowed_statuses: [TODO, IN_PROGRESS, BLOCKED, DONE]
   allowed_priorities: [P0, P1, P2]
   status_flow:
@@ -292,16 +292,19 @@ tasks:
   - id: WS-C-005
     workstream: WS-C
     title: Add replay hash and drift assertions
-    status: TODO
+    status: DONE
     priority: P0
     owner: unassigned
     dependencies: [WS-C-001, WS-B-002]
     started_at: null
     target_date: null
-    completed_at: null
+    completed_at: 2026-02-28T02:00:00Z
     blocked_by: null
     unblock_plan: null
-    evidence: []
+    evidence:
+      - packages/sim/src/replayDrift.ts
+      - packages/sim/src/replayDrift.test.ts
+      - packages/sim/src/index.ts
     notes: Add seeded replay harness with periodic state hashes and drift reports.
     acceptance:
       - Drift reports generated for scripted runs.
@@ -352,16 +355,19 @@ tasks:
   - id: WS-D-003
     workstream: WS-D
     title: Implement interpolation and camera modes
-    status: TODO
+    status: DONE
     priority: P1
     owner: unassigned
     dependencies: [WS-D-001, WS-E-002]
     started_at: null
     target_date: null
-    completed_at: null
+    completed_at: 2026-02-28T02:00:00Z
     blocked_by: null
     unblock_plan: null
-    evidence: []
+    evidence:
+      - apps/client/src/render/camera.ts
+      - apps/client/src/render/rendererBridge.ts
+      - apps/client/src/render/camera.test.ts
     notes: Add forward and ball camera modes plus interpolation from snapshots.
     acceptance:
       - Camera mode toggle works.
@@ -451,16 +457,19 @@ tasks:
   - id: WS-E-004
     workstream: WS-E
     title: Implement reconnect and resync flow
-    status: TODO
+    status: DONE
     priority: P1
     owner: unassigned
     dependencies: [WS-E-002, WS-B-002]
     started_at: null
     target_date: null
-    completed_at: null
+    completed_at: 2026-02-28T02:00:00Z
     blocked_by: null
     unblock_plan: null
-    evidence: []
+    evidence:
+      - apps/server/src/runtime.ts
+      - apps/server/src/runtime.reconnect.test.ts
+      - apps/server/src/index.ts
     notes: Add reconnect path and authoritative state resynchronization.
     acceptance:
       - Dropped client can rejoin and recover match state.
