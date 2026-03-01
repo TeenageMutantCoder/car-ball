@@ -1,4 +1,4 @@
-import type { MatchState, Rotation, Snapshot, Vec3 } from "@car-ball/protocol";
+import type { InputFrame, MatchState, Rotation, Snapshot, Vec3 } from "@car-ball/protocol";
 
 export interface RenderCarState {
   id: string;
@@ -27,6 +27,7 @@ export interface RenderSnapshotState {
 
 export class RendererBridge {
   private latestSnapshot: RenderSnapshotState | null = null;
+  private latestInputFrame: InputFrame | null = null;
 
   applySnapshot(snapshot: Snapshot): RenderSnapshotState {
     const normalizedSnapshot = normalizeSnapshot(snapshot);
@@ -36,6 +37,15 @@ export class RendererBridge {
 
   getLatestSnapshot(): RenderSnapshotState | null {
     return this.latestSnapshot;
+  }
+
+  applyInputFrame(inputFrame: InputFrame): InputFrame {
+    this.latestInputFrame = cloneInputFrame(inputFrame);
+    return this.latestInputFrame;
+  }
+
+  getLatestInputFrame(): InputFrame | null {
+    return this.latestInputFrame;
   }
 }
 
@@ -94,4 +104,22 @@ function cloneScoreByTeam(scoreByTeam: MatchState["scoreByTeam"]): MatchState["s
   }
 
   return cloned;
+}
+
+function cloneInputFrame(inputFrame: InputFrame): InputFrame {
+  return {
+    version: inputFrame.version,
+    sequence: inputFrame.sequence,
+    timestamp: inputFrame.timestamp,
+    tick: inputFrame.tick,
+    playerId: inputFrame.playerId,
+    carId: inputFrame.carId,
+    controls: {
+      throttle: inputFrame.controls.throttle,
+      steer: inputFrame.controls.steer,
+      jump: inputFrame.controls.jump,
+      boost: inputFrame.controls.boost,
+      handbrake: inputFrame.controls.handbrake,
+    },
+  };
 }

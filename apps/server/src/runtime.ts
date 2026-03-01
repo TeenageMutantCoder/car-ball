@@ -1,5 +1,16 @@
 import type { InputFrame, PlayerId, ServerEvent, Snapshot } from "@car-ball/protocol";
 import { SimulationCore, worldToProtocolSnapshot } from "@car-ball/sim";
+import {
+  createInputValidationRoomState,
+  createInputValidationTelemetry,
+  createInputValidationTelemetryAccumulator,
+  minInputTickDelta,
+  recordValidationResult,
+  type InputValidationResult,
+  type InputValidationRoomState,
+  type InputValidationTelemetry,
+  validateInputFrame
+} from "./validation.ts";
 
 export const DEFAULT_TICK_RATE_HZ = 120;
 export const DEFAULT_SNAPSHOT_RATE_HZ = 20;
@@ -26,12 +37,16 @@ export interface RuntimeMetrics {
   roomCount: number;
 }
 
+export type EnqueueInputFrameResult = InputValidationResult;
+
 interface RuntimeRoomInternal {
   roomId: string;
   playerIds: PlayerId[];
   sim: SimulationCore;
   sequence: number;
   pendingInputs: InputFrame[];
+  validationState: InputValidationRoomState;
+  validationTelemetry: InputValidationTelemetry;
 }
 
 function uniqueSortedPlayerIds(playerIds: PlayerId[]): PlayerId[] {
@@ -56,6 +71,7 @@ export class ServerRuntime {
   readonly fixedStepMs: number;
 
   private readonly snapshotEveryTicks: number;
+  private readonly minInputTickDelta: number;
   private readonly now: () => number;
   private readonly rooms = new Map<string, RuntimeRoomInternal>();
   private metrics: RuntimeMetrics = {
@@ -75,6 +91,7 @@ export class ServerRuntime {
     this.snapshotRateHz = snapshotRateHz;
     this.fixedStepMs = 1000 / tickRateHz;
     this.snapshotEveryTicks = tickRateHz / snapshotRateHz;
+    this.minInputTickDelta = minInputTickDelta(tickRateHz);
     this.now = config.now ?? Date.now;
   }
 
@@ -98,13 +115,30 @@ export class ServerRuntime {
       fixedStepMs: this.fixedStepMs
     });
     room.pendingInputs = [];
+    room.validationState = createInputValidationRoomState();
+    room.validationTelemetry = createInputValidationTelemetry();
 
     return this.toRuntimeRoom(room);
   }
 
-  enqueueInputFrame(roomId: string, frame: InputFrame): void {
+  enqueueInputFrame(roomId: string, frame: InputFrame): EnqueueInputFrameResult {
     const room = this.requireRoom(roomId);
+
+    const validationResult = validateInputFrame({
+      frame,
+      sim: room.sim,
+      state: room.validationState,
+      minTickDelta: this.minInputTickDelta
+    });
+
+    recordValidationResult(room.validationTelemetry, validationResult);
+
+    if (!validationResult.ok) {
+      return validationResult;
+    }
+
     room.pendingInputs.push(frame);
+    return validationResult;
   }
 
   tickOnce(stepMs = this.fixedStepMs): TickResult {
@@ -164,6 +198,25 @@ export class ServerRuntime {
     };
   }
 
+  getValidationTelemetry(roomId?: string): InputValidationTelemetry {
+    if (roomId) {
+      const room = this.requireRoom(roomId);
+      return {
+        accepted: room.validationTelemetry.accepted,
+        rejected: room.validationTelemetry.rejected,
+        rejectedByCode: {
+          IMPOSSIBLE_ACCELERATION: room.validationTelemetry.rejectedByCode.IMPOSSIBLE_ACCELERATION,
+          INVALID_BOOST_USAGE: room.validationTelemetry.rejectedByCode.INVALID_BOOST_USAGE,
+          COOLDOWN_ABUSE: room.validationTelemetry.rejectedByCode.COOLDOWN_ABUSE
+        }
+      };
+    }
+
+    return createInputValidationTelemetryAccumulator(
+      [...this.rooms.values()].map((roomInternal) => roomInternal.validationTelemetry)
+    );
+  }
+
   private createInternalRoom(roomId: string, playerIds: PlayerId[]): RuntimeRoomInternal {
     const normalizedPlayerIds = uniqueSortedPlayerIds(playerIds);
 
@@ -174,7 +227,9 @@ export class ServerRuntime {
         fixedStepMs: this.fixedStepMs
       }),
       sequence: 1,
-      pendingInputs: []
+      pendingInputs: [],
+      validationState: createInputValidationRoomState(),
+      validationTelemetry: createInputValidationTelemetry()
     };
   }
 

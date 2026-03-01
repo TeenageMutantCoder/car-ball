@@ -72,3 +72,102 @@ test("metrics update tickDurationMs and roomCount", () => {
   assert.equal(metrics.roomCount, 1);
   assert.equal(metrics.tickDurationMs, 3);
 });
+
+test("enqueueInputFrame rejects impossible acceleration and records telemetry", () => {
+  const runtime = createServerRuntime({
+    now: createMonotonicNow(20_000, 1)
+  });
+
+  runtime.createRoomRuntime("room-d");
+  const room = runtime.attachPlayerIds("room-d", ["player-1"]);
+
+  const result = runtime.enqueueInputFrame("room-d", {
+    version: 1,
+    sequence: 1,
+    timestamp: 20_000,
+    tick: 1,
+    playerId: "player-1",
+    carId: "car:player-1",
+    controls: {
+      throttle: 2,
+      steer: 0,
+      jump: false,
+      boost: false,
+      handbrake: false
+    }
+  });
+
+  assert.equal(result.ok, false);
+  assert.equal(result.code, "IMPOSSIBLE_ACCELERATION");
+
+  runtime.tickOnce();
+
+  assert.equal(room.sim.world.clock.tick, 1);
+  assert.equal(room.sim.world.cars["car:player-1"]?.velocity.x ?? 0, 0);
+
+  assert.deepEqual(runtime.getValidationTelemetry("room-d"), {
+    accepted: 0,
+    rejected: 1,
+    rejectedByCode: {
+      IMPOSSIBLE_ACCELERATION: 1,
+      INVALID_BOOST_USAGE: 0,
+      COOLDOWN_ABUSE: 0
+    }
+  });
+});
+
+test("enqueueInputFrame enforces cooldown abuse checks", () => {
+  const runtime = createServerRuntime({
+    tickRateHz: 120,
+    now: createMonotonicNow(30_000, 1)
+  });
+
+  runtime.createRoomRuntime("room-e");
+  runtime.attachPlayerIds("room-e", ["player-1"]);
+
+  const first = runtime.enqueueInputFrame("room-e", {
+    version: 1,
+    sequence: 1,
+    timestamp: 30_000,
+    tick: 1,
+    playerId: "player-1",
+    carId: "car:player-1",
+    controls: {
+      throttle: 1,
+      steer: 0,
+      jump: false,
+      boost: false,
+      handbrake: false
+    }
+  });
+
+  const second = runtime.enqueueInputFrame("room-e", {
+    version: 1,
+    sequence: 2,
+    timestamp: 30_001,
+    tick: 2,
+    playerId: "player-1",
+    carId: "car:player-1",
+    controls: {
+      throttle: 1,
+      steer: 0,
+      jump: false,
+      boost: false,
+      handbrake: false
+    }
+  });
+
+  assert.deepEqual(first, { ok: true });
+  assert.equal(second.ok, false);
+  assert.equal(second.code, "COOLDOWN_ABUSE");
+
+  assert.deepEqual(runtime.getValidationTelemetry("room-e"), {
+    accepted: 1,
+    rejected: 1,
+    rejectedByCode: {
+      IMPOSSIBLE_ACCELERATION: 0,
+      INVALID_BOOST_USAGE: 0,
+      COOLDOWN_ABUSE: 1
+    }
+  });
+});

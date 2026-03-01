@@ -6,13 +6,28 @@ import {
   Scene,
   Vector3,
 } from "@babylonjs/core";
-import type { Snapshot } from "@car-ball/protocol";
+import type { InputFrame, Snapshot } from "@car-ball/protocol";
 
+import { createInputBindings, type InputBindings } from "./input/bindings.ts";
+import { createInputFrameEmitter, type InputFrameEmitter } from "./input/frameEmitter.ts";
 import { RendererBridge, type RenderSnapshotState } from "./render/rendererBridge.ts";
+
+const INPUT_RATE_HZ = 60;
+const INPUT_EMIT_INTERVAL_MS = 1_000 / INPUT_RATE_HZ;
+
+export interface InputFrameContext {
+  playerId: string;
+  carId: string;
+  getTick?: () => number;
+}
 
 export interface BabylonSceneBootstrapOptions {
   canvas: HTMLCanvasElement;
   rendererBridge?: RendererBridge;
+  inputBindings?: InputBindings;
+  inputFrameEmitter?: InputFrameEmitter;
+  inputFrameContext?: InputFrameContext;
+  onInputFrame?: (frame: InputFrame) => void;
   onFrame?: (context: { scene: Scene; deltaMs: number; rendererBridge: RendererBridge }) => void;
 }
 
@@ -21,6 +36,8 @@ export interface BabylonSceneBootstrap {
   scene: Scene;
   camera: ArcRotateCamera;
   rendererBridge: RendererBridge;
+  inputBindings: InputBindings;
+  inputFrameEmitter: InputFrameEmitter;
   applySnapshot: (snapshot: Snapshot) => RenderSnapshotState;
   start: () => void;
   stop: () => void;
@@ -33,6 +50,17 @@ export function bootstrapBabylonScene(options: BabylonSceneBootstrapOptions): Ba
   }
 
   const rendererBridge = options.rendererBridge ?? new RendererBridge();
+  const inputBindings = options.inputBindings ?? createInputBindings();
+  const inputFrameContext = options.inputFrameContext ?? {
+    playerId: "player-1",
+    carId: "car:player-1",
+  };
+  const inputFrameEmitter =
+    options.inputFrameEmitter ??
+    createInputFrameEmitter({
+      playerId: inputFrameContext.playerId,
+      carId: inputFrameContext.carId,
+    });
   const engine = new Engine(options.canvas, true);
   const scene = new Scene(engine);
 
@@ -48,11 +76,24 @@ export function bootstrapBabylonScene(options: BabylonSceneBootstrapOptions): Ba
   MeshBuilder.CreateSphere("ball", { diameter: 1.2 }, scene);
 
   let previousFrameTime = performance.now();
+  let inputTick = 1;
+  let inputAccumulatorMs = 0;
 
   const renderTick = () => {
     const currentFrameTime = performance.now();
     const deltaMs = currentFrameTime - previousFrameTime;
     previousFrameTime = currentFrameTime;
+
+    inputAccumulatorMs += deltaMs;
+    while (inputAccumulatorMs >= INPUT_EMIT_INTERVAL_MS) {
+      const tick = inputFrameContext.getTick?.() ?? inputTick;
+      const inputFrame = inputFrameEmitter.emit(tick, inputBindings.getControls());
+      rendererBridge.applyInputFrame(inputFrame);
+      options.onInputFrame?.(inputFrame);
+
+      inputAccumulatorMs -= INPUT_EMIT_INTERVAL_MS;
+      inputTick += 1;
+    }
 
     options.onFrame?.({ scene, deltaMs, rendererBridge });
     scene.render();
@@ -69,11 +110,14 @@ export function bootstrapBabylonScene(options: BabylonSceneBootstrapOptions): Ba
     scene,
     camera,
     rendererBridge,
+    inputBindings,
+    inputFrameEmitter,
     applySnapshot(snapshot: Snapshot): RenderSnapshotState {
       return rendererBridge.applySnapshot(snapshot);
     },
     start(): void {
       previousFrameTime = performance.now();
+      inputAccumulatorMs = 0;
       engine.runRenderLoop(renderTick);
     },
     stop(): void {
@@ -82,6 +126,7 @@ export function bootstrapBabylonScene(options: BabylonSceneBootstrapOptions): Ba
     dispose(): void {
       engine.stopRenderLoop(renderTick);
       window.removeEventListener("resize", handleResize);
+      inputBindings.dispose();
       scene.dispose();
       engine.dispose();
     },

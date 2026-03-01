@@ -24,17 +24,17 @@ Update this section first.
 - Last updated: YYYY-MM-DD
  - Last updated: 2026-02-28
 - Sprint / Milestone: MVP-1
-- Overall completion: 54%
+- Overall completion: 64%
 - P0 gate pass rate: 0/0
 - Last full benchmark date: YYYY-MM-DD
 - Last soak date: YYYY-MM-DD
 
 ### Counts
 
-- TODO: 13
+- TODO: 10
 - IN PROGRESS: 0
 - BLOCKED: 0
-- DONE: 15
+- DONE: 18
 
 ## Release Gate Summary
 
@@ -63,11 +63,9 @@ Update this section first.
 
 | ID | Workstream | Task | Priority | Dependency |
 |---|---|---|---|---|
-| WS-C-003 | WS-C | Implement controls jump flip boost | P0 | WS-C-002, WS-A-001 |
-| WS-C-004 | WS-C | Implement wall and ceiling traction model | P0 | WS-C-003 |
 | WS-C-005 | WS-C | Add replay hash and drift assertions | P0 | WS-C-001, WS-B-002 |
-| WS-D-002 | WS-D | Implement input bindings and frame emitter | P0 | WS-D-001, WS-B-002, WS-A-001 |
-| WS-E-003 | WS-E | Add server validation checks | P0 | WS-E-002, WS-C-003 |
+| WS-D-003 | WS-D | Implement interpolation and camera modes | P1 | WS-D-001, WS-E-002 |
+| WS-D-004 | WS-D | Add client debug HUD metrics | P1 | WS-D-001, WS-G-001 |
 | WS-E-004 | WS-E | Implement reconnect and resync flow | P1 | WS-E-002, WS-B-002 |
 | WS-F-001 | WS-F | Implement client prediction history buffer | P1 | WS-D-002, WS-E-002 |
 | WS-F-002 | WS-F | Implement reconciliation smoothing metrics | P1 | WS-F-001, WS-C-005 |
@@ -91,9 +89,12 @@ Update this section first.
 | WS-C-001 | WS-C | Build fixed-step simulation loop | 2026-02-28 | packages/sim/src/simulation.ts | PASS |
 | WS-C-002 | WS-C | Implement world entity model | 2026-02-28 | packages/sim/src/state.ts | PASS |
 | WS-C-003 | WS-C | Implement controls jump flip boost | 2026-02-28 | packages/sim/src/tick.jump.test.ts | PASS |
+| WS-C-004 | WS-C | Implement wall and ceiling traction model | 2026-02-28 | packages/sim/src/traction.test.ts | PASS |
 | WS-D-001 | WS-D | Initialize Babylon client shell and render bridge | 2026-02-28 | apps/client/src/main.ts | PASS |
+| WS-D-002 | WS-D | Implement input bindings and frame emitter | 2026-02-28 | apps/client/src/input/frameEmitter.ts | PASS |
 | WS-E-001 | WS-E | Build server room lifecycle | 2026-02-28 | apps/server/src/room.ts | PASS |
 | WS-E-002 | WS-E | Implement server tick and snapshot loop | 2026-02-28 | apps/server/src/runtime.ts | PASS |
+| WS-E-003 | WS-E | Add server validation checks | 2026-02-28 | apps/server/src/validation.ts | PASS |
 | WS-G-001 | WS-G | Freeze telemetry schema and benchmark fields | 2026-02-28 | docs/telemetry-schema.md | PASS |
 
 ## Workstream Rollup
@@ -102,9 +103,9 @@ Update this section first.
 |---|---|---:|---|---|---|
 | WS-A Foundation | DONE | 100 | TBD | - | Completed |
 | WS-B Protocol | DONE | 100 | TBD | - | Completed |
-| WS-C Simulation | IN PROGRESS | 60 | TBD | Traction + replay drift | Wall/ceiling drive stable |
-| WS-D Client | IN PROGRESS | 25 | TBD | Input/frame emitter | 60 FPS local scene |
-| WS-E Server | IN PROGRESS | 50 | TBD | Validation + reconnect | 2v2 room loop stable |
+| WS-C Simulation | IN PROGRESS | 80 | TBD | Replay drift assertions | Wall/ceiling drive stable |
+| WS-D Client | IN PROGRESS | 50 | TBD | Interpolation/camera + HUD | 60 FPS local scene |
+| WS-E Server | IN PROGRESS | 75 | TBD | Reconnect/resync | 2v2 room loop stable |
 | WS-F Netcode | TODO | 0 | TBD | - | Corrections within threshold |
 | WS-G QA/Perf | IN PROGRESS | 25 | TBD | Benchmark harness setup | MVP gates automated |
 

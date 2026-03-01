@@ -8,6 +8,14 @@ export const GOAL_BLUE_ID = "goal:blue" as GoalId;
 export const GOAL_ORANGE_ID = "goal:orange" as GoalId;
 export const MATCH_MAIN_ID = "match:main" as MatchId;
 
+export type TractionSurface =
+  | "none"
+  | "wall-x-min"
+  | "wall-x-max"
+  | "wall-y-min"
+  | "wall-y-max"
+  | "ceiling";
+
 export interface CarState {
   id: CarId;
   playerId: PlayerId;
@@ -17,6 +25,9 @@ export interface CarState {
   heading: number;
   boost: number;
   onGround: boolean;
+  tractionAttached: boolean;
+  tractionSurface: TractionSurface;
+  tractionNormal: Vec3;
   jumpCount: number;
   jumpWindowTicksRemaining: number;
   jumpPressedLastTick: boolean;
@@ -83,6 +94,9 @@ function createCarState(playerId: PlayerId, teamId: TeamId, spawnX: number): Car
     heading: 0,
     boost: 100,
     onGround: true,
+    tractionAttached: false,
+    tractionSurface: "none",
+    tractionNormal: vec3(),
     jumpCount: 0,
     jumpWindowTicksRemaining: 0,
     jumpPressedLastTick: false

@@ -13,9 +13,9 @@ Target scope: desktop browser, 1v1/2v2, RL-like control feel.
 Completed from registry:
 - WS-A-001, WS-A-002, WS-A-003, WS-A-004, WS-A-005
 - WS-B-001, WS-B-002, WS-B-003
-- WS-C-001, WS-C-002, WS-C-003
-- WS-D-001
-- WS-E-001, WS-E-002
+- WS-C-001, WS-C-002, WS-C-003, WS-C-004
+- WS-D-001, WS-D-002
+- WS-E-001, WS-E-002, WS-E-003
 - WS-G-001
 
 Primary artifacts already created:
@@ -25,8 +25,11 @@ Primary artifacts already created:
 - `docs/telemetry-schema.md`
 - `.github/workflows/ci.yml`
 - `apps/client/src/main.ts`
+- `apps/client/src/input/frameEmitter.ts`
 - `apps/server/src/runtime.ts`
+- `apps/server/src/validation.ts`
 - `packages/sim/src/tick.jump.test.ts`
+- `packages/sim/src/traction.test.ts`
 
 ## Steps (Architecture to Implementation Mapping)
 

@@ -5,7 +5,7 @@ meta:
   project: CarBall
   source_plan: docs/implementation-plan-parallel.md
   version: 2
-  last_updated: 2026-02-28T01:00:00Z
+  last_updated: 2026-02-28T01:30:00Z
   allowed_statuses: [TODO, IN_PROGRESS, BLOCKED, DONE]
   allowed_priorities: [P0, P1, P2]
   status_flow:
@@ -271,16 +271,19 @@ tasks:
   - id: WS-C-004
     workstream: WS-C
     title: Implement wall and ceiling traction model
-    status: TODO
+    status: DONE
     priority: P0
     owner: unassigned
     dependencies: [WS-C-003]
     started_at: null
     target_date: null
-    completed_at: null
+    completed_at: 2026-02-28T01:30:00Z
     blocked_by: null
     unblock_plan: null
-    evidence: []
+    evidence:
+      - packages/sim/src/tick.ts
+      - packages/sim/src/constants.ts
+      - packages/sim/src/traction.test.ts
     notes: Implement adhesion detach and normal alignment logic for floor wall and ceiling transitions.
     acceptance:
       - Scripted transition tests pass.
@@ -328,16 +331,19 @@ tasks:
   - id: WS-D-002
     workstream: WS-D
     title: Implement input bindings and frame emitter
-    status: TODO
+    status: DONE
     priority: P0
     owner: unassigned
     dependencies: [WS-D-001, WS-B-002, WS-A-001]
     started_at: null
     target_date: null
-    completed_at: null
+    completed_at: 2026-02-28T01:30:00Z
     blocked_by: null
     unblock_plan: null
-    evidence: []
+    evidence:
+      - apps/client/src/input/bindings.ts
+      - apps/client/src/input/frameEmitter.ts
+      - apps/client/src/input/frameEmitter.test.ts
     notes: Implement README controls and emit input frames at configured rate.
     acceptance:
       - All control bindings are mapped and tested.
@@ -424,16 +430,19 @@ tasks:
   - id: WS-E-003
     workstream: WS-E
     title: Add server validation checks
-    status: TODO
+    status: DONE
     priority: P0
     owner: unassigned
     dependencies: [WS-E-002, WS-C-003]
     started_at: null
     target_date: null
-    completed_at: null
+    completed_at: 2026-02-28T01:30:00Z
     blocked_by: null
     unblock_plan: null
-    evidence: []
+    evidence:
+      - apps/server/src/validation.ts
+      - apps/server/src/validation.test.ts
+      - apps/server/src/runtime.ts
     notes: Validate impossible acceleration boost usage and cooldown abuse.
     acceptance:
       - Invalid input behaviors are rejected consistently.

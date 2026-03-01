@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import type { Snapshot } from "@car-ball/protocol";
+import type { InputFrame, Snapshot } from "@car-ball/protocol";
 
 import { RendererBridge } from "./rendererBridge.ts";
 
@@ -96,4 +96,38 @@ test("applySnapshot does not mutate frozen protocol snapshots", () => {
   assert.doesNotThrow(() => {
     bridge.applySnapshot(frozenSnapshot);
   });
+});
+
+test("applyInputFrame stores a cloned latest input frame", () => {
+  const bridge = new RendererBridge();
+
+  const frame: InputFrame = {
+    version: 1,
+    sequence: 9,
+    timestamp: 1_738_160_123_456,
+    tick: 77,
+    playerId: "player-1",
+    carId: "car:player-1",
+    controls: {
+      throttle: 1,
+      steer: -1,
+      jump: true,
+      boost: false,
+      handbrake: false,
+    },
+  };
+
+  const applied = bridge.applyInputFrame(frame);
+
+  frame.controls.throttle = 0;
+  frame.controls.jump = false;
+
+  assert.deepEqual(applied.controls, {
+    throttle: 1,
+    steer: -1,
+    jump: true,
+    boost: false,
+    handbrake: false,
+  });
+  assert.deepEqual(bridge.getLatestInputFrame(), applied);
 });
