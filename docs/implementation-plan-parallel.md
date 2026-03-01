@@ -13,6 +13,31 @@ Build an MVP Rocket League-style web game for desktop browsers with:
 
 Work is split into independent workstreams with explicit contracts. Teams can move in parallel after a short alignment phase.
 
+### Execution Gates (Required Before Next Phase)
+
+- `G0 Contract Freeze` (day 0-2)
+   - Freeze runtime constants: `tickRate`, `snapshotRate`, `inputRate`, `maxSubsteps`, `reconcileThreshold`.
+   - Freeze protocol envelope: sequence/timestamp/version and message headers.
+   - Freeze entity identity model: player/car/ball/team/goal IDs and ownership semantics.
+   - Freeze telemetry schema: frame, physics, render, correction, server tick metrics.
+
+- `G1 Build Graph Ready` (day 2-4)
+   - Monorepo builds in dependency order with project references.
+   - CI runs typecheck, tests, and build checks.
+   - Protocol v1 contracts and compatibility tests pass.
+
+- `G2 Simulation Spine + Runtime Shells` (day 4-8)
+   - Fixed-step simulation loop and replay harness are running.
+   - Client snapshot ingest and server room tick/broadcast skeletons are running.
+
+- `G3 Online Vertical Slice` (day 8-12)
+   - End-to-end 1v1 loop works: join, start, play, score, end.
+   - Prediction/reconciliation and reconnect/resync are operational.
+
+- `G4 Quality/Performance Release Gate` (day 12+)
+   - SLO gates pass for required browser/network scenarios.
+   - Two consecutive soak cycles pass for 1v1 and 2v2.
+
 ### Multi-Agent Coordination Protocol
 
 To support concurrent AI agents safely:
@@ -315,6 +340,14 @@ Critical path: WS-A -> WS-B -> (WS-C + WS-E) -> WS-F -> MVP gate.
 
 If a task is `BLOCKED`, `blocked_by` and `unblock_plan` are required in the registry.
 
+## 4.2) Hidden Dependencies (Watchlist)
+
+- Constants churn risk: changes to runtime constants after `G0` cascade across sim/server/client/netcode.
+- Identity mismatch risk: inconsistent ownership/entity ID assumptions cause hard-to-debug desync.
+- Telemetry lateness risk: missing shared metric fields blocks comparable performance gating.
+- Replay variance risk: deterministic replay expectations can fail across platforms if not drift-bounded.
+- Tick/snapshot coupling risk: server timing decisions directly affect interpolation/reconciliation behavior.
+
 ## 5) Integration Cadence
 
 Use short integration windows to avoid long-lived divergence.
@@ -358,3 +391,62 @@ MVP is complete only when all conditions hold:
 - Performance SLOs are met on target desktop browsers
 - Correction and desync metrics remain under agreed thresholds
 - Regression suite and soak tests pass for two consecutive cycles
+
+## 8.1) Measurable Release SLOs (Go/No-Go)
+
+- Client performance (required browsers: Chrome, Firefox, Edge)
+   - Frame time `p95 <= 16.7ms`
+   - Physics time `p95 <= 6ms`
+   - Render time `p95 <= 9ms`
+
+- Server stability
+   - Tick duration `p95 <= 8.3ms`, `p99 <= 12ms` at 120Hz
+   - Missed ticks `< 0.5%` over 20-minute soak
+
+- Reconciliation quality
+   - Clean network: corrections `<= 12/min/player`
+   - 5% packet loss: corrections `<= 30/min/player`
+   - Correction magnitude `p95 <= 20cm`, `p99 <= 60cm`, max `<= 120cm`
+
+- Simulation replay stability
+   - Drift rate `<= 0.5%` sampled ticks over 10-minute scripted replay
+   - End-of-run drift: car `<= 15cm`, ball `<= 25cm`
+
+- Memory and runtime health
+   - Client long tasks (`>50ms`) `<= 3` per 10 minutes
+   - Client heap growth slope `<= 5MB` per 10-minute soak after warm-up
+   - Server RSS growth `<= 8%` over 20-minute soak
+
+No-go if any P0 SLO fails in two consecutive benchmark runs.
+
+## 9) Medium Task Slices (Parallel-Ready Backlog)
+
+These slices are intended for 1-2 day execution units and should be mirrored in the registry as needed.
+
+- `T-G0-001` Freeze runtime constants and reconciliation thresholds (deps: none)
+- `T-G0-002` Freeze protocol envelope fields and versioning policy (deps: none)
+- `T-G0-003` Freeze entity ID and ownership semantics (deps: none)
+- `T-G0-004` Freeze telemetry schema for client/server/QA (deps: none)
+
+- `T-G1-001` Scaffold workspace packages and root scripts (deps: `T-G0-001`)
+- `T-G1-002` Add TS project references and deterministic build order (deps: `T-G1-001`)
+- `T-G1-003` Add CI typecheck/test/build pipeline (deps: `T-G1-001`)
+- `T-G1-004` Define protocol v1 types and events (deps: `T-G0-002`, `T-G1-002`)
+- `T-G1-005` Add protocol roundtrip/compat tests (deps: `T-G1-004`)
+
+- `T-G2-001` Implement fixed-step sim loop + catch-up cap (deps: `T-G0-001`, `T-G1-002`)
+- `T-G2-002` Implement world entity model (deps: `T-G0-003`, `T-G2-001`, `T-G1-004`)
+- `T-G2-003` Implement car control model + boost/jump/flip windows (deps: `T-G2-002`)
+- `T-G2-004` Implement wall/ceiling adhesion + detach model (deps: `T-G2-003`)
+- `T-G2-005` Add replay hash harness + drift assertions (deps: `T-G2-001`, `T-G1-004`)
+
+- `T-G3-001` Implement server room lifecycle (deps: `T-G1-002`, `T-G1-004`)
+- `T-G3-002` Implement server tick + snapshot broadcast loop (deps: `T-G3-001`, `T-G2-002`, `T-G0-001`)
+- `T-G3-003` Implement client interpolation bridge (deps: `T-G2-001`, `T-G3-002`)
+- `T-G3-004` Add client/server telemetry emitters (deps: `T-G0-004`, `T-G3-002`)
+
+- `T-G4-001` Implement client prediction history + replay (deps: `T-G2-003`, `T-G3-002`)
+- `T-G4-002` Implement reconciliation deadzone/smoothing + correction metrics (deps: `T-G4-001`, `T-G2-005`)
+- `T-G4-003` Implement server validation checks (deps: `T-G3-002`, `T-G2-003`)
+- `T-G4-004` Implement reconnect/resync flow (deps: `T-G3-002`, `T-G1-004`)
+- `T-G4-005` Add impairment matrix + automated SLO checks (deps: `T-G4-002`, `T-G3-004`, `T-G1-003`)

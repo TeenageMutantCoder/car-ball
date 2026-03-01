@@ -24,43 +24,75 @@ Update this section first.
 - Last updated: YYYY-MM-DD
 - Sprint / Milestone: MVP-1
 - Overall completion: 0%
+- P0 gate pass rate: 0/0
+- Last full benchmark date: YYYY-MM-DD
+- Last soak date: YYYY-MM-DD
 
 ### Counts
 
-- TODO: 0
+- TODO: 28
 - IN PROGRESS: 0
 - BLOCKED: 0
 - DONE: 0
 
+## Release Gate Summary
+
+| Gate | Threshold | Latest Value | Evidence | Status |
+|---|---|---|---|---|
+| Frame p95 | <= 16.7ms | - | - | PENDING |
+| Physics p95 | <= 6ms | - | - | PENDING |
+| Render p95 | <= 9ms | - | - | PENDING |
+| Server tick p95/p99 | <= 8.3ms / <= 12ms | - | - | PENDING |
+| Corrections/min/player | <= 12 clean, <= 30 at 5% loss | - | - | PENDING |
+| Replay drift | <= 0.5% sampled ticks | - | - | PENDING |
+
 ## In Progress
 
-| ID | Workstream | Task | Owner | Started | Target | Notes |
-|---|---|---|---|---|---|---|
-| - | - | - | - | - | - | - |
+| ID | Workstream | Task | Owner | Started | Target | Metrics Snapshot | Evidence | Notes |
+|---|---|---|---|---|---|---|---|---|
+| - | - | - | - | - | - | - | - | - |
 
 ## Blocked
 
-| ID | Workstream | Task | Blocked By | Since | Unblock Plan |
-|---|---|---|---|---|---|
-| - | - | - | - | - | - |
+| ID | Workstream | Task | Blocked By | Since | Unblock Plan | Metrics Snapshot |
+|---|---|---|---|---|---|---|
+| - | - | - | - | - | - | - |
 
 ## To Do
 
 | ID | Workstream | Task | Priority | Dependency |
 |---|---|---|---|---|
-| WS-A-001 | WS-A | Initialize monorepo packages and workspace config | P0 | None |
-| WS-B-001 | WS-B | Define protocol schemas and version field | P0 | WS-A-001 |
-| WS-C-001 | WS-C | Build fixed-step simulation loop with accumulator | P0 | WS-B-001 |
-| WS-D-001 | WS-D | Initialize Babylon client shell and render bridge | P0 | WS-B-001 |
-| WS-E-001 | WS-E | Build server room lifecycle and snapshot broadcast | P0 | WS-B-001 |
-| WS-F-001 | WS-F | Implement prediction and reconciliation loop | P1 | WS-D-001, WS-E-001 |
-| WS-G-001 | WS-G | Set up benchmark and release gate harness | P1 | WS-A-001 |
+| WS-A-001 | WS-A | Freeze runtime constants and thresholds | P0 | None |
+| WS-A-002 | WS-A | Freeze entity ID ownership semantics | P0 | None |
+| WS-B-001 | WS-B | Freeze protocol envelope and versioning policy | P0 | None |
+| WS-G-001 | WS-G | Freeze telemetry schema and benchmark fields | P0 | None |
+| WS-A-003 | WS-A | Scaffold monorepo packages and scripts | P0 | WS-A-001 |
+| WS-A-004 | WS-A | Configure TS project references | P0 | WS-A-003 |
+| WS-A-005 | WS-A | Add CI typecheck test build | P0 | WS-A-003 |
+| WS-B-002 | WS-B | Define protocol v1 payload types | P0 | WS-A-004, WS-B-001, WS-A-002 |
+| WS-B-003 | WS-B | Add protocol roundtrip compatibility tests | P0 | WS-B-002 |
+| WS-C-001 | WS-C | Build fixed-step simulation loop | P0 | WS-A-001, WS-A-004 |
+| WS-C-002 | WS-C | Implement world entity model | P0 | WS-C-001, WS-A-002, WS-B-002 |
+| WS-C-003 | WS-C | Implement controls jump flip boost | P0 | WS-C-002, WS-A-001 |
+| WS-C-004 | WS-C | Implement wall and ceiling traction model | P0 | WS-C-003 |
+| WS-C-005 | WS-C | Add replay hash and drift assertions | P0 | WS-C-001, WS-B-002 |
+| WS-D-001 | WS-D | Initialize Babylon client shell and render bridge | P0 | WS-A-004, WS-B-002 |
+| WS-D-002 | WS-D | Implement input bindings and frame emitter | P0 | WS-D-001, WS-B-002, WS-A-001 |
+| WS-E-001 | WS-E | Build server room lifecycle | P0 | WS-A-004, WS-B-002 |
+| WS-E-002 | WS-E | Implement server tick and snapshot loop | P0 | WS-E-001, WS-C-002, WS-A-001 |
+| WS-E-003 | WS-E | Add server validation checks | P0 | WS-E-002, WS-C-003 |
+| WS-F-001 | WS-F | Implement client prediction history buffer | P1 | WS-D-002, WS-E-002 |
+| WS-F-002 | WS-F | Implement reconciliation smoothing metrics | P1 | WS-F-001, WS-C-005 |
+| WS-F-003 | WS-F | Add network impairment simulation controls | P1 | WS-F-002 |
+| WS-G-002 | WS-G | Build benchmark scenarios and harness | P1 | WS-G-001, WS-D-004, WS-E-002, WS-F-003 |
+| WS-G-003 | WS-G | Implement SLO gate evaluation | P1 | WS-G-002 |
+| WS-G-004 | WS-G | Run soak tests and release check | P1 | WS-G-003 |
 
 ## Done
 
-| ID | Workstream | Task | Completed | Evidence |
-|---|---|---|---|---|
-| - | - | - | - | - |
+| ID | Workstream | Task | Completed | Evidence | Validation |
+|---|---|---|---|---|---|
+| - | - | - | - | - | PASS/FAIL |
 
 ## Workstream Rollup
 

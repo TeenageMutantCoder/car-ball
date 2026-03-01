@@ -49,6 +49,39 @@ Chronological append-only implementation log. Add one entry per meaningful updat
 ### 2026-02-28T00:00:00Z | Agent: copilot
 
 - changed_tasks:
+  - id: WS-G-PLAN-002
+    from: TODO
+    to: DONE
+- summary: Expanded task registry to 28 medium-granularity tasks with explicit dependencies and synced board TODO backlog.
+- blockers: []
+- evidence:
+  - path: docs/agent-task-registry.yaml
+  - path: docs/progress-board.md
+  - path: scripts/validate_task_registry.ts
+- next_actions:
+  - Claim first G0 tasks (WS-A-001 WS-A-002 WS-B-001 WS-G-001) with owners.
+  - Begin implementation streams after G0 freeze completion.
+- related_pr_or_commit: n/a
+
+### 2026-02-28T00:00:00Z | Agent: copilot
+
+- changed_tasks:
+  - id: WS-G-PLAN-001
+    from: TODO
+    to: DONE
+- summary: Integrated parallel subagent recommendations into execution gates, measurable SLO go/no-go criteria, and board evidence tracking fields.
+- blockers: []
+- evidence:
+  - path: docs/implementation-plan-parallel.md
+  - path: docs/progress-board.md
+- next_actions:
+  - Mirror selected T-G* slices into docs/agent-task-registry.yaml with immutable IDs.
+  - Start G0 freeze tasks before feature stream work.
+- related_pr_or_commit: n/a
+
+### 2026-02-28T00:00:00Z | Agent: copilot
+
+- changed_tasks:
   - id: WS-G-TRACK-002
     from: TODO
     to: DONE

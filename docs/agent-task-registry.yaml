@@ -4,7 +4,7 @@
 meta:
   project: CarBall
   source_plan: docs/implementation-plan-parallel.md
-  version: 1
+  version: 2
   last_updated: 2026-02-28
   allowed_statuses: [TODO, IN_PROGRESS, BLOCKED, DONE]
   allowed_priorities: [P0, P1, P2]
@@ -41,7 +41,7 @@ workstreams:
 tasks:
   - id: WS-A-001
     workstream: WS-A
-    title: Initialize monorepo and workspace config
+    title: Freeze runtime constants and thresholds
     status: TODO
     priority: P0
     owner: unassigned
@@ -52,14 +52,32 @@ tasks:
     blocked_by: null
     unblock_plan: null
     evidence: []
-    notes: Create apps/client apps/server packages/sim packages/protocol and root workspace scripts.
+    notes: Freeze tickRate snapshotRate inputRate maxSubsteps and reconcileThreshold for all streams.
     acceptance:
-      - All workspace packages install/build with one command.
-      - CI typecheck/build/test jobs run.
+      - Runtime constants are documented in architecture docs.
+      - Client/server/sim use identical values.
 
-  - id: WS-B-001
-    workstream: WS-B
-    title: Define protocol schemas and versioning
+  - id: WS-A-002
+    workstream: WS-A
+    title: Freeze entity ID ownership semantics
+    status: TODO
+    priority: P0
+    owner: unassigned
+    dependencies: []
+    started_at: null
+    target_date: null
+    completed_at: null
+    blocked_by: null
+    unblock_plan: null
+    evidence: []
+    notes: Freeze player car ball team goal identifiers and ownership rules.
+    acceptance:
+      - Entity ownership model is documented and referenced by protocol and sim.
+      - No ambiguous ownership transitions remain.
+
+  - id: WS-A-003
+    workstream: WS-A
+    title: Scaffold monorepo packages and scripts
     status: TODO
     priority: P0
     owner: unassigned
@@ -70,10 +88,100 @@ tasks:
     blocked_by: null
     unblock_plan: null
     evidence: []
-    notes: Define InputFrame Snapshot MatchState ServerEvent ClientEvent and compatibility policy.
+    notes: Create apps/client apps/server packages/sim packages/protocol and root scripts for dev build test lint typecheck.
     acceptance:
-      - Protocol contracts are shared by client/server/sim.
-      - Encode/decode tests pass.
+      - All workspace packages install and build with one command.
+      - Root scripts execute from workspace root.
+
+  - id: WS-A-004
+    workstream: WS-A
+    title: Configure TS project references
+    status: TODO
+    priority: P0
+    owner: unassigned
+    dependencies: [WS-A-003]
+    started_at: null
+    target_date: null
+    completed_at: null
+    blocked_by: null
+    unblock_plan: null
+    evidence: []
+    notes: Add deterministic build order across protocol sim client and server.
+    acceptance:
+      - Build order is deterministic across clean installs.
+      - Cross-package type references resolve cleanly.
+
+  - id: WS-A-005
+    workstream: WS-A
+    title: Add CI typecheck test build
+    status: TODO
+    priority: P0
+    owner: unassigned
+    dependencies: [WS-A-003]
+    started_at: null
+    target_date: null
+    completed_at: null
+    blocked_by: null
+    unblock_plan: null
+    evidence: []
+    notes: Add CI workflow for typecheck unit tests and build verification.
+    acceptance:
+      - CI executes all required checks on each change.
+      - Failing checks block merges.
+
+  - id: WS-B-001
+    workstream: WS-B
+    title: Freeze protocol envelope and versioning policy
+    status: TODO
+    priority: P0
+    owner: unassigned
+    dependencies: []
+    started_at: null
+    target_date: null
+    completed_at: null
+    blocked_by: null
+    unblock_plan: null
+    evidence: []
+    notes: Freeze sequence timestamp version fields and envelope compatibility rules.
+    acceptance:
+      - Envelope contract is documented and stable.
+      - Compatibility strategy is defined for additive changes.
+
+  - id: WS-B-002
+    workstream: WS-B
+    title: Define protocol v1 payload types
+    status: TODO
+    priority: P0
+    owner: unassigned
+    dependencies: [WS-A-004, WS-B-001, WS-A-002]
+    started_at: null
+    target_date: null
+    completed_at: null
+    blocked_by: null
+    unblock_plan: null
+    evidence: []
+    notes: Define InputFrame Snapshot MatchState ServerEvent ClientEvent and ownership fields.
+    acceptance:
+      - Protocol contracts are shared by client server and sim.
+      - Type exports are consumable by all packages.
+
+  - id: WS-B-003
+    workstream: WS-B
+    title: Add protocol roundtrip compatibility tests
+    status: TODO
+    priority: P0
+    owner: unassigned
+    dependencies: [WS-B-002]
+    started_at: null
+    target_date: null
+    completed_at: null
+    blocked_by: null
+    unblock_plan: null
+    evidence: []
+    notes: Add encode decode unknown-field and version mismatch tests.
+    acceptance:
+      - Encode decode tests pass for all v1 messages.
+      - Unknown and version mismatch behavior is validated.
 
   - id: WS-C-001
     workstream: WS-C
@@ -81,7 +189,7 @@ tasks:
     status: TODO
     priority: P0
     owner: unassigned
-    dependencies: [WS-B-001]
+    dependencies: [WS-A-001, WS-A-004]
     started_at: null
     target_date: null
     completed_at: null
@@ -90,8 +198,80 @@ tasks:
     evidence: []
     notes: Implement tick accumulator max substep cap and replay harness.
     acceptance:
-      - Replay tests pass within drift bounds.
-      - Stable wall/ceiling transitions in scripted tests.
+      - Fixed-step loop is stable with max substep cap.
+      - Spiral-of-death prevention is verified.
+
+  - id: WS-C-002
+    workstream: WS-C
+    title: Implement world entity model
+    status: TODO
+    priority: P0
+    owner: unassigned
+    dependencies: [WS-C-001, WS-A-002, WS-B-002]
+    started_at: null
+    target_date: null
+    completed_at: null
+    blocked_by: null
+    unblock_plan: null
+    evidence: []
+    notes: Implement car ball arena and goal volume state models.
+    acceptance:
+      - Sim state includes all core entities and IDs.
+      - State serialization aligns with protocol snapshots.
+
+  - id: WS-C-003
+    workstream: WS-C
+    title: Implement controls jump flip boost
+    status: TODO
+    priority: P0
+    owner: unassigned
+    dependencies: [WS-C-002, WS-A-001]
+    started_at: null
+    target_date: null
+    completed_at: null
+    blocked_by: null
+    unblock_plan: null
+    evidence: []
+    notes: Implement throttle steer brake jump double-jump flip and boost resource behavior.
+    acceptance:
+      - Gameplay windows match contract values.
+      - Input to state transitions are deterministic per tick.
+
+  - id: WS-C-004
+    workstream: WS-C
+    title: Implement wall and ceiling traction model
+    status: TODO
+    priority: P0
+    owner: unassigned
+    dependencies: [WS-C-003]
+    started_at: null
+    target_date: null
+    completed_at: null
+    blocked_by: null
+    unblock_plan: null
+    evidence: []
+    notes: Implement adhesion detach and normal alignment logic for floor wall and ceiling transitions.
+    acceptance:
+      - Scripted transition tests pass.
+      - Control-loss incidents remain within test threshold.
+
+  - id: WS-C-005
+    workstream: WS-C
+    title: Add replay hash and drift assertions
+    status: TODO
+    priority: P0
+    owner: unassigned
+    dependencies: [WS-C-001, WS-B-002]
+    started_at: null
+    target_date: null
+    completed_at: null
+    blocked_by: null
+    unblock_plan: null
+    evidence: []
+    notes: Add seeded replay harness with periodic state hashes and drift reports.
+    acceptance:
+      - Drift reports generated for scripted runs.
+      - Replay stability thresholds are enforceable in CI.
 
   - id: WS-D-001
     workstream: WS-D
@@ -99,7 +279,7 @@ tasks:
     status: TODO
     priority: P0
     owner: unassigned
-    dependencies: [WS-B-001]
+    dependencies: [WS-A-004, WS-B-002]
     started_at: null
     target_date: null
     completed_at: null
@@ -111,54 +291,254 @@ tasks:
       - Local scene runs at target FPS on test hardware.
       - Render layer does not mutate simulation state.
 
-  - id: WS-E-001
-    workstream: WS-E
-    title: Build server rooms and snapshot broadcast
+  - id: WS-D-002
+    workstream: WS-D
+    title: Implement input bindings and frame emitter
     status: TODO
     priority: P0
     owner: unassigned
-    dependencies: [WS-B-001]
+    dependencies: [WS-D-001, WS-B-002, WS-A-001]
     started_at: null
     target_date: null
     completed_at: null
     blocked_by: null
     unblock_plan: null
     evidence: []
-    notes: Add create join leave start end plus validation and telemetry basics.
+    notes: Implement README controls and emit input frames at configured rate.
     acceptance:
-      - Two clients can complete a match loop.
-      - Snapshot stream stable at configured rate.
+      - All control bindings are mapped and tested.
+      - Input frame schema matches protocol contract.
+
+  - id: WS-D-003
+    workstream: WS-D
+    title: Implement interpolation and camera modes
+    status: TODO
+    priority: P1
+    owner: unassigned
+    dependencies: [WS-D-001, WS-E-002]
+    started_at: null
+    target_date: null
+    completed_at: null
+    blocked_by: null
+    unblock_plan: null
+    evidence: []
+    notes: Add forward and ball camera modes plus interpolation from snapshots.
+    acceptance:
+      - Camera mode toggle works.
+      - Snapshot interpolation is smooth under nominal network.
+
+  - id: WS-D-004
+    workstream: WS-D
+    title: Add client debug HUD metrics
+    status: TODO
+    priority: P1
+    owner: unassigned
+    dependencies: [WS-D-001, WS-G-001]
+    started_at: null
+    target_date: null
+    completed_at: null
+    blocked_by: null
+    unblock_plan: null
+    evidence: []
+    notes: Expose FPS frame time correction counts ping and key runtime metrics.
+    acceptance:
+      - HUD displays agreed telemetry fields.
+      - Metrics can be captured in benchmark evidence.
+
+  - id: WS-E-001
+    workstream: WS-E
+    title: Build server room lifecycle
+    status: TODO
+    priority: P0
+    owner: unassigned
+    dependencies: [WS-A-004, WS-B-002]
+    started_at: null
+    target_date: null
+    completed_at: null
+    blocked_by: null
+    unblock_plan: null
+    evidence: []
+    notes: Implement create join leave ready start end match flow.
+    acceptance:
+      - Two clients can complete full room lifecycle.
+      - Match state transitions are consistent.
+
+  - id: WS-E-002
+    workstream: WS-E
+    title: Implement server tick and snapshot loop
+    status: TODO
+    priority: P0
+    owner: unassigned
+    dependencies: [WS-E-001, WS-C-002, WS-A-001]
+    started_at: null
+    target_date: null
+    completed_at: null
+    blocked_by: null
+    unblock_plan: null
+    evidence: []
+    notes: Implement authoritative tick and snapshot broadcast cadence.
+    acceptance:
+      - Snapshot stream is stable at configured rate.
+      - Server tick budget metrics are emitted.
+
+  - id: WS-E-003
+    workstream: WS-E
+    title: Add server validation checks
+    status: TODO
+    priority: P0
+    owner: unassigned
+    dependencies: [WS-E-002, WS-C-003]
+    started_at: null
+    target_date: null
+    completed_at: null
+    blocked_by: null
+    unblock_plan: null
+    evidence: []
+    notes: Validate impossible acceleration boost usage and cooldown abuse.
+    acceptance:
+      - Invalid input behaviors are rejected consistently.
+      - Validation telemetry events are captured.
+
+  - id: WS-E-004
+    workstream: WS-E
+    title: Implement reconnect and resync flow
+    status: TODO
+    priority: P1
+    owner: unassigned
+    dependencies: [WS-E-002, WS-B-002]
+    started_at: null
+    target_date: null
+    completed_at: null
+    blocked_by: null
+    unblock_plan: null
+    evidence: []
+    notes: Add reconnect path and authoritative state resynchronization.
+    acceptance:
+      - Dropped client can rejoin and recover match state.
+      - Resync path is tested under packet impairment.
 
   - id: WS-F-001
     workstream: WS-F
-    title: Implement prediction and reconciliation
+    title: Implement client prediction history buffer
     status: TODO
     priority: P1
     owner: unassigned
-    dependencies: [WS-D-001, WS-E-001]
+    dependencies: [WS-D-002, WS-E-002]
     started_at: null
     target_date: null
     completed_at: null
     blocked_by: null
     unblock_plan: null
     evidence: []
-    notes: Add input history replay correction deadzone and smoothing metrics.
+    notes: Track local input history and replay predicted state against snapshots.
     acceptance:
-      - Correction spikes stay under agreed threshold under packet impairment tests.
+      - Prediction path is stable during nominal gameplay.
+      - Replay buffer handles sequence ordering correctly.
+
+  - id: WS-F-002
+    workstream: WS-F
+    title: Implement reconciliation smoothing metrics
+    status: TODO
+    priority: P1
+    owner: unassigned
+    dependencies: [WS-F-001, WS-C-005]
+    started_at: null
+    target_date: null
+    completed_at: null
+    blocked_by: null
+    unblock_plan: null
+    evidence: []
+    notes: Add deadzone smoothing and correction magnitude metrics with thresholds.
+    acceptance:
+      - Correction metrics are emitted and tracked.
+      - Threshold checks pass for clean network scenario.
+
+  - id: WS-F-003
+    workstream: WS-F
+    title: Add network impairment simulation controls
+    status: TODO
+    priority: P1
+    owner: unassigned
+    dependencies: [WS-F-002]
+    started_at: null
+    target_date: null
+    completed_at: null
+    blocked_by: null
+    unblock_plan: null
+    evidence: []
+    notes: Add latency jitter and packet loss simulation profiles for test runs.
+    acceptance:
+      - Impairment profiles can be toggled and reproduced.
+      - Metrics are comparable across profile runs.
 
   - id: WS-G-001
     workstream: WS-G
-    title: Set up benchmark and release gates
+    title: Freeze telemetry schema and benchmark fields
     status: TODO
-    priority: P1
+    priority: P0
     owner: unassigned
-    dependencies: [WS-A-001]
+    dependencies: []
     started_at: null
     target_date: null
     completed_at: null
     blocked_by: null
     unblock_plan: null
     evidence: []
-    notes: Build automated test matrix soak tests and SLO gate checks.
+    notes: Define metric fields for frame physics render tick correction replay and memory tracking.
     acceptance:
-      - MVP gates pass for two consecutive cycles.
+      - Telemetry schema is documented and shared.
+      - All streams can emit required fields.
+
+  - id: WS-G-002
+    workstream: WS-G
+    title: Build benchmark scenarios and harness
+    status: TODO
+    priority: P1
+    owner: unassigned
+    dependencies: [WS-G-001, WS-D-004, WS-E-002, WS-F-003]
+    started_at: null
+    target_date: null
+    completed_at: null
+    blocked_by: null
+    unblock_plan: null
+    evidence: []
+    notes: Implement 1v1 baseline 2v2 collision-heavy wall-ceiling stress and impairment matrix scenarios.
+    acceptance:
+      - Required benchmark scenarios run automatically.
+      - Artifact outputs include metrics and environment stamp.
+
+  - id: WS-G-003
+    workstream: WS-G
+    title: Implement SLO gate evaluation
+    status: TODO
+    priority: P1
+    owner: unassigned
+    dependencies: [WS-G-002]
+    started_at: null
+    target_date: null
+    completed_at: null
+    blocked_by: null
+    unblock_plan: null
+    evidence: []
+    notes: Evaluate benchmark output against go/no-go thresholds and publish gate status.
+    acceptance:
+      - SLO pass/fail status is generated per run.
+      - Gate failures identify blocking metrics.
+
+  - id: WS-G-004
+    workstream: WS-G
+    title: Run soak tests and release check
+    status: TODO
+    priority: P1
+    owner: unassigned
+    dependencies: [WS-G-003]
+    started_at: null
+    target_date: null
+    completed_at: null
+    blocked_by: null
+    unblock_plan: null
+    evidence: []
+    notes: Run 20-minute soak sessions and enforce two consecutive passing cycles for MVP.
+    acceptance:
+      - Two consecutive soak cycles pass for 1v1 and 2v2.
+      - Release decision includes artifact links and gate summary.
