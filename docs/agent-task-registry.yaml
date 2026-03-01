@@ -5,7 +5,7 @@ meta:
   project: CarBall
   source_plan: docs/implementation-plan-parallel.md
   version: 2
-  last_updated: 2026-02-28
+  last_updated: 2026-02-28T00:00:00Z
   allowed_statuses: [TODO, IN_PROGRESS, BLOCKED, DONE]
   allowed_priorities: [P0, P1, P2]
   status_flow:
@@ -42,16 +42,18 @@ tasks:
   - id: WS-A-001
     workstream: WS-A
     title: Freeze runtime constants and thresholds
-    status: TODO
+    status: DONE
     priority: P0
     owner: unassigned
     dependencies: []
     started_at: null
     target_date: null
-    completed_at: null
+    completed_at: 2026-02-28T00:00:00Z
     blocked_by: null
     unblock_plan: null
-    evidence: []
+    evidence:
+      - docs/runtime-constants.md
+      - docs/implementation-plan-parallel.md
     notes: Freeze tickRate snapshotRate inputRate maxSubsteps and reconcileThreshold for all streams.
     acceptance:
       - Runtime constants are documented in architecture docs.
@@ -78,16 +80,21 @@ tasks:
   - id: WS-A-003
     workstream: WS-A
     title: Scaffold monorepo packages and scripts
-    status: TODO
+    status: DONE
     priority: P0
     owner: unassigned
     dependencies: [WS-A-001]
     started_at: null
     target_date: null
-    completed_at: null
+    completed_at: 2026-02-28T00:00:00Z
     blocked_by: null
     unblock_plan: null
-    evidence: []
+    evidence:
+      - package.json
+      - apps/client/package.json
+      - apps/server/package.json
+      - packages/protocol/package.json
+      - packages/sim/package.json
     notes: Create apps/client apps/server packages/sim packages/protocol and root scripts for dev build test lint typecheck.
     acceptance:
       - All workspace packages install and build with one command.
@@ -96,16 +103,21 @@ tasks:
   - id: WS-A-004
     workstream: WS-A
     title: Configure TS project references
-    status: TODO
+    status: DONE
     priority: P0
     owner: unassigned
     dependencies: [WS-A-003]
     started_at: null
     target_date: null
-    completed_at: null
+    completed_at: 2026-02-28T00:00:00Z
     blocked_by: null
     unblock_plan: null
-    evidence: []
+    evidence:
+      - tsconfig.json
+      - apps/client/tsconfig.json
+      - apps/server/tsconfig.json
+      - packages/protocol/tsconfig.json
+      - packages/sim/tsconfig.json
     notes: Add deterministic build order across protocol sim client and server.
     acceptance:
       - Build order is deterministic across clean installs.
@@ -114,16 +126,18 @@ tasks:
   - id: WS-A-005
     workstream: WS-A
     title: Add CI typecheck test build
-    status: TODO
+    status: DONE
     priority: P0
     owner: unassigned
     dependencies: [WS-A-003]
     started_at: null
     target_date: null
-    completed_at: null
+    completed_at: 2026-02-28T00:00:00Z
     blocked_by: null
     unblock_plan: null
-    evidence: []
+    evidence:
+      - .github/workflows/ci.yml
+      - package.json
     notes: Add CI workflow for typecheck unit tests and build verification.
     acceptance:
       - CI executes all required checks on each change.
@@ -132,16 +146,18 @@ tasks:
   - id: WS-B-001
     workstream: WS-B
     title: Freeze protocol envelope and versioning policy
-    status: TODO
+    status: DONE
     priority: P0
     owner: unassigned
     dependencies: []
     started_at: null
     target_date: null
-    completed_at: null
+    completed_at: 2026-02-28T00:00:00Z
     blocked_by: null
     unblock_plan: null
-    evidence: []
+    evidence:
+      - docs/protocol-envelope.md
+      - packages/protocol/src/contracts.ts
     notes: Freeze sequence timestamp version fields and envelope compatibility rules.
     acceptance:
       - Envelope contract is documented and stable.
@@ -150,16 +166,18 @@ tasks:
   - id: WS-B-002
     workstream: WS-B
     title: Define protocol v1 payload types
-    status: TODO
+    status: DONE
     priority: P0
     owner: unassigned
     dependencies: [WS-A-004, WS-B-001, WS-A-002]
     started_at: null
     target_date: null
-    completed_at: null
+    completed_at: 2026-02-28T00:00:00Z
     blocked_by: null
     unblock_plan: null
-    evidence: []
+    evidence:
+      - packages/protocol/src/contracts.ts
+      - packages/protocol/src/index.ts
     notes: Define InputFrame Snapshot MatchState ServerEvent ClientEvent and ownership fields.
     acceptance:
       - Protocol contracts are shared by client server and sim.
@@ -168,16 +186,18 @@ tasks:
   - id: WS-B-003
     workstream: WS-B
     title: Add protocol roundtrip compatibility tests
-    status: TODO
+    status: DONE
     priority: P0
     owner: unassigned
     dependencies: [WS-B-002]
     started_at: null
     target_date: null
-    completed_at: null
+    completed_at: 2026-02-28T00:00:00Z
     blocked_by: null
     unblock_plan: null
-    evidence: []
+    evidence:
+      - packages/protocol/tests/codec.test.ts
+      - packages/protocol/package.json
     notes: Add encode decode unknown-field and version mismatch tests.
     acceptance:
       - Encode decode tests pass for all v1 messages.
@@ -186,16 +206,19 @@ tasks:
   - id: WS-C-001
     workstream: WS-C
     title: Build fixed-step simulation loop
-    status: TODO
+    status: DONE
     priority: P0
     owner: unassigned
     dependencies: [WS-A-001, WS-A-004]
     started_at: null
     target_date: null
-    completed_at: null
+    completed_at: 2026-02-28T00:00:00Z
     blocked_by: null
     unblock_plan: null
-    evidence: []
+    evidence:
+      - packages/sim/src/simulation.ts
+      - packages/sim/tests/simulation.accumulator.test.ts
+      - packages/sim/src/constants.ts
     notes: Implement tick accumulator max substep cap and replay harness.
     acceptance:
       - Fixed-step loop is stable with max substep cap.
@@ -474,16 +497,18 @@ tasks:
   - id: WS-G-001
     workstream: WS-G
     title: Freeze telemetry schema and benchmark fields
-    status: TODO
+    status: DONE
     priority: P0
     owner: unassigned
     dependencies: []
     started_at: null
     target_date: null
-    completed_at: null
+    completed_at: 2026-02-28T00:00:00Z
     blocked_by: null
     unblock_plan: null
-    evidence: []
+    evidence:
+      - docs/telemetry-schema.md
+      - docs/implementation-plan-parallel.md
     notes: Define metric fields for frame physics render tick correction replay and memory tracking.
     acceptance:
       - Telemetry schema is documented and shared.
