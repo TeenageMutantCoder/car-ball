@@ -267,8 +267,9 @@ export function createLiveTransportServer(config: LiveTransportConfig): LiveTran
       return;
     }
 
+    let reconnectSnapshot: Snapshot;
     try {
-      runtime.reconnectPlayer(parsed.roomId, parsed.playerId);
+      reconnectSnapshot = runtime.reconnectPlayer(parsed.roomId, parsed.playerId).snapshot;
     } catch (error) {
       const reason = error instanceof Error ? error.message : "Unknown room/player binding.";
       socket.close(1008, reason);
@@ -293,7 +294,6 @@ export function createLiveTransportServer(config: LiveTransportConfig): LiveTran
     }
     roomSessions.add(session);
 
-    const reconnectSnapshot = runtime.reconnectPlayer(parsed.roomId, parsed.playerId).snapshot;
     sendSnapshot(session, reconnectSnapshot);
 
     socket.on("message", (rawPayload: RawData) => {

@@ -1,10 +1,14 @@
 import {
   ArcRotateCamera,
+  Mesh,
   Engine,
   HemisphericLight,
   MeshBuilder,
+  Quaternion,
   Scene,
+  StandardMaterial,
   Vector3,
+  Color3,
 } from "@babylonjs/core";
 import type { InputFrame, Snapshot } from "@car-ball/protocol";
 
@@ -26,6 +30,7 @@ import { createDebugHud, type DebugHud } from "./debug/hud.ts";
 
 const INPUT_RATE_HZ = 60;
 const INPUT_EMIT_INTERVAL_MS = 1_000 / INPUT_RATE_HZ;
+const NETWORK_MIN_INPUT_TICK_DELTA = 2;
 
 export interface InputFrameContext {
   playerId: string;
@@ -111,7 +116,49 @@ export function bootstrapBabylonScene(options: BabylonSceneBootstrapOptions): Ba
   const ground = MeshBuilder.CreateGround("ground", { width: 40, height: 26 }, scene);
   ground.position.y = -0.5;
 
-  MeshBuilder.CreateSphere("ball", { diameter: 1.2 }, scene);
+  const ballMesh = MeshBuilder.CreateSphere("ball", { diameter: 1.2 }, scene);
+  const carMeshes = new Map<string, Mesh>();
+
+  const blueTeamMaterial = new StandardMaterial("team-blue", scene);
+  blueTeamMaterial.diffuseColor = new Color3(0.25, 0.5, 1);
+  const orangeTeamMaterial = new StandardMaterial("team-orange", scene);
+  orangeTeamMaterial.diffuseColor = new Color3(1, 0.6, 0.2);
+  const neutralMaterial = new StandardMaterial("team-neutral", scene);
+  neutralMaterial.diffuseColor = new Color3(0.85, 0.85, 0.85);
+
+  const syncRenderMeshes = (renderSnapshot: RenderSnapshotState): void => {
+    ballMesh.position.set(renderSnapshot.ball.position.x, renderSnapshot.ball.position.y, renderSnapshot.ball.position.z);
+
+    const activeCarIds = new Set(renderSnapshot.cars.map((car) => car.id));
+    for (const [carId, mesh] of carMeshes) {
+      if (!activeCarIds.has(carId)) {
+        mesh.dispose();
+        carMeshes.delete(carId);
+      }
+    }
+
+    for (const car of renderSnapshot.cars) {
+      let mesh = carMeshes.get(car.id);
+      if (!mesh) {
+        mesh = MeshBuilder.CreateBox(car.id, { width: 1.6, height: 0.8, depth: 2.6 }, scene);
+        mesh.material =
+          car.teamId === "team:blue"
+            ? blueTeamMaterial
+            : car.teamId === "team:orange"
+              ? orangeTeamMaterial
+              : neutralMaterial;
+        carMeshes.set(car.id, mesh);
+      }
+
+      mesh.position.set(car.position.x, car.position.y, car.position.z);
+      mesh.rotationQuaternion = new Quaternion(
+        car.rotation.x,
+        car.rotation.y,
+        car.rotation.z,
+        car.rotation.w,
+      );
+    }
+  };
 
   let previousFrameTime = performance.now();
   let inputTick = 1;
@@ -138,6 +185,8 @@ export function bootstrapBabylonScene(options: BabylonSceneBootstrapOptions): Ba
     const interpolationAlpha = Math.min(Math.max(inputAccumulatorMs / INPUT_EMIT_INTERVAL_MS, 0), 1);
     const renderSnapshot = rendererBridge.getInterpolatedSnapshot(interpolationAlpha);
     if (renderSnapshot !== null) {
+      syncRenderMeshes(renderSnapshot);
+
       const cameraPose = resolveCameraPose(cameraController.getMode(), renderSnapshot, inputFrameContext.carId);
       camera.alpha = cameraPose.alpha;
       camera.beta = cameraPose.beta;
@@ -200,15 +249,35 @@ export function bootstrapBabylonScene(options: BabylonSceneBootstrapOptions): Ba
 export function bootstrapNetworkedBabylonScene(
   options: NetworkedBabylonSceneBootstrapOptions,
 ): NetworkedBabylonSceneBootstrap {
-  const inputFrameContext = options.inputFrameContext ?? {
+  const rendererBridge = options.rendererBridge ?? new RendererBridge();
+
+  const baseInputFrameContext = options.inputFrameContext ?? {
     playerId: "player-1",
     carId: "car:player-1",
   };
+
+  let nextNetworkInputTick = 1;
+  const inputFrameContext: InputFrameContext = baseInputFrameContext.getTick
+    ? baseInputFrameContext
+    : {
+      ...baseInputFrameContext,
+      getTick: () => {
+        const latestSnapshotTick = rendererBridge.getLatestSnapshot()?.tick;
+        if (latestSnapshotTick !== undefined && nextNetworkInputTick <= latestSnapshotTick) {
+          nextNetworkInputTick = latestSnapshotTick + NETWORK_MIN_INPUT_TICK_DELTA;
+        }
+
+        const tick = nextNetworkInputTick;
+        nextNetworkInputTick += NETWORK_MIN_INPUT_TICK_DELTA;
+        return tick;
+      },
+    };
 
   let transport: WebSocketClientTransport | null = null;
 
   const base = bootstrapBabylonScene({
     ...options,
+    rendererBridge,
     inputFrameContext,
     onInputFrame(frame): void {
       transport?.sendInputFrame(frame);
