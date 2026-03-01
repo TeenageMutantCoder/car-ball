@@ -1,0 +1,164 @@
+# Canonical machine-readable task registry for AI agents.
+# Single source of truth for status, dependencies, and ownership.
+
+meta:
+  project: CarBall
+  source_plan: docs/implementation-plan-parallel.md
+  version: 1
+  last_updated: 2026-02-28
+  allowed_statuses: [TODO, IN_PROGRESS, BLOCKED, DONE]
+  allowed_priorities: [P0, P1, P2]
+  status_flow:
+    - TODO -> IN_PROGRESS
+    - IN_PROGRESS -> DONE
+    - IN_PROGRESS -> BLOCKED
+    - BLOCKED -> IN_PROGRESS
+
+agent_edit_rules:
+  - Never rename task IDs.
+  - Only update fields for tasks you touch.
+  - Update `meta.last_updated` on every change.
+  - If setting BLOCKED, include `blocked_by` and `unblock_plan`.
+  - If setting DONE, include `completed_at` and `evidence`.
+  - Keep YAML valid; do not convert to another format.
+
+workstreams:
+  - id: WS-A
+    name: Foundation
+  - id: WS-B
+    name: Protocol
+  - id: WS-C
+    name: Simulation
+  - id: WS-D
+    name: Client
+  - id: WS-E
+    name: Server
+  - id: WS-F
+    name: Netcode
+  - id: WS-G
+    name: QA-Perf
+
+tasks:
+  - id: WS-A-001
+    workstream: WS-A
+    title: Initialize monorepo and workspace config
+    status: TODO
+    priority: P0
+    owner: unassigned
+    dependencies: []
+    started_at: null
+    target_date: null
+    completed_at: null
+    blocked_by: null
+    unblock_plan: null
+    evidence: []
+    notes: Create apps/client apps/server packages/sim packages/protocol and root workspace scripts.
+    acceptance:
+      - All workspace packages install/build with one command.
+      - CI typecheck/build/test jobs run.
+
+  - id: WS-B-001
+    workstream: WS-B
+    title: Define protocol schemas and versioning
+    status: TODO
+    priority: P0
+    owner: unassigned
+    dependencies: [WS-A-001]
+    started_at: null
+    target_date: null
+    completed_at: null
+    blocked_by: null
+    unblock_plan: null
+    evidence: []
+    notes: Define InputFrame Snapshot MatchState ServerEvent ClientEvent and compatibility policy.
+    acceptance:
+      - Protocol contracts are shared by client/server/sim.
+      - Encode/decode tests pass.
+
+  - id: WS-C-001
+    workstream: WS-C
+    title: Build fixed-step simulation loop
+    status: TODO
+    priority: P0
+    owner: unassigned
+    dependencies: [WS-B-001]
+    started_at: null
+    target_date: null
+    completed_at: null
+    blocked_by: null
+    unblock_plan: null
+    evidence: []
+    notes: Implement tick accumulator max substep cap and replay harness.
+    acceptance:
+      - Replay tests pass within drift bounds.
+      - Stable wall/ceiling transitions in scripted tests.
+
+  - id: WS-D-001
+    workstream: WS-D
+    title: Initialize Babylon client shell and render bridge
+    status: TODO
+    priority: P0
+    owner: unassigned
+    dependencies: [WS-B-001]
+    started_at: null
+    target_date: null
+    completed_at: null
+    blocked_by: null
+    unblock_plan: null
+    evidence: []
+    notes: Build scene input camera toggle and interpolation-only render bridge.
+    acceptance:
+      - Local scene runs at target FPS on test hardware.
+      - Render layer does not mutate simulation state.
+
+  - id: WS-E-001
+    workstream: WS-E
+    title: Build server rooms and snapshot broadcast
+    status: TODO
+    priority: P0
+    owner: unassigned
+    dependencies: [WS-B-001]
+    started_at: null
+    target_date: null
+    completed_at: null
+    blocked_by: null
+    unblock_plan: null
+    evidence: []
+    notes: Add create join leave start end plus validation and telemetry basics.
+    acceptance:
+      - Two clients can complete a match loop.
+      - Snapshot stream stable at configured rate.
+
+  - id: WS-F-001
+    workstream: WS-F
+    title: Implement prediction and reconciliation
+    status: TODO
+    priority: P1
+    owner: unassigned
+    dependencies: [WS-D-001, WS-E-001]
+    started_at: null
+    target_date: null
+    completed_at: null
+    blocked_by: null
+    unblock_plan: null
+    evidence: []
+    notes: Add input history replay correction deadzone and smoothing metrics.
+    acceptance:
+      - Correction spikes stay under agreed threshold under packet impairment tests.
+
+  - id: WS-G-001
+    workstream: WS-G
+    title: Set up benchmark and release gates
+    status: TODO
+    priority: P1
+    owner: unassigned
+    dependencies: [WS-A-001]
+    started_at: null
+    target_date: null
+    completed_at: null
+    blocked_by: null
+    unblock_plan: null
+    evidence: []
+    notes: Build automated test matrix soak tests and SLO gate checks.
+    acceptance:
+      - MVP gates pass for two consecutive cycles.
