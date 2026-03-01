@@ -1,5 +1,6 @@
 import type { InputFrame, PlayerId } from "@car-ball/protocol";
 import { DEFAULT_MAX_SUBSTEPS, FIXED_STEP_MS } from "./constants.ts";
+import { RapierShadowWorld, type RapierShadowConfig, type RapierShadowMetrics } from "./rapierShadow.ts";
 import { createInitialWorldState, type WorldState } from "./state.ts";
 import { tickWorld } from "./tick.ts";
 
@@ -7,6 +8,7 @@ export interface SimulationConfig {
   fixedStepMs?: number;
   maxSubsteps?: number;
   matchDurationSeconds?: number;
+  rapierShadow?: RapierShadowConfig;
 }
 
 export interface AdvanceResult {
@@ -23,6 +25,7 @@ export class SimulationCore {
 
   private accumulatorMs = 0;
   private readonly pendingInputsByTick = new Map<number, InputFrame[]>();
+  private readonly rapierShadow: RapierShadowWorld;
 
   constructor(playerIds: PlayerId[], config: SimulationConfig = {}) {
     this.fixedStepMs = config.fixedStepMs ?? FIXED_STEP_MS;
@@ -31,6 +34,7 @@ export class SimulationCore {
       playerIds,
       matchDurationSeconds: config.matchDurationSeconds
     });
+    this.rapierShadow = new RapierShadowWorld(config.rapierShadow);
   }
 
   enqueueInput(frame: InputFrame): void {
@@ -69,6 +73,7 @@ export class SimulationCore {
       this.pendingInputsByTick.delete(nextTick);
 
       tickWorld(this.world, tickInputs, this.fixedStepMs / 1000);
+      this.rapierShadow.step(this.fixedStepMs / 1000);
 
       this.accumulatorMs -= this.fixedStepMs;
       substeps += 1;
@@ -80,5 +85,13 @@ export class SimulationCore {
       accumulatorMs: this.accumulatorMs,
       tick: this.world.clock.tick
     };
+  }
+
+  resetRapierShadow(): void {
+    this.rapierShadow.reset();
+  }
+
+  getRapierShadowMetrics(): RapierShadowMetrics {
+    return this.rapierShadow.getMetrics();
   }
 }

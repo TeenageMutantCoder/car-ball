@@ -15,6 +15,26 @@ export interface StartLiveServerConfig {
   port?: number;
   path?: string;
   playerIds?: string[];
+  rapierEnabled?: boolean;
+  rapierShadowMode?: boolean;
+}
+
+function parseBoolean(value: string | undefined, defaultValue: boolean): boolean {
+  if (value === undefined) {
+    return defaultValue;
+  }
+
+  const normalized = value.trim().toLowerCase();
+
+  if (["1", "true", "yes", "on"].includes(normalized)) {
+    return true;
+  }
+
+  if (["0", "false", "no", "off"].includes(normalized)) {
+    return false;
+  }
+
+  return defaultValue;
 }
 
 function parsePort(value: string | undefined): number {
@@ -49,8 +69,13 @@ export async function startLiveServer(config: StartLiveServerConfig = {}): Promi
   const port = config.port ?? parsePort(process.env.PORT);
   const path = config.path ?? process.env.CAR_BALL_WS_PATH ?? DEFAULT_PATH;
   const playerIds = config.playerIds ?? parsePlayerIds(process.env.CAR_BALL_PLAYER_IDS);
+  const rapierEnabled = config.rapierEnabled ?? parseBoolean(process.env.CAR_BALL_RAPIER_ENABLED, false);
+  const rapierShadowMode = config.rapierShadowMode ?? parseBoolean(process.env.CAR_BALL_RAPIER_SHADOW_MODE, true);
 
-  const runtime = createServerRuntime();
+  const runtime = createServerRuntime({
+    rapierEnabled,
+    rapierShadowMode
+  });
   runtime.createRoomRuntime(roomId);
   runtime.attachPlayerIds(roomId, playerIds);
 
@@ -67,6 +92,7 @@ export async function startLiveServer(config: StartLiveServerConfig = {}): Promi
     `car-ball live server started: ws://${endpoint.host}:${endpoint.port}${endpoint.path}?roomId=${roomId}&playerId=<player-id>\n`,
   );
   process.stdout.write(`room=${roomId} players=${playerIds.join(",")}\n`);
+  process.stdout.write(`rapier.enabled=${rapierEnabled} rapier.shadowMode=${rapierShadowMode}\n`);
 
   let stopping = false;
   const stop = async (): Promise<void> => {

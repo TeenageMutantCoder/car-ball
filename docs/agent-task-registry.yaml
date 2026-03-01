@@ -5,7 +5,7 @@ meta:
   project: CarBall
   source_plan: docs/implementation-plan-parallel.md
   version: 2
-  last_updated: 2026-03-01T00:00:00Z
+  last_updated: 2026-03-01T06:20:00Z
   allowed_statuses: [TODO, IN_PROGRESS, BLOCKED, DONE]
   allowed_priorities: [P0, P1, P2]
   status_flow:
@@ -627,16 +627,21 @@ tasks:
   - id: WS-C-006
     workstream: WS-C
     title: Add Rapier world shadow bootstrap
-    status: TODO
+    status: DONE
     priority: P0
     owner: unassigned
     dependencies: [WS-C-005, WS-B-002]
-    started_at: null
+    started_at: 2026-03-01T06:00:00Z
     target_date: null
-    completed_at: null
+    completed_at: 2026-03-01T06:20:00Z
     blocked_by: null
     unblock_plan: null
-    evidence: []
+    evidence:
+      - packages/sim/src/rapierShadow.ts
+      - packages/sim/src/simulation.ts
+      - packages/sim/src/simulation.rapierShadow.test.ts
+      - apps/server/src/runtime.ts
+      - apps/server/src/runtime.test.ts
     notes: Add Rapier world lifecycle in shadow mode without changing authoritative outputs.
     acceptance:
       - Rapier world can be initialized stepped and reset behind feature flag.
@@ -681,11 +686,11 @@ tasks:
   - id: WS-E-005
     workstream: WS-E
     title: Integrate Rapier ball authority in runtime
-    status: TODO
+    status: IN_PROGRESS
     priority: P0
     owner: unassigned
     dependencies: [WS-C-008, WS-E-003]
-    started_at: null
+    started_at: 2026-03-01T06:20:00Z
     target_date: null
     completed_at: null
     blocked_by: null

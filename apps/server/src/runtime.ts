@@ -18,6 +18,8 @@ export const DEFAULT_SNAPSHOT_RATE_HZ = 20;
 export interface RuntimeConfig {
   tickRateHz?: number;
   snapshotRateHz?: number;
+  rapierEnabled?: boolean;
+  rapierShadowMode?: boolean;
   now?: () => number;
 }
 
@@ -105,6 +107,8 @@ export class ServerRuntime {
 
   private readonly snapshotEveryTicks: number;
   private readonly minInputTickDelta: number;
+  private readonly rapierEnabled: boolean;
+  private readonly rapierShadowMode: boolean;
   private readonly now: () => number;
   private readonly rooms = new Map<string, RuntimeRoomInternal>();
   private metrics: RuntimeMetrics = {
@@ -125,6 +129,8 @@ export class ServerRuntime {
     this.fixedStepMs = 1000 / tickRateHz;
     this.snapshotEveryTicks = tickRateHz / snapshotRateHz;
     this.minInputTickDelta = minInputTickDelta(tickRateHz);
+    this.rapierEnabled = config.rapierEnabled ?? false;
+    this.rapierShadowMode = config.rapierShadowMode ?? true;
     this.now = config.now ?? Date.now;
   }
 
@@ -145,7 +151,11 @@ export class ServerRuntime {
 
     room.playerIds = normalizedPlayerIds;
     room.sim = new SimulationCore(normalizedPlayerIds, {
-      fixedStepMs: this.fixedStepMs
+      fixedStepMs: this.fixedStepMs,
+      rapierShadow: {
+        enabled: this.rapierEnabled,
+        shadowMode: this.rapierShadowMode
+      }
     });
     room.matchPhase = "playing";
     room.scoreByTeam = createInitialScoreByTeam();
@@ -323,7 +333,11 @@ export class ServerRuntime {
       roomId,
       playerIds: normalizedPlayerIds,
       sim: new SimulationCore(normalizedPlayerIds, {
-        fixedStepMs: this.fixedStepMs
+        fixedStepMs: this.fixedStepMs,
+        rapierShadow: {
+          enabled: this.rapierEnabled,
+          shadowMode: this.rapierShadowMode
+        }
       }),
       sequence: 1,
       matchPhase: "playing",

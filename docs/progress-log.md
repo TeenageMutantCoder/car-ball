@@ -303,3 +303,27 @@ Chronological append-only implementation log. Add one entry per meaningful updat
   - Implement Phase 1 from docs/inprocess-e2e-test-plan.md with before/after authoritative state assertions.
   - Reintroduce server in-process E2E tests that validate accepted and rejected input state transitions.
 - related_pr_or_commit: n/a
+
+### 2026-03-01T06:20:00Z | Agent: copilot
+
+- changed_tasks:
+  - id: WS-C-006
+    from: TODO
+    to: DONE
+  - id: WS-E-005
+    from: TODO
+    to: IN_PROGRESS
+- summary: Implemented Rapier shadow-world scaffolding in shared sim with feature flags and lifecycle hooks, wired runtime flag propagation, and added unit/integration coverage for critical behavior.
+- blockers: []
+- evidence:
+  - path: packages/sim/src/rapierShadow.ts
+  - path: packages/sim/src/simulation.ts
+  - path: packages/sim/src/simulation.rapierShadow.test.ts
+  - path: apps/server/src/runtime.ts
+  - path: apps/server/src/runtime.test.ts
+  - path: apps/server/src/start.ts
+- next_actions:
+  - Implement WS-C-007 arena and ball collider wiring.
+  - Continue WS-E-005 to integrate Rapier ball authority into runtime snapshot/validation paths.
+  - Extend benchmark/gate telemetry for hybrid metrics before WS-G-005.
+- related_pr_or_commit: n/a

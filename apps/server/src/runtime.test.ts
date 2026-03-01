@@ -171,3 +171,33 @@ test("enqueueInputFrame enforces cooldown abuse checks", () => {
     }
   });
 });
+
+test("runtime propagates rapier shadow flags to room simulation", () => {
+  const runtime = createServerRuntime({
+    rapierEnabled: true,
+    rapierShadowMode: true,
+    now: createMonotonicNow(40_000, 1)
+  });
+
+  runtime.createRoomRuntime("room-rapier-a");
+  const room = runtime.attachPlayerIds("room-rapier-a", ["player-1"]);
+
+  const metrics = room.sim.getRapierShadowMetrics();
+  assert.equal(metrics.enabled, true);
+  assert.equal(metrics.shadowMode, true);
+  assert.equal(metrics.initialized, true);
+});
+
+test("runtime keeps rapier shadow disabled by default", () => {
+  const runtime = createServerRuntime({
+    now: createMonotonicNow(50_000, 1)
+  });
+
+  runtime.createRoomRuntime("room-rapier-b");
+  const room = runtime.attachPlayerIds("room-rapier-b", ["player-1"]);
+
+  const metrics = room.sim.getRapierShadowMetrics();
+  assert.equal(metrics.enabled, false);
+  assert.equal(metrics.shadowMode, true);
+  assert.equal(metrics.initialized, false);
+});
