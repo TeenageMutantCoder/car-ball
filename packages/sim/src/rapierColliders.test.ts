@@ -11,7 +11,7 @@ test("rapier collider setup is deterministic and complete", () => {
   const collidersB = createRapierColliderSpecs(world);
 
   assert.deepEqual(collidersA, collidersB);
-  assert.equal(collidersA.length, 7);
+  assert.equal(collidersA.length, 9);
 
   const ids = collidersA.map((collider) => collider.id);
   assert.deepEqual(ids, [
@@ -21,7 +21,9 @@ test("rapier collider setup is deterministic and complete", () => {
     "arena:wall-x-min",
     "arena:wall-y-max",
     "arena:wall-y-min",
-    "ball:main"
+    "ball:main",
+    "car:player-1",
+    "car:player-2"
   ]);
 
   const ball = collidersA.find((collider) => collider.id === "ball:main");
@@ -45,6 +47,6 @@ test("shadow init context includes colliders and materials", () => {
   const world = createInitialWorldState({ playerIds: ["player-1"] });
   const initContext = createRapierShadowInitContext(world);
 
-  assert.equal(initContext.colliders.length, 7);
+  assert.equal(initContext.colliders.length, 8);
   assert.equal(Object.keys(initContext.materials).length, 2);
 });

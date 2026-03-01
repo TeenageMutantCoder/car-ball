@@ -79,7 +79,16 @@ export class SimulationCore {
       this.pendingInputsByTick.delete(nextTick);
 
       tickWorld(this.world, tickInputs, this.fixedStepMs / 1000);
-      const rapierReport = this.rapierShadow.step(this.fixedStepMs / 1000);
+      const rapierReport = this.rapierShadow.step(this.fixedStepMs / 1000, {
+        kinematicBodies: Object.values(this.world.cars).map((car) => ({
+          id: car.id,
+          translation: {
+            x: car.position.x,
+            y: car.position.y,
+            z: car.position.z
+          }
+        }))
+      });
       if (this.rapierBallAuthority && rapierReport?.authoritativeBallState) {
         const { position, velocity } = rapierReport.authoritativeBallState;
         if (isFiniteVec3(position) && isFiniteVec3(velocity)) {

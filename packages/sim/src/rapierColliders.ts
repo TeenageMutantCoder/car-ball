@@ -2,6 +2,11 @@ import type { WorldState } from "./state.ts";
 import type { RapierColliderSpec, RapierMaterialTable, RapierShadowInitContext } from "./rapierShadow.ts";
 
 export const DEFAULT_BALL_COLLIDER_RADIUS = 0.6;
+export const DEFAULT_CAR_PROXY_HALF_EXTENTS = {
+  x: 1.2,
+  y: 0.8,
+  z: 1.2
+};
 
 export function createRapierMaterialTable(): RapierMaterialTable {
   return {
@@ -153,6 +158,27 @@ export function createRapierColliderSpecs(world: WorldState): RapierColliderSpec
       }
     }
   ];
+
+  for (const car of Object.values(world.cars)) {
+    colliders.push({
+      id: car.id,
+      bodyType: "kinematic-position",
+      materialPreset: "arena-static",
+      translation: {
+        x: car.position.x,
+        y: car.position.y,
+        z: car.position.z
+      },
+      shape: {
+        kind: "cuboid",
+        halfExtents: {
+          x: DEFAULT_CAR_PROXY_HALF_EXTENTS.x,
+          y: DEFAULT_CAR_PROXY_HALF_EXTENTS.y,
+          z: DEFAULT_CAR_PROXY_HALF_EXTENTS.z
+        }
+      }
+    });
+  }
 
   return colliders.sort((left, right) => left.id.localeCompare(right.id));
 }

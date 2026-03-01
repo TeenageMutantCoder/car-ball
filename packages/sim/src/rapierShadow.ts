@@ -17,7 +17,7 @@ async function getRapierModule(): Promise<typeof RAPIER> {
 
 export interface RapierShadowBackend {
   init(context: RapierShadowInitContext): void;
-  step(dtSeconds: number): RapierShadowStepReport | undefined;
+  step(dtSeconds: number, context?: RapierShadowStepContext): RapierShadowStepReport | undefined;
   reset(): void;
   getStatus?(): {
     ready: boolean;
@@ -43,7 +43,7 @@ export type RapierColliderShape =
 
 export interface RapierColliderSpec {
   id: string;
-  bodyType: "fixed" | "dynamic";
+  bodyType: "fixed" | "dynamic" | "kinematic-position";
   materialPreset: RapierMaterialPreset;
   translation: {
     x: number;
@@ -72,6 +72,17 @@ export interface RapierShadowStepReport {
     position: Vec3;
     velocity: Vec3;
   };
+}
+
+export interface RapierShadowStepContext {
+  kinematicBodies?: {
+    id: string;
+    translation: {
+      x: number;
+      y: number;
+      z: number;
+    };
+  }[];
 }
 
 export interface RapierShadowConfig {
@@ -119,6 +130,7 @@ class RapierCompatBackend implements RapierShadowBackend {
   private world: RAPIER.World | null = null;
   private ballBody: RAPIER.RigidBody | null = null;
   private ballCollider: RAPIER.Collider | null = null;
+  private readonly kinematicBodies = new Map<string, RAPIER.RigidBody>();
   private ready = false;
   private error: string | null = null;
   private initializePromise: Promise<void> | null = null;
@@ -144,10 +156,12 @@ class RapierCompatBackend implements RapierShadowBackend {
       });
   }
 
-  step(dtSeconds: number): RapierShadowStepReport | undefined {
+  step(dtSeconds: number, context?: RapierShadowStepContext): RapierShadowStepReport | undefined {
     if (!this.ready || !this.world) {
       return undefined;
     }
+
+    this.syncKinematicBodies(context);
 
     if (typeof this.world.timestep === "number") {
       this.world.timestep = dtSeconds;
@@ -191,6 +205,7 @@ class RapierCompatBackend implements RapierShadowBackend {
     this.world = null;
     this.ballBody = null;
     this.ballCollider = null;
+    this.kinematicBodies.clear();
     this.initializePromise = null;
 
     if (this.context) {
@@ -213,7 +228,11 @@ class RapierCompatBackend implements RapierShadowBackend {
 
     for (const collider of context.colliders) {
       const bodyDesc =
-        collider.bodyType === "dynamic" ? rapier.RigidBodyDesc.dynamic() : rapier.RigidBodyDesc.fixed();
+        collider.bodyType === "dynamic"
+          ? rapier.RigidBodyDesc.dynamic()
+          : collider.bodyType === "kinematic-position"
+            ? rapier.RigidBodyDesc.kinematicPositionBased()
+            : rapier.RigidBodyDesc.fixed();
 
       if (typeof bodyDesc.setTranslation === "function") {
         bodyDesc.setTranslation(collider.translation.x, collider.translation.y, collider.translation.z);
@@ -245,6 +264,27 @@ class RapierCompatBackend implements RapierShadowBackend {
       if (collider.id.startsWith("ball:")) {
         this.ballBody = body;
         this.ballCollider = createdCollider;
+      } else if (collider.bodyType === "kinematic-position") {
+        this.kinematicBodies.set(collider.id, body);
+      }
+    }
+  }
+
+  private syncKinematicBodies(context?: RapierShadowStepContext): void {
+    if (!context?.kinematicBodies || context.kinematicBodies.length === 0) {
+      return;
+    }
+
+    for (const bodyState of context.kinematicBodies) {
+      const body = this.kinematicBodies.get(bodyState.id);
+      if (!body) {
+        continue;
+      }
+
+      if (typeof body.setNextKinematicTranslation === "function") {
+        body.setNextKinematicTranslation(bodyState.translation);
+      } else if (typeof body.setTranslation === "function") {
+        body.setTranslation(bodyState.translation, true);
       }
     }
   }
@@ -300,7 +340,7 @@ export class RapierShadowWorld {
     }
   }
 
-  step(dtSeconds: number): RapierShadowStepReport | undefined {
+  step(dtSeconds: number, context?: RapierShadowStepContext): RapierShadowStepReport | undefined {
     if (!this.enabled || !this.initialized) {
       return undefined;
     }
@@ -309,7 +349,7 @@ export class RapierShadowWorld {
       return undefined;
     }
 
-    const report = this.backend.step(dtSeconds);
+    const report = this.backend.step(dtSeconds, context);
     this.stepCount += 1;
     this.lastStepDtSeconds = dtSeconds;
 

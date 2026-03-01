@@ -110,9 +110,9 @@ test("rapier shadow lifecycle initializes and steps when enabled", () => {
   assert.equal(initialMetrics.enabled, true);
   assert.equal(initialMetrics.shadowMode, true);
   assert.equal(initialMetrics.initialized, true);
-  assert.equal(initialMetrics.colliderCount, 7);
+  assert.equal(initialMetrics.colliderCount, 8);
   assert.equal(initialMetrics.materialPresetCount, 2);
-  assert.equal(calls.colliderCount, 7);
+  assert.equal(calls.colliderCount, 8);
   assert.equal(calls.materialPresetCount, 2);
   assert.equal(calls.init, 1);
 
@@ -317,4 +317,38 @@ test("default backend uses Rapier and becomes ready", async () => {
   assert.equal(metrics.initialized, true);
   assert.equal(metrics.backendError, null);
   assert.equal(ready, true);
+});
+
+test("rapier authoritative ball responds to car proxy collisions", async () => {
+  const sim = new SimulationCore(["player-1"], {
+    fixedStepMs: 1000 / 120,
+    maxSubsteps: 1,
+    rapierShadow: {
+      enabled: true,
+      shadowMode: false,
+      ballAuthority: true
+    }
+  });
+
+  for (let index = 0; index < 300; index += 1) {
+    sim.advance(1000 / 120);
+    if (sim.getRapierShadowMetrics().backendReady) {
+      break;
+    }
+
+    await sleep(1);
+  }
+
+  const car = sim.world.cars["car:player-1"];
+  car.position = { x: -1.8, y: 0, z: 1.5 };
+  car.velocity = { x: 35, y: 0, z: 0 };
+
+  const before = { ...sim.world.ball.position };
+
+  for (let index = 0; index < 120; index += 1) {
+    sim.advance(1000 / 120);
+  }
+
+  const after = sim.world.ball.position;
+  assert.equal(after.x > before.x + 0.25, true);
 });
