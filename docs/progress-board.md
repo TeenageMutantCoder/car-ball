@@ -24,17 +24,17 @@ Update this section first.
 - Last updated: YYYY-MM-DD
  - Last updated: 2026-02-28
 - Sprint / Milestone: MVP-1
-- Overall completion: 75%
+- Overall completion: 86%
 - P0 gate pass rate: 0/0
 - Last full benchmark date: YYYY-MM-DD
 - Last soak date: YYYY-MM-DD
 
 ### Counts
 
-- TODO: 7
+- TODO: 4
 - IN PROGRESS: 0
 - BLOCKED: 0
-- DONE: 21
+- DONE: 24
 
 ## Release Gate Summary
 
@@ -64,9 +64,6 @@ Update this section first.
 | ID | Workstream | Task | Priority | Dependency |
 |---|---|---|---|---|
 | WS-D-003 | WS-D | Implement interpolation and camera modes | P1 | WS-D-001, WS-E-002 |
-| WS-D-004 | WS-D | Add client debug HUD metrics | P1 | WS-D-001, WS-G-001 |
-| WS-F-001 | WS-F | Implement client prediction history buffer | P1 | WS-D-002, WS-E-002 |
-| WS-F-002 | WS-F | Implement reconciliation smoothing metrics | P1 | WS-F-001, WS-C-005 |
 | WS-F-003 | WS-F | Add network impairment simulation controls | P1 | WS-F-002 |
 | WS-G-002 | WS-G | Build benchmark scenarios and harness | P1 | WS-G-001, WS-D-004, WS-E-002, WS-F-003 |
 | WS-G-003 | WS-G | Implement SLO gate evaluation | P1 | WS-G-002 |
@@ -92,10 +89,13 @@ Update this section first.
 | WS-D-001 | WS-D | Initialize Babylon client shell and render bridge | 2026-02-28 | apps/client/src/main.ts | PASS |
 | WS-D-002 | WS-D | Implement input bindings and frame emitter | 2026-02-28 | apps/client/src/input/frameEmitter.ts | PASS |
 | WS-D-003 | WS-D | Implement interpolation and camera modes | 2026-02-28 | apps/client/src/render/camera.test.ts | PASS |
+| WS-D-004 | WS-D | Add client debug HUD metrics | 2026-02-28 | apps/client/src/debug/hud.test.ts | PASS |
 | WS-E-001 | WS-E | Build server room lifecycle | 2026-02-28 | apps/server/src/room.ts | PASS |
 | WS-E-002 | WS-E | Implement server tick and snapshot loop | 2026-02-28 | apps/server/src/runtime.ts | PASS |
 | WS-E-003 | WS-E | Add server validation checks | 2026-02-28 | apps/server/src/validation.ts | PASS |
 | WS-E-004 | WS-E | Implement reconnect and resync flow | 2026-02-28 | apps/server/src/runtime.reconnect.test.ts | PASS |
+| WS-F-001 | WS-F | Implement client prediction history buffer | 2026-02-28 | apps/client/src/net/prediction.test.ts | PASS |
+| WS-F-002 | WS-F | Implement reconciliation smoothing metrics | 2026-02-28 | apps/client/src/net/reconciliation.test.ts | PASS |
 | WS-G-001 | WS-G | Freeze telemetry schema and benchmark fields | 2026-02-28 | docs/telemetry-schema.md | PASS |
 
 ## Workstream Rollup
@@ -105,9 +105,9 @@ Update this section first.
 | WS-A Foundation | DONE | 100 | TBD | - | Completed |
 | WS-B Protocol | DONE | 100 | TBD | - | Completed |
 | WS-C Simulation | DONE | 100 | TBD | - | Completed |
-| WS-D Client | IN PROGRESS | 75 | TBD | HUD metrics | 60 FPS local scene |
+| WS-D Client | DONE | 100 | TBD | - | Completed |
 | WS-E Server | DONE | 100 | TBD | - | Completed |
-| WS-F Netcode | TODO | 0 | TBD | - | Corrections within threshold |
+| WS-F Netcode | IN PROGRESS | 67 | TBD | Impairment simulation controls | Corrections within threshold |
 | WS-G QA/Perf | IN PROGRESS | 25 | TBD | Benchmark harness setup | MVP gates automated |
 
 ## Update Rules (2-minute routine)

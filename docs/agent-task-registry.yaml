@@ -5,7 +5,7 @@ meta:
   project: CarBall
   source_plan: docs/implementation-plan-parallel.md
   version: 2
-  last_updated: 2026-02-28T02:00:00Z
+  last_updated: 2026-02-28T02:30:00Z
   allowed_statuses: [TODO, IN_PROGRESS, BLOCKED, DONE]
   allowed_priorities: [P0, P1, P2]
   status_flow:
@@ -376,16 +376,19 @@ tasks:
   - id: WS-D-004
     workstream: WS-D
     title: Add client debug HUD metrics
-    status: TODO
+    status: DONE
     priority: P1
     owner: unassigned
     dependencies: [WS-D-001, WS-G-001]
     started_at: null
     target_date: null
-    completed_at: null
+    completed_at: 2026-02-28T02:30:00Z
     blocked_by: null
     unblock_plan: null
-    evidence: []
+    evidence:
+      - apps/client/src/debug/hud.ts
+      - apps/client/src/debug/hud.test.ts
+      - apps/client/src/main.ts
     notes: Expose FPS frame time correction counts ping and key runtime metrics.
     acceptance:
       - HUD displays agreed telemetry fields.
@@ -478,16 +481,19 @@ tasks:
   - id: WS-F-001
     workstream: WS-F
     title: Implement client prediction history buffer
-    status: TODO
+    status: DONE
     priority: P1
     owner: unassigned
     dependencies: [WS-D-002, WS-E-002]
     started_at: null
     target_date: null
-    completed_at: null
+    completed_at: 2026-02-28T02:30:00Z
     blocked_by: null
     unblock_plan: null
-    evidence: []
+    evidence:
+      - apps/client/src/net/prediction.ts
+      - apps/client/src/net/prediction.test.ts
+      - apps/client/src/main.ts
     notes: Track local input history and replay predicted state against snapshots.
     acceptance:
       - Prediction path is stable during nominal gameplay.
@@ -496,16 +502,19 @@ tasks:
   - id: WS-F-002
     workstream: WS-F
     title: Implement reconciliation smoothing metrics
-    status: TODO
+    status: DONE
     priority: P1
     owner: unassigned
     dependencies: [WS-F-001, WS-C-005]
     started_at: null
     target_date: null
-    completed_at: null
+    completed_at: 2026-02-28T02:30:00Z
     blocked_by: null
     unblock_plan: null
-    evidence: []
+    evidence:
+      - apps/client/src/net/reconciliation.ts
+      - apps/client/src/net/reconciliation.test.ts
+      - apps/client/src/index.ts
     notes: Add deadzone smoothing and correction magnitude metrics with thresholds.
     acceptance:
       - Correction metrics are emitted and tracked.

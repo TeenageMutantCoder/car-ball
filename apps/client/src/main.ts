@@ -10,12 +10,14 @@ import type { InputFrame, Snapshot } from "@car-ball/protocol";
 
 import { createInputBindings, type InputBindings } from "./input/bindings.ts";
 import { createInputFrameEmitter, type InputFrameEmitter } from "./input/frameEmitter.ts";
+import { createPredictionHistory, type PredictionHistory } from "./net/prediction.ts";
 import {
   createCameraController,
   resolveCameraPose,
   type CameraMode,
 } from "./render/camera.ts";
 import { RendererBridge, type RenderSnapshotState } from "./render/rendererBridge.ts";
+import { createDebugHud, type DebugHud } from "./debug/hud.ts";
 
 const INPUT_RATE_HZ = 60;
 const INPUT_EMIT_INTERVAL_MS = 1_000 / INPUT_RATE_HZ;
@@ -29,8 +31,10 @@ export interface InputFrameContext {
 export interface BabylonSceneBootstrapOptions {
   canvas: HTMLCanvasElement;
   rendererBridge?: RendererBridge;
+  debugHud?: DebugHud;
   inputBindings?: InputBindings;
   inputFrameEmitter?: InputFrameEmitter;
+  predictionHistory?: PredictionHistory;
   inputFrameContext?: InputFrameContext;
   initialCameraMode?: CameraMode;
   onInputFrame?: (frame: InputFrame) => void;
@@ -42,8 +46,10 @@ export interface BabylonSceneBootstrap {
   scene: Scene;
   camera: ArcRotateCamera;
   rendererBridge: RendererBridge;
+  debugHud: DebugHud;
   inputBindings: InputBindings;
   inputFrameEmitter: InputFrameEmitter;
+  predictionHistory: PredictionHistory;
   getCameraMode: () => CameraMode;
   setCameraMode: (mode: CameraMode) => CameraMode;
   toggleCamera: () => CameraMode;
@@ -60,6 +66,7 @@ export function bootstrapBabylonScene(options: BabylonSceneBootstrapOptions): Ba
   }
 
   const rendererBridge = options.rendererBridge ?? new RendererBridge();
+  const debugHud = options.debugHud ?? createDebugHud();
   const inputBindings = options.inputBindings ?? createInputBindings();
   const inputFrameContext = options.inputFrameContext ?? {
     playerId: "player-1",
@@ -71,6 +78,7 @@ export function bootstrapBabylonScene(options: BabylonSceneBootstrapOptions): Ba
       playerId: inputFrameContext.playerId,
       carId: inputFrameContext.carId,
     });
+  const predictionHistory = options.predictionHistory ?? createPredictionHistory();
   const engine = new Engine(options.canvas, true);
   const scene = new Scene(engine);
 
@@ -94,12 +102,14 @@ export function bootstrapBabylonScene(options: BabylonSceneBootstrapOptions): Ba
     const currentFrameTime = performance.now();
     const deltaMs = currentFrameTime - previousFrameTime;
     previousFrameTime = currentFrameTime;
+    debugHud.updateFrame(deltaMs);
 
     inputAccumulatorMs += deltaMs;
     while (inputAccumulatorMs >= INPUT_EMIT_INTERVAL_MS) {
       const tick = inputFrameContext.getTick?.() ?? inputTick;
       const inputFrame = inputFrameEmitter.emit(tick, inputBindings.getControls());
       rendererBridge.applyInputFrame(inputFrame);
+      predictionHistory.enqueue(inputFrame);
       options.onInputFrame?.(inputFrame);
 
       inputAccumulatorMs -= INPUT_EMIT_INTERVAL_MS;
@@ -131,8 +141,10 @@ export function bootstrapBabylonScene(options: BabylonSceneBootstrapOptions): Ba
     scene,
     camera,
     rendererBridge,
+    debugHud,
     inputBindings,
     inputFrameEmitter,
+    predictionHistory,
     getCameraMode(): CameraMode {
       return cameraController.getMode();
     },

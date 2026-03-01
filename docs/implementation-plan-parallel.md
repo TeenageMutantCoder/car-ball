@@ -16,8 +16,9 @@ Current completed tasks (see `docs/agent-task-registry.yaml` for authoritative s
 - `WS-B-001`, `WS-B-002`, `WS-B-003`
 - `WS-C-001`, `WS-C-002`, `WS-C-003`, `WS-C-004`
 - `WS-C-005`
-- `WS-D-001`, `WS-D-002`, `WS-D-003`
+- `WS-D-001`, `WS-D-002`, `WS-D-003`, `WS-D-004`
 - `WS-E-001`, `WS-E-002`, `WS-E-003`, `WS-E-004`
+- `WS-F-001`, `WS-F-002`
 - `WS-G-001`
 
 Completed artifacts aligned to those tasks:
@@ -29,6 +30,9 @@ Completed artifacts aligned to those tasks:
 - `apps/client/src/main.ts`
 - `apps/client/src/input/frameEmitter.ts`
 - `apps/client/src/render/camera.ts`
+- `apps/client/src/debug/hud.ts`
+- `apps/client/src/net/prediction.ts`
+- `apps/client/src/net/reconciliation.ts`
 - `apps/server/src/runtime.ts`
 - `apps/server/src/validation.ts`
 - `apps/server/src/runtime.reconnect.test.ts`
