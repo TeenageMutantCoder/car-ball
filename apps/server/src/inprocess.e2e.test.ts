@@ -375,6 +375,28 @@ test("e2e interleaved multi-player inputs apply only accepted owner frames", () 
   );
   assert.deepEqual(baselineAcceptedP1, { ok: true });
 
+  const baselineAcceptedP2 = baselineRuntime.enqueueInputFrame(
+    "room-e2e-d-baseline",
+    decodeClientInput(
+      encodeClientInput({
+        version: 1,
+        sequence: 2,
+        timestamp: 230_001,
+        tick: 1,
+        playerId: "player-2",
+        carId: "car:player-2",
+        controls: {
+          throttle: -1,
+          steer: 0,
+          jump: false,
+          boost: false,
+          handbrake: false
+        }
+      })
+    )
+  );
+  assert.deepEqual(baselineAcceptedP2, { ok: true });
+
   baselineRuntime.tickOnce();
 
   const baselineAfterCar1 = baselineRoom.sim.world.cars["car:player-1"];
@@ -473,4 +495,48 @@ test("e2e disconnect blocks input and reconnect returns authoritative resync sna
   );
 
   assert.deepEqual(acceptedAfterReconnect, { ok: true });
+});
+
+test("e2e goal-volume interaction evolves score and phase in snapshots", () => {
+  const runtime = createServerRuntime({
+    tickRateHz: 120,
+    snapshotRateHz: 120,
+    now: createMonotonicNow(250_000, 1)
+  });
+
+  runtime.createRoomRuntime("room-e2e-f");
+  const room = runtime.attachPlayerIds("room-e2e-f", ["player-1"]);
+
+  room.sim.world.ball.position = {
+    x: room.sim.world.goals.blue.volume.min.x + 0.5,
+    y: 0,
+    z: 1
+  };
+  room.sim.world.ball.velocity = { x: 0, y: 0, z: 0 };
+
+  const firstTick = runtime.tickOnce();
+  assert.equal(firstTick.events.length, 1);
+
+  const firstSnapshotPayload = encodeEvent(firstTick.events[0]!);
+  const firstSnapshotEvent = decodeServerEvent(firstSnapshotPayload);
+  assert.equal(firstSnapshotEvent.type, "server.snapshot");
+  assert.equal(firstSnapshotEvent.match.phase, "goal_pause");
+  assert.deepEqual(firstSnapshotEvent.match.scoreByTeam, {
+    "team:blue": 0,
+    "team:orange": 1
+  });
+  assert.deepEqual(firstSnapshotEvent.ball.position, { x: 0, y: 0, z: 1.5 });
+  assert.deepEqual(firstSnapshotEvent.ball.velocity, { x: 0, y: 0, z: 0 });
+
+  const secondTick = runtime.tickOnce();
+  assert.equal(secondTick.events.length, 1);
+
+  const secondSnapshotPayload = encodeEvent(secondTick.events[0]!);
+  const secondSnapshotEvent = decodeServerEvent(secondSnapshotPayload);
+  assert.equal(secondSnapshotEvent.type, "server.snapshot");
+  assert.equal(secondSnapshotEvent.match.phase, "playing");
+  assert.deepEqual(secondSnapshotEvent.match.scoreByTeam, {
+    "team:blue": 0,
+    "team:orange": 1
+  });
 });

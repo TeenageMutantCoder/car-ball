@@ -1,5 +1,5 @@
-import type { InputFrame, PlayerId, ServerEvent, Snapshot } from "@car-ball/protocol";
-import { SimulationCore, worldToProtocolSnapshot } from "@car-ball/sim";
+import type { InputFrame, MatchPhase, PlayerId, ServerEvent, Snapshot, TeamId, Vec3 } from "@car-ball/protocol";
+import { SimulationCore, TEAM_BLUE_ID, TEAM_ORANGE_ID, worldToProtocolSnapshot } from "@car-ball/sim";
 import {
   createInputValidationRoomState,
   createInputValidationTelemetry,
@@ -55,10 +55,31 @@ interface RuntimeRoomInternal {
   playerIds: PlayerId[];
   sim: SimulationCore;
   sequence: number;
+  matchPhase: MatchPhase;
+  scoreByTeam: Record<TeamId, number>;
+  goalPauseTicksRemaining: number;
   pendingInputs: InputFrame[];
   disconnectedPlayerIds: Set<PlayerId>;
   validationState: InputValidationRoomState;
   validationTelemetry: InputValidationTelemetry;
+}
+
+function createInitialScoreByTeam(): Record<TeamId, number> {
+  return {
+    [TEAM_BLUE_ID]: 0,
+    [TEAM_ORANGE_ID]: 0
+  };
+}
+
+function isInsideBox(position: Vec3, volume: { min: Vec3; max: Vec3 }): boolean {
+  return (
+    position.x >= volume.min.x &&
+    position.x <= volume.max.x &&
+    position.y >= volume.min.y &&
+    position.y <= volume.max.y &&
+    position.z >= volume.min.z &&
+    position.z <= volume.max.z
+  );
 }
 
 function uniqueSortedPlayerIds(playerIds: PlayerId[]): PlayerId[] {
@@ -126,6 +147,9 @@ export class ServerRuntime {
     room.sim = new SimulationCore(normalizedPlayerIds, {
       fixedStepMs: this.fixedStepMs
     });
+    room.matchPhase = "playing";
+    room.scoreByTeam = createInitialScoreByTeam();
+    room.goalPauseTicksRemaining = 0;
     room.pendingInputs = [];
     room.disconnectedPlayerIds = new Set<PlayerId>();
     room.validationState = createInputValidationRoomState();
@@ -194,7 +218,10 @@ export class ServerRuntime {
       sequence: room.sequence,
       timestamp: Math.round(this.now()),
       matchId: `${roomId}:match:runtime`,
-      phase: room.sim.world.clock.isOver ? "finished" : "playing"
+      phase: room.matchPhase,
+      scoreByTeam: {
+        ...room.scoreByTeam
+      }
     });
 
     return {
@@ -230,6 +257,8 @@ export class ServerRuntime {
         continue;
       }
 
+      this.updateMatchState(room);
+
       if (advanceResult.tick % this.snapshotEveryTicks !== 0) {
         continue;
       }
@@ -238,7 +267,10 @@ export class ServerRuntime {
         sequence: room.sequence,
         timestamp,
         matchId: `${roomId}:match:runtime`,
-        phase: room.sim.world.clock.isOver ? "finished" : "playing"
+        phase: room.matchPhase,
+        scoreByTeam: {
+          ...room.scoreByTeam
+        }
       });
 
       room.sequence += 1;
@@ -294,11 +326,48 @@ export class ServerRuntime {
         fixedStepMs: this.fixedStepMs
       }),
       sequence: 1,
+      matchPhase: "playing",
+      scoreByTeam: createInitialScoreByTeam(),
+      goalPauseTicksRemaining: 0,
       pendingInputs: [],
       disconnectedPlayerIds: new Set<PlayerId>(),
       validationState: createInputValidationRoomState(),
       validationTelemetry: createInputValidationTelemetry()
     };
+  }
+
+  private updateMatchState(room: RuntimeRoomInternal): void {
+    if (room.sim.world.clock.isOver) {
+      room.matchPhase = "finished";
+      room.goalPauseTicksRemaining = 0;
+      return;
+    }
+
+    const ballPosition = room.sim.world.ball.position;
+    const inBlueGoal = isInsideBox(ballPosition, room.sim.world.goals.blue.volume);
+    const inOrangeGoal = isInsideBox(ballPosition, room.sim.world.goals.orange.volume);
+
+    if (inBlueGoal || inOrangeGoal) {
+      const scoringTeamId = inBlueGoal ? TEAM_ORANGE_ID : TEAM_BLUE_ID;
+      room.scoreByTeam[scoringTeamId] += 1;
+      room.matchPhase = "goal_pause";
+      room.goalPauseTicksRemaining = 1;
+
+      room.sim.world.ball.position = { x: 0, y: 0, z: 1.5 };
+      room.sim.world.ball.velocity = { x: 0, y: 0, z: 0 };
+      return;
+    }
+
+    if (room.goalPauseTicksRemaining > 0) {
+      room.goalPauseTicksRemaining -= 1;
+
+      if (room.goalPauseTicksRemaining === 0) {
+        room.matchPhase = "playing";
+      }
+      return;
+    }
+
+    room.matchPhase = "playing";
   }
 
   private requireRoom(roomId: string): RuntimeRoomInternal {
