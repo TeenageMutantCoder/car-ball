@@ -1,9 +1,9 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { decodeEvent, encodeEvent, type InputFrame, type ServerEvent } from "@car-ball/protocol";
+import { decodeEvent, encodeEvent, type InputFrame, type ServerEvent, type Snapshot } from "@car-ball/protocol";
 
-import { createServerRuntime } from "./runtime.ts";
+import { createServerRuntime, type RuntimeRoom } from "./runtime.ts";
 
 function createMonotonicNow(startMs: number, deltaMs: number): () => number {
   let current = startMs - deltaMs;
@@ -39,6 +39,31 @@ function decodeServerEvent(payload: string): ServerEvent {
   }
 
   return event;
+}
+
+function assertSnapshotMatchesAuthoritativeWorld(snapshot: Snapshot, room: RuntimeRoom): void {
+  const world = room.sim.world;
+
+  assert.equal(snapshot.tick, world.clock.tick);
+  assert.equal(snapshot.match.tick, world.clock.tick);
+  assert.equal(snapshot.ball.id, world.ball.id);
+  assert.deepEqual(snapshot.ball.position, world.ball.position);
+  assert.deepEqual(snapshot.ball.velocity, world.ball.velocity);
+
+  const snapshotCarsById = new Map(snapshot.cars.map((car) => [car.id, car]));
+  const worldCars = Object.values(world.cars);
+  assert.equal(snapshotCarsById.size, worldCars.length);
+
+  for (const worldCar of worldCars) {
+    const snapshotCar = snapshotCarsById.get(worldCar.id);
+    assert(snapshotCar, `snapshot car missing for id ${worldCar.id}`);
+
+    assert.equal(snapshotCar.ownerPlayerId, worldCar.playerId);
+    assert.equal(snapshotCar.teamId, worldCar.teamId);
+    assert.deepEqual(snapshotCar.position, worldCar.position);
+    assert.deepEqual(snapshotCar.velocity, worldCar.velocity);
+    assert.equal(snapshotCar.boost, worldCar.boost);
+  }
 }
 
 test("e2e accepted input mutates authoritative car state", () => {
@@ -230,6 +255,8 @@ test("e2e interleaved multi-player inputs apply only accepted owner frames", () 
   assert(beforeCar2);
   const beforeVelocity1 = { ...beforeCar1.velocity };
   const beforeVelocity2 = { ...beforeCar2.velocity };
+  const beforePosition1 = { ...beforeCar1.position };
+  const beforePosition2 = { ...beforeCar2.position };
 
   const acceptedP1 = runtime.enqueueInputFrame(
     "room-e2e-d",
@@ -318,6 +345,51 @@ test("e2e interleaved multi-player inputs apply only accepted owner frames", () 
   assert(speedDelta1 > 0, "player-1 accepted frame should mutate car:player-1");
   assert(speedDelta2 > 0, "player-2 accepted frame should mutate car:player-2");
 
+  const baselineRuntime = createServerRuntime({
+    tickRateHz: 120,
+    snapshotRateHz: 120,
+    now: createMonotonicNow(230_000, 1)
+  });
+  baselineRuntime.createRoomRuntime("room-e2e-d-baseline");
+  const baselineRoom = baselineRuntime.attachPlayerIds("room-e2e-d-baseline", ["player-1", "player-2"]);
+
+  const baselineAcceptedP1 = baselineRuntime.enqueueInputFrame(
+    "room-e2e-d-baseline",
+    decodeClientInput(
+      encodeClientInput({
+        version: 1,
+        sequence: 1,
+        timestamp: 230_000,
+        tick: 1,
+        playerId: "player-1",
+        carId: "car:player-1",
+        controls: {
+          throttle: 1,
+          steer: 0,
+          jump: false,
+          boost: false,
+          handbrake: false
+        }
+      })
+    )
+  );
+  assert.deepEqual(baselineAcceptedP1, { ok: true });
+
+  baselineRuntime.tickOnce();
+
+  const baselineAfterCar1 = baselineRoom.sim.world.cars["car:player-1"];
+  const baselineAfterCar2 = baselineRoom.sim.world.cars["car:player-2"];
+  assert(baselineAfterCar1);
+  assert(baselineAfterCar2);
+
+  assert.deepEqual(afterCar1.position, baselineAfterCar1.position);
+  assert.deepEqual(afterCar1.velocity, baselineAfterCar1.velocity);
+  assert.deepEqual(afterCar2.position, baselineAfterCar2.position);
+  assert.deepEqual(afterCar2.velocity, baselineAfterCar2.velocity);
+
+  assert.notDeepEqual(afterCar1.position, beforePosition1);
+  assert.notDeepEqual(afterCar2.position, beforePosition2);
+
   assert.deepEqual(runtime.getValidationTelemetry("room-e2e-d"), {
     accepted: 2,
     rejected: 1,
@@ -377,8 +449,7 @@ test("e2e disconnect blocks input and reconnect returns authoritative resync sna
   assert.equal(reconnectEvent.type, "server.snapshot");
   const { type: _eventType, ...eventSnapshot } = reconnectEvent;
   assert.deepEqual(reconnectResult.snapshot, eventSnapshot);
-  assert.equal(reconnectResult.snapshot.tick, room.sim.world.clock.tick);
-  assert.equal(reconnectResult.snapshot.match.tick, room.sim.world.clock.tick);
+  assertSnapshotMatchesAuthoritativeWorld(reconnectResult.snapshot, room);
 
   const acceptedAfterReconnect = runtime.enqueueInputFrame(
     "room-e2e-e",

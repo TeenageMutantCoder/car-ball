@@ -1,6 +1,6 @@
 # Improved In-Process E2E Test Plan
 
-Status: PLANNED
+Status: IN_PROGRESS
 LastUpdated: 2026-03-01
 Owner: WS-E / WS-F
 
@@ -70,6 +70,24 @@ Replace smoke-style E2E checks with in-process E2E tests that assert concrete au
 - Negative-path assertions exist for rejected events and no-op handling.
 - Tests run under existing workspace command:
   - `npm test --workspaces --if-present`
+
+## Implementation Progress (2026-03-01)
+
+- Implemented and passing:
+   - Phase 1.1 Input Accepted -> Car State Changes
+   - Phase 1.2 Input Rejected -> No Unauthorized State Mutation
+   - Phase 1.3 Snapshot Sequencing and Match Clock Integrity
+   - Phase 2.1 Interleaved Inputs Across Players
+   - Phase 2.2 Disconnect/Reconnect Resync Consistency
+   - Phase 3.1 Client Input Payload Mapping
+   - Phase 3.2 Snapshot Ingestion Produces Expected Render State Deltas
+   - Phase 3.3 Non-Snapshot Events Are Ignored Without Side Effects
+
+- Remaining planned item:
+   - Phase 2.3 Goal/Score State Evolution
+
+- Blocker for Phase 2.3:
+   - Current simulation/runtime does not yet produce goal-volume scoring transitions or authoritative `scoreByTeam` evolution; snapshot score values remain default unless explicitly injected.
 
 ## File Targets
 

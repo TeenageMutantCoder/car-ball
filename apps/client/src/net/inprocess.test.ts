@@ -83,11 +83,31 @@ test("in-process client net maps input payload to exact client.input fields", ()
 });
 
 test("in-process client net snapshot ingestion yields render-state deltas", () => {
-  const renderTicks: number[] = [];
+  const renderStates: Array<{
+    tick: number;
+    carX: number;
+    carVx: number;
+    carBoost: number;
+    ballX: number;
+    ballZ: number;
+  }> = [];
+
   const net = createInprocessClientNet({
     applySnapshot(snapshot) {
-      renderTicks.push(snapshot.tick);
-      return snapshot.tick;
+      const car = snapshot.cars.find((candidate) => candidate.id === "car:player-1");
+      assert(car);
+
+      const renderState = {
+        tick: snapshot.tick,
+        carX: car.position.x,
+        carVx: car.velocity.x,
+        carBoost: car.boost,
+        ballX: snapshot.ball.position.x,
+        ballZ: snapshot.ball.position.z,
+      };
+
+      renderStates.push(renderState);
+      return renderState;
     },
   });
 
@@ -154,9 +174,37 @@ test("in-process client net snapshot ingestion yields render-state deltas", () =
     }),
   });
 
-  assert.equal(net.ingestServerPayload(firstSnapshotPayload), 6);
-  assert.equal(net.ingestServerPayload(secondSnapshotPayload), 7);
-  assert.deepEqual(renderTicks, [6, 7]);
+  const firstRenderState = net.ingestServerPayload(firstSnapshotPayload);
+  const secondRenderState = net.ingestServerPayload(secondSnapshotPayload);
+
+  assert.deepEqual(firstRenderState, {
+    tick: 6,
+    carX: 1,
+    carVx: 0.2,
+    carBoost: 95,
+    ballX: 0,
+    ballZ: 1.5,
+  });
+
+  assert.deepEqual(secondRenderState, {
+    tick: 7,
+    carX: 1.4,
+    carVx: 0.4,
+    carBoost: 94,
+    ballX: 0.5,
+    ballZ: 1.4,
+  });
+
+  assert.equal(renderStates.length, 2);
+  assert.deepEqual(renderStates[0], firstRenderState);
+  assert.deepEqual(renderStates[1], secondRenderState);
+
+  assert(renderStates[1]!.tick > renderStates[0]!.tick);
+  assert(renderStates[1]!.carX > renderStates[0]!.carX);
+  assert(renderStates[1]!.carVx > renderStates[0]!.carVx);
+  assert(renderStates[1]!.carBoost < renderStates[0]!.carBoost);
+  assert(renderStates[1]!.ballX > renderStates[0]!.ballX);
+  assert(renderStates[1]!.ballZ < renderStates[0]!.ballZ);
 });
 
 test("in-process client net ignores non-snapshot events without side effects", () => {
