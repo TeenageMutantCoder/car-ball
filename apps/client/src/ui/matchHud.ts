@@ -12,6 +12,7 @@ export interface MatchHudValues {
   blueScore: number;
   orangeScore: number;
   clock: string;
+  boost: number;
 }
 
 interface MatchHudElement {
@@ -50,10 +51,35 @@ export function getMatchHudValues(snapshot: Pick<RenderSnapshotState, "match">):
     blueScore: snapshot.match.scoreByTeam[TEAM_BLUE_ID] ?? 0,
     orangeScore: snapshot.match.scoreByTeam[TEAM_ORANGE_ID] ?? 0,
     clock: formatTimeRemaining(snapshot.match.timeRemainingMs),
+    boost: 0,
   };
 }
 
-export function createMatchHud(documentLike: MatchHudDocumentLike = resolveDocument()): MatchHud {
+function clampBoost(boost: number): number {
+  if (!Number.isFinite(boost)) {
+    return 0;
+  }
+
+  return Math.max(0, Math.min(100, Math.round(boost)));
+}
+
+export function getMatchHudValuesForCar(
+  snapshot: Pick<RenderSnapshotState, "match" | "cars">,
+  carId?: string,
+): MatchHudValues {
+  const localCar = carId ? snapshot.cars.find((car) => car.id === carId) : undefined;
+  return {
+    blueScore: snapshot.match.scoreByTeam[TEAM_BLUE_ID] ?? 0,
+    orangeScore: snapshot.match.scoreByTeam[TEAM_ORANGE_ID] ?? 0,
+    clock: formatTimeRemaining(snapshot.match.timeRemainingMs),
+    boost: clampBoost(localCar?.boost ?? 0),
+  };
+}
+
+export function createMatchHud(
+  documentLike: MatchHudDocumentLike = resolveDocument(),
+  localCarId?: string,
+): MatchHud {
   const root = documentLike.createElement("div");
   root.style.position = "fixed";
   root.style.top = "0";
@@ -95,17 +121,52 @@ export function createMatchHud(documentLike: MatchHudDocumentLike = resolveDocum
 
   panel.append(blueScore, separator, orangeScore, clock);
   root.append(panel);
+
+  const boostRoot = documentLike.createElement("div");
+  boostRoot.style.position = "fixed";
+  boostRoot.style.right = "16px";
+  boostRoot.style.bottom = "16px";
+  boostRoot.style.pointerEvents = "none";
+  boostRoot.style.zIndex = "1000";
+
+  const boostPanel = documentLike.createElement("div");
+  boostPanel.style.display = "flex";
+  boostPanel.style.alignItems = "baseline";
+  boostPanel.style.gap = "10px";
+  boostPanel.style.padding = "10px 14px";
+  boostPanel.style.borderRadius = "10px";
+  boostPanel.style.background = "rgba(12, 16, 24, 0.72)";
+  boostPanel.style.color = "#f3f6ff";
+  boostPanel.style.fontFamily = "system-ui, sans-serif";
+
+  const boostLabel = documentLike.createElement("span");
+  boostLabel.style.fontSize = "12px";
+  boostLabel.style.fontWeight = "600";
+  boostLabel.style.opacity = "0.8";
+  boostLabel.textContent = "BOOST";
+
+  const boostValue = documentLike.createElement("span");
+  boostValue.style.fontSize = "28px";
+  boostValue.style.fontWeight = "700";
+  boostValue.textContent = "0";
+
+  boostPanel.append(boostLabel, boostValue);
+  boostRoot.append(boostPanel);
+
   documentLike.body.append(root);
+  documentLike.body.append(boostRoot);
 
   return {
     update(snapshot: RenderSnapshotState): void {
-      const values = getMatchHudValues(snapshot);
+      const values = getMatchHudValuesForCar(snapshot, localCarId);
       blueScore.textContent = String(values.blueScore);
       orangeScore.textContent = String(values.orangeScore);
       clock.textContent = values.clock;
+      boostValue.textContent = String(values.boost);
     },
     dispose(): void {
       root.remove();
+      boostRoot.remove();
     },
   };
 }

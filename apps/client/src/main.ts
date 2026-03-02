@@ -136,7 +136,7 @@ export function bootstrapBabylonScene(options: BabylonSceneBootstrapOptions): Ba
       carId: inputFrameContext.carId,
     });
   const predictionHistory = options.predictionHistory ?? createPredictionHistory();
-  const matchHud = createMatchHud();
+  const matchHud = createMatchHud(undefined, inputFrameContext.carId);
   const engine = new Engine(options.canvas, true);
   const scene = new Scene(engine);
 
