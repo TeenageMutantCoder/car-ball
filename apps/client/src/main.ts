@@ -427,12 +427,22 @@ export function createNetworkInputTickResolver(
   minInputTickDelta = NETWORK_MIN_INPUT_TICK_DELTA,
 ): () => number | null {
   let nextNetworkInputTick = 1;
+  let previousLatestSnapshotTick: number | null = null;
 
   return () => {
     const latestSnapshotTick = getLatestSnapshotTick();
     if (latestSnapshotTick === undefined) {
       return null;
     }
+
+    if (
+      previousLatestSnapshotTick !== null &&
+      latestSnapshotTick < previousLatestSnapshotTick
+    ) {
+      nextNetworkInputTick = latestSnapshotTick + minInputTickDelta;
+    }
+
+    previousLatestSnapshotTick = latestSnapshotTick;
 
     if (nextNetworkInputTick <= latestSnapshotTick) {
       nextNetworkInputTick = latestSnapshotTick + minInputTickDelta;

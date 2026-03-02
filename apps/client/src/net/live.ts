@@ -64,6 +64,7 @@ export function createLiveClientNet<TRenderSnapshot>(
     smoothingAlpha: tuning.smoothingAlpha
   });
   let lastSnapshotMatchId: string | null = null;
+  let lastSnapshotPhase: Snapshot["match"]["phase"] | null = null;
   let lastSnapshotTick = -1;
   let lastSnapshotSequence = -1;
   let lastSnapshotTimestamp = -1;
@@ -109,6 +110,17 @@ export function createLiveClientNet<TRenderSnapshot>(
       return false;
     }
 
+    const likelyRestartBaseline =
+      lastSnapshotPhase === "finished" &&
+      snapshot.match.phase === "playing" &&
+      lastSnapshotTick >= 8 &&
+      snapshot.tick <= 2 &&
+      snapshot.timestamp >= lastSnapshotTimestamp;
+
+    if (likelyRestartBaseline) {
+      return false;
+    }
+
     if (snapshot.tick < lastSnapshotTick) {
       return true;
     }
@@ -122,6 +134,7 @@ export function createLiveClientNet<TRenderSnapshot>(
 
   const markSnapshotApplied = (snapshot: Snapshot): void => {
     lastSnapshotMatchId = snapshot.match.matchId;
+    lastSnapshotPhase = snapshot.match.phase;
     lastSnapshotTick = snapshot.tick;
     lastSnapshotSequence = snapshot.sequence;
     lastSnapshotTimestamp = snapshot.timestamp;

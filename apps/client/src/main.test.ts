@@ -39,3 +39,15 @@ test("createNetworkInputTickResolver re-bases when authoritative tick jumps ahea
   assert.equal(resolveTick(), 42);
   assert.equal(resolveTick(), 44);
 });
+
+test("createNetworkInputTickResolver re-bases when authoritative tick resets after restart", () => {
+  let latestSnapshotTick = 100;
+  const resolveTick = createNetworkInputTickResolver(() => latestSnapshotTick, 2);
+
+  assert.equal(resolveTick(), 102);
+  assert.equal(resolveTick(), 104);
+
+  latestSnapshotTick = 0;
+  assert.equal(resolveTick(), 2);
+  assert.equal(resolveTick(), 4);
+});

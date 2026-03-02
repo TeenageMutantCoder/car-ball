@@ -221,6 +221,39 @@ test("live client net accepts same-match stream reset baseline", () => {
   ]);
 });
 
+test("live client net accepts finished-to-playing restart baseline with monotonic sequence", () => {
+  const applied: Array<{ tick: number; sequence: number; phase: Snapshot["match"]["phase"] }> = [];
+  const net = createLiveClientNet(
+    {
+      applySnapshot(snapshot) {
+        applied.push({ tick: snapshot.tick, sequence: snapshot.sequence, phase: snapshot.match.phase });
+        return snapshot.tick;
+      },
+    },
+    {
+      playerId: "player-1",
+      carId: "car:player-1",
+    },
+  );
+
+  const finishedPayload = encodeEvent({
+    type: "server.snapshot",
+    ...createSnapshot({ sequence: 300, tick: 120, timestamp: 30_000, match: { ...createSnapshot().match, phase: "finished" } }),
+  });
+
+  const restartedPayload = encodeEvent({
+    type: "server.snapshot",
+    ...createSnapshot({ sequence: 301, tick: 0, timestamp: 30_100, match: { ...createSnapshot().match, phase: "playing" } }),
+  });
+
+  assert.equal(net.ingestServerPayload(finishedPayload), 120);
+  assert.equal(net.ingestServerPayload(restartedPayload), 0);
+  assert.deepEqual(applied, [
+    { tick: 120, sequence: 300, phase: "finished" },
+    { tick: 0, sequence: 301, phase: "playing" },
+  ]);
+});
+
 test("live client net records correction metrics when authoritative snapshot exceeds threshold", () => {
   let nowMs = 20_000;
   const net = createLiveClientNet(
