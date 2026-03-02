@@ -59,9 +59,9 @@ export function shouldCorrect(positionErrorCm: number, deadzoneCm: number): bool
 export function resolveReconciliationTuning(context: ReconciliationTuningContext): ReconciliationTuning {
   const baseTuning =
     context.profile === "loss_5pct"
-      ? { deadzoneCm: 18, smoothingAlpha: 0.65 }
+      ? { deadzoneCm: 8, smoothingAlpha: 0.8 }
       : context.profile === "jitter"
-        ? { deadzoneCm: 22, smoothingAlpha: 0.5 }
+        ? { deadzoneCm: 15, smoothingAlpha: 0.65 }
         : { deadzoneCm: 20, smoothingAlpha: 0.4 };
 
   if (!context.rapierBallAuthority) {

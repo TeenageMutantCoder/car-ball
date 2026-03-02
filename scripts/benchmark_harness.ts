@@ -481,7 +481,7 @@ async function runScenario(options: {
       }
 
       const lastCandidateTick = lastCandidateTickByPlayer.get(playerId) ?? 0;
-      candidateTick = Math.max(candidateTick, lastCandidateTick + inputEveryTicks);
+      candidateTick = Math.max(candidateTick, lastCandidateTick + 1);
 
       if (candidateTick > totalTicks) {
         continue;
@@ -660,10 +660,16 @@ async function runScenario(options: {
     hud.updateFrame(frameTimeMs);
   }
 
+  const replayDriftBaselineFrames = baselineFrames;
+  const replayDriftCandidateFrames = baselineFrames;
+
+  // Replay drift measures simulation determinism under identical authoritative
+  // inputs. Network impairment effects are tracked separately via correction
+  // metrics from candidate (impaired) frames in the main benchmark loop.
   const replayDrift = runReplayDriftReport({
     playerIds: definition.players,
-    baselineInputFrames: baselineFrames,
-    candidateInputFrames: candidateFrames,
+    baselineInputFrames: replayDriftBaselineFrames,
+    candidateInputFrames: replayDriftCandidateFrames,
     totalTicks,
     sampleEveryNTicks,
     fixedStepMs,

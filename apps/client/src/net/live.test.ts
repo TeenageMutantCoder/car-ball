@@ -208,7 +208,7 @@ test("live client net applies profile-based deadzone when threshold is not overr
           id: "car:player-1",
           ownerPlayerId: "player-1",
           teamId: "team:blue",
-          position: { x: 0.14, y: 0, z: 0 },
+          position: { x: 0.04, y: 0, z: 0 },
           velocity: { x: 0, y: 0, z: 0 },
           rotation: { x: 0, y: 0, z: 0, w: 1 },
           boost: 100,
@@ -221,8 +221,8 @@ test("live client net applies profile-based deadzone when threshold is not overr
 
   const metrics = net.getCorrectionMetrics();
   assert.equal(metrics.correctionsPerMinuteWindow, 0);
-  assert.equal(metrics.deadzoneCm, 15);
-  assert.equal(Math.abs(metrics.smoothingAlpha - 0.7) < 1e-9, true);
+  assert.equal(metrics.deadzoneCm, 5);
+  assert.equal(Math.abs(metrics.smoothingAlpha - 0.85) < 1e-9, true);
 });
 
 test("live client net defaults to clean reconciliation tuning when profile is unspecified", () => {
