@@ -127,6 +127,11 @@ Additional checks:
 - A/B comparison reports for custom vs hybrid correction metrics.
 - Replay drift reports with and without Rapier paths.
 
+Impairment-model assumptions for benchmark/gate runs:
+- `loss_5pct` models reliable transport packet loss as delayed retransmission, not permanent input-frame loss.
+- Replay drift metrics compare equivalent authoritative input streams (determinism signal), while network impairment impact is evaluated via correction metrics.
+- These assumptions must remain explicit in benchmark harness comments and any future gate-threshold updates.
+
 ## 9) Risks and Mitigations
 
 1. Determinism/replay drift increase

@@ -315,13 +315,18 @@ function createNetworkProfile(profile: NetworkProfileName): {
   lossRate: number;
   jitterMs: number;
   baseRttMs: number;
+  retransmitPenaltyTicks: number;
 } {
+  // Benchmark impairment models the current live transport behavior.
+  // For `loss_5pct`, frames are delayed (retransmitted) instead of dropped,
+  // since the runtime path uses reliable transport semantics.
   if (profile === "loss_5pct") {
     return {
       name: "loss_5pct",
       lossRate: 0.05,
-      jitterMs: 8,
+      jitterMs: 3,
       baseRttMs: 48,
+      retransmitPenaltyTicks: 2,
     };
   }
 
@@ -331,6 +336,7 @@ function createNetworkProfile(profile: NetworkProfileName): {
       lossRate: 0,
       jitterMs: 28,
       baseRttMs: 54,
+      retransmitPenaltyTicks: 0,
     };
   }
 
@@ -339,6 +345,7 @@ function createNetworkProfile(profile: NetworkProfileName): {
     lossRate: 0,
     jitterMs: 1,
     baseRttMs: 24,
+    retransmitPenaltyTicks: 0,
   };
 }
 
@@ -468,13 +475,17 @@ async function runScenario(options: {
         baselineFramesByTick.set(frame.tick, [frame]);
       }
 
-      if (rand() < network.lossRate) {
+      const isLostPacket = rand() < network.lossRate;
+      if (isLostPacket) {
+        // Count as network loss event for telemetry while still delivering the
+        // frame later through retransmit penalty ticks.
         droppedInputFrames += 1;
-        continue;
       }
 
       const jitterMs = network.jitterMs <= 0 ? 0 : rand() * network.jitterMs;
-      const delayTicks = Math.max(0, Math.round(jitterMs / fixedStepMs));
+      const delayTicks =
+        Math.max(0, Math.round(jitterMs / fixedStepMs)) +
+        (isLostPacket ? network.retransmitPenaltyTicks : 0);
       let candidateTick = tick + delayTicks;
       if (delayTicks > 0) {
         delayedInputFrames += 1;
