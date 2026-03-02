@@ -62,6 +62,10 @@ export function createLiveClientNet<TRenderSnapshot>(
     deadzoneCm: reconcileThresholdCm,
     smoothingAlpha: tuning.smoothingAlpha
   });
+  let lastSnapshotMatchId: string | null = null;
+  let lastSnapshotTick = -1;
+  let lastSnapshotSequence = -1;
+  let lastSnapshotTimestamp = -1;
 
   const recordCorrectionIfNeeded = (snapshot: Snapshot): void => {
     if (!options.getPredictedPosition) {
@@ -84,6 +88,42 @@ export function createLiveClientNet<TRenderSnapshot>(
     }
 
     correctionTelemetry.recordCorrection(positionErrorCm, Math.round(now()));
+  };
+
+  const isStaleSnapshot = (snapshot: Snapshot): boolean => {
+    const snapshotMatchId = snapshot.match.matchId;
+
+    if (lastSnapshotMatchId !== snapshotMatchId) {
+      return false;
+    }
+
+    const likelyStreamReset =
+      lastSnapshotSequence >= 8 &&
+      snapshot.sequence <= 2 &&
+      lastSnapshotTick >= 8 &&
+      snapshot.tick <= 2 &&
+      snapshot.timestamp >= lastSnapshotTimestamp;
+
+    if (likelyStreamReset) {
+      return false;
+    }
+
+    if (snapshot.tick < lastSnapshotTick) {
+      return true;
+    }
+
+    if (snapshot.tick === lastSnapshotTick && snapshot.sequence <= lastSnapshotSequence) {
+      return true;
+    }
+
+    return false;
+  };
+
+  const markSnapshotApplied = (snapshot: Snapshot): void => {
+    lastSnapshotMatchId = snapshot.match.matchId;
+    lastSnapshotTick = snapshot.tick;
+    lastSnapshotSequence = snapshot.sequence;
+    lastSnapshotTimestamp = snapshot.timestamp;
   };
 
   return {
@@ -110,8 +150,14 @@ export function createLiveClientNet<TRenderSnapshot>(
         return null;
       }
 
+      if (isStaleSnapshot(event)) {
+        return null;
+      }
+
       recordCorrectionIfNeeded(event);
-      return snapshotApplier.applySnapshot(event);
+      const applied = snapshotApplier.applySnapshot(event);
+      markSnapshotApplied(event);
+      return applied;
     },
 
     getCorrectionMetrics(): CorrectionMetrics {

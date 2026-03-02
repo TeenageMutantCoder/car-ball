@@ -112,6 +112,108 @@ test("live client net applies snapshot payloads and ignores non-snapshot events"
   assert.equal(net.ingestServerPayload(pongPayload), null);
 });
 
+test("live client net ignores stale snapshot tick and duplicate sequence", () => {
+  const appliedTicks: number[] = [];
+  const net = createLiveClientNet(
+    {
+      applySnapshot(snapshot) {
+        appliedTicks.push(snapshot.tick);
+        return snapshot.tick;
+      },
+    },
+    {
+      playerId: "player-1",
+      carId: "car:player-1",
+    },
+  );
+
+  const newestPayload = encodeEvent({
+    type: "server.snapshot",
+    ...createSnapshot({ sequence: 5, tick: 12 }),
+  });
+
+  const staleTickPayload = encodeEvent({
+    type: "server.snapshot",
+    ...createSnapshot({ sequence: 6, tick: 11 }),
+  });
+
+  const duplicatePayload = encodeEvent({
+    type: "server.snapshot",
+    ...createSnapshot({ sequence: 5, tick: 12 }),
+  });
+
+  assert.equal(net.ingestServerPayload(newestPayload), 12);
+  assert.equal(net.ingestServerPayload(staleTickPayload), null);
+  assert.equal(net.ingestServerPayload(duplicatePayload), null);
+  assert.deepEqual(appliedTicks, [12]);
+});
+
+test("live client net accepts newer tick after reconnect-like sequence reset", () => {
+  const applied: Array<{ tick: number; sequence: number }> = [];
+  const net = createLiveClientNet(
+    {
+      applySnapshot(snapshot) {
+        applied.push({ tick: snapshot.tick, sequence: snapshot.sequence });
+        return snapshot.tick;
+      },
+    },
+    {
+      playerId: "player-1",
+      carId: "car:player-1",
+    },
+  );
+
+  const beforeReconnectPayload = encodeEvent({
+    type: "server.snapshot",
+    ...createSnapshot({ sequence: 42, tick: 50 }),
+  });
+
+  const afterReconnectPayload = encodeEvent({
+    type: "server.snapshot",
+    ...createSnapshot({ sequence: 1, tick: 51 }),
+  });
+
+  assert.equal(net.ingestServerPayload(beforeReconnectPayload), 50);
+  assert.equal(net.ingestServerPayload(afterReconnectPayload), 51);
+  assert.deepEqual(applied, [
+    { tick: 50, sequence: 42 },
+    { tick: 51, sequence: 1 },
+  ]);
+});
+
+test("live client net accepts same-match stream reset baseline", () => {
+  const applied: Array<{ tick: number; sequence: number }> = [];
+  const net = createLiveClientNet(
+    {
+      applySnapshot(snapshot) {
+        applied.push({ tick: snapshot.tick, sequence: snapshot.sequence });
+        return snapshot.tick;
+      },
+    },
+    {
+      playerId: "player-1",
+      carId: "car:player-1",
+    },
+  );
+
+  const preResetPayload = encodeEvent({
+    type: "server.snapshot",
+    ...createSnapshot({ sequence: 30, tick: 30, timestamp: 20_000 }),
+  });
+
+  const postResetPayload = encodeEvent({
+    type: "server.snapshot",
+    ...createSnapshot({ sequence: 1, tick: 1, timestamp: 20_100 }),
+  });
+
+  assert.equal(net.ingestServerPayload(preResetPayload), 30);
+  assert.equal(net.ingestServerPayload(postResetPayload), 1);
+  assert.deepEqual(applied, [
+    { tick: 30, sequence: 30 },
+    { tick: 1, sequence: 1 },
+  ]);
+});
+
 test("live client net records correction metrics when authoritative snapshot exceeds threshold", () => {
   let nowMs = 20_000;
   const net = createLiveClientNet(

@@ -44,19 +44,45 @@ export class SimulationCore {
   }
 
   enqueueInput(frame: InputFrame): void {
-    const existing = this.pendingInputsByTick.get(frame.tick);
+    const targetTick = Math.max(frame.tick, this.world.clock.tick + 1);
+    const frameForTick = targetTick === frame.tick
+      ? frame
+      : {
+        ...frame,
+        tick: targetTick
+      };
+
+    const existing = this.pendingInputsByTick.get(targetTick);
     if (existing) {
-      existing.push(frame);
+      existing.push(frameForTick);
       return;
     }
 
-    this.pendingInputsByTick.set(frame.tick, [frame]);
+    this.pendingInputsByTick.set(targetTick, [frameForTick]);
   }
 
   enqueueInputs(frames: InputFrame[]): void {
     for (const frame of frames) {
       this.enqueueInput(frame);
     }
+  }
+
+  setAuthoritativeBallState(position: { x: number; y: number; z: number }, velocity: { x: number; y: number; z: number }): void {
+    this.world.ball.position = {
+      x: position.x,
+      y: position.y,
+      z: position.z
+    };
+    this.world.ball.velocity = {
+      x: velocity.x,
+      y: velocity.y,
+      z: velocity.z
+    };
+
+    this.rapierShadow.syncAuthoritativeBallState({
+      position: this.world.ball.position,
+      velocity: this.world.ball.velocity
+    });
   }
 
   advance(elapsedMs: number): AdvanceResult {
@@ -92,16 +118,7 @@ export class SimulationCore {
       if (this.rapierBallAuthority && rapierReport?.authoritativeBallState) {
         const { position, velocity } = rapierReport.authoritativeBallState;
         if (isFiniteVec3(position) && isFiniteVec3(velocity)) {
-          this.world.ball.position = {
-            x: position.x,
-            y: position.y,
-            z: position.z
-          };
-          this.world.ball.velocity = {
-            x: velocity.x,
-            y: velocity.y,
-            z: velocity.z
-          };
+          this.setAuthoritativeBallState(position, velocity);
         }
       }
 

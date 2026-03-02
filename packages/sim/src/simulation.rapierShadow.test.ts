@@ -352,3 +352,67 @@ test("rapier authoritative ball responds to car proxy collisions", async () => {
   const after = sim.world.ball.position;
   assert.equal(after.x > before.x + 0.25, true);
 });
+
+test("setAuthoritativeBallState synchronizes rapier backend state", () => {
+  let backendBall = {
+    position: { x: 18, y: 0, z: 1.5 },
+    velocity: { x: -6, y: 0, z: 0 }
+  };
+
+  const sim = new SimulationCore(["player-1"], {
+    fixedStepMs: 10,
+    maxSubsteps: 1,
+    rapierShadow: {
+      enabled: true,
+      shadowMode: false,
+      ballAuthority: true,
+      createBackend: () => ({
+        init(): void {
+          return;
+        },
+        step() {
+          return {
+            authoritativeBallState: {
+              position: {
+                x: backendBall.position.x,
+                y: backendBall.position.y,
+                z: backendBall.position.z
+              },
+              velocity: {
+                x: backendBall.velocity.x,
+                y: backendBall.velocity.y,
+                z: backendBall.velocity.z
+              }
+            }
+          };
+        },
+        reset(): void {
+          return;
+        },
+        syncAuthoritativeBallState(state): void {
+          backendBall = {
+            position: {
+              x: state.position.x,
+              y: state.position.y,
+              z: state.position.z
+            },
+            velocity: {
+              x: state.velocity.x,
+              y: state.velocity.y,
+              z: state.velocity.z
+            }
+          };
+        }
+      })
+    }
+  });
+
+  sim.advance(10);
+  assert.deepEqual(sim.world.ball.position, { x: 18, y: 0, z: 1.5 });
+
+  sim.setAuthoritativeBallState({ x: 0, y: 0, z: 1.5 }, { x: 0, y: 0, z: 0 });
+  sim.advance(10);
+
+  assert.deepEqual(sim.world.ball.position, { x: 0, y: 0, z: 1.5 });
+  assert.deepEqual(sim.world.ball.velocity, { x: 0, y: 0, z: 0 });
+});

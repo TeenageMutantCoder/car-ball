@@ -22,6 +22,7 @@ export interface WebSocketClientTransport {
 }
 
 const OPEN_READY_STATE = 1;
+const SERVER_SNAPSHOT_EVENT_PATTERN = /"type"\s*:\s*"server\.snapshot"/;
 
 function toPayloadString(data: unknown): string | null {
   if (typeof data === "string") {
@@ -46,6 +47,46 @@ export function createWebSocketClientTransport<TRenderSnapshot>(
   const createSocket = options.webSocketFactory ?? ((url: string, protocols?: string | string[]) => new WebSocket(url, protocols));
 
   let socket: WebSocket | null = null;
+  let pendingSnapshotPayload: string | null = null;
+  let snapshotDrainScheduled = false;
+
+  const dispatchPayload = (payload: string): void => {
+    const snapshot = options.net.ingestServerPayload(payload);
+    if (snapshot !== null) {
+      options.onSnapshot?.(snapshot);
+    }
+  };
+
+  const drainSnapshotPayload = (): void => {
+    snapshotDrainScheduled = false;
+
+    if (pendingSnapshotPayload === null) {
+      return;
+    }
+
+    const payload = pendingSnapshotPayload;
+    pendingSnapshotPayload = null;
+    dispatchPayload(payload);
+  };
+
+  const scheduleSnapshotDrain = (): void => {
+    if (snapshotDrainScheduled) {
+      return;
+    }
+
+    snapshotDrainScheduled = true;
+
+    if (typeof window !== "undefined" && typeof window.requestAnimationFrame === "function") {
+      window.requestAnimationFrame(() => {
+        drainSnapshotPayload();
+      });
+      return;
+    }
+
+    queueMicrotask(() => {
+      drainSnapshotPayload();
+    });
+  };
 
   const onMessage = (event: MessageEvent): void => {
     const payload = toPayloadString(event.data);
@@ -53,10 +94,13 @@ export function createWebSocketClientTransport<TRenderSnapshot>(
       return;
     }
 
-    const snapshot = options.net.ingestServerPayload(payload);
-    if (snapshot !== null) {
-      options.onSnapshot?.(snapshot);
+    if (SERVER_SNAPSHOT_EVENT_PATTERN.test(payload)) {
+      pendingSnapshotPayload = payload;
+      scheduleSnapshotDrain();
+      return;
     }
+
+    dispatchPayload(payload);
   };
 
   return {
@@ -83,6 +127,8 @@ export function createWebSocketClientTransport<TRenderSnapshot>(
         return;
       }
 
+      pendingSnapshotPayload = null;
+      snapshotDrainScheduled = false;
       socket.removeEventListener("message", onMessage);
       socket.close(code, reason);
       socket = null;

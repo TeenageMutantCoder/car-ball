@@ -19,6 +19,7 @@ export interface RapierShadowBackend {
   init(context: RapierShadowInitContext): void;
   step(dtSeconds: number, context?: RapierShadowStepContext): RapierShadowStepReport | undefined;
   reset(): void;
+  syncAuthoritativeBallState?(state: RapierAuthoritativeBallState): void;
   getStatus?(): {
     ready: boolean;
     error: string | null;
@@ -85,6 +86,11 @@ export interface RapierShadowStepContext {
   }[];
 }
 
+export interface RapierAuthoritativeBallState {
+  position: Vec3;
+  velocity: Vec3;
+}
+
 export interface RapierShadowConfig {
   enabled?: boolean;
   shadowMode?: boolean;
@@ -120,6 +126,9 @@ function createNoopBackend(): RapierShadowBackend {
       return undefined;
     },
     reset(): void {
+      return;
+    },
+    syncAuthoritativeBallState(): void {
       return;
     }
   };
@@ -210,6 +219,40 @@ class RapierCompatBackend implements RapierShadowBackend {
 
     if (this.context) {
       this.init(this.context);
+    }
+  }
+
+  syncAuthoritativeBallState(state: RapierAuthoritativeBallState): void {
+    if (!this.ready || !this.ballBody) {
+      return;
+    }
+
+    const translation = {
+      x: state.position.x,
+      y: state.position.y,
+      z: state.position.z
+    };
+
+    const linearVelocity = {
+      x: state.velocity.x,
+      y: state.velocity.y,
+      z: state.velocity.z
+    };
+
+    if (typeof this.ballBody.setTranslation === "function") {
+      this.ballBody.setTranslation(translation, true);
+    }
+
+    if (typeof this.ballBody.setLinvel === "function") {
+      this.ballBody.setLinvel(linearVelocity, true);
+    }
+
+    if (typeof this.ballBody.setAngvel === "function") {
+      this.ballBody.setAngvel({ x: 0, y: 0, z: 0 }, true);
+    }
+
+    if (typeof this.ballBody.wakeUp === "function") {
+      this.ballBody.wakeUp();
     }
   }
 
@@ -365,6 +408,14 @@ export class RapierShadowWorld {
     }
 
     return report;
+  }
+
+  syncAuthoritativeBallState(state: RapierAuthoritativeBallState): void {
+    if (!this.enabled || !this.initialized) {
+      return;
+    }
+
+    this.backend.syncAuthoritativeBallState?.(state);
   }
 
   reset(): void {

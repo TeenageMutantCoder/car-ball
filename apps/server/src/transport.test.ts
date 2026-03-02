@@ -262,3 +262,36 @@ test("live transport rejects non-monotonic inbound sequence", async () => {
     await transport.stop();
   }
 });
+
+test("live transport drops tick snapshots under backpressure", async () => {
+  const runtime = createServerRuntime({
+    now: createMonotonicNow(330_000, 1)
+  });
+  runtime.createRoomRuntime("room-live-d");
+  runtime.attachPlayerIds("room-live-d", ["player-1"]);
+
+  const transport = createLiveTransportServer({
+    runtime,
+    tickIntervalMs: 2,
+    maxBufferedAmountBytes: 0
+  });
+
+  const endpoint = await transport.start();
+  const client = new WebSocket(
+    `ws://${endpoint.host}:${endpoint.port}${endpoint.path}?roomId=room-live-d&playerId=player-1`,
+  );
+
+  try {
+    await waitForOpen(client);
+    await waitForCondition(() => transport.getMetrics().outboundPackets >= 1);
+
+    await new Promise((resolve) => setTimeout(resolve, 40));
+
+    const metrics = transport.getMetrics();
+    assert.equal(metrics.outboundPackets, 1);
+    assert(metrics.droppedSnapshotsBackpressure > 0);
+  } finally {
+    client.close();
+    await transport.stop();
+  }
+});

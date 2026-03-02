@@ -60,6 +60,10 @@ class FakeWebSocket {
   }
 }
 
+function flushMicrotasks(): Promise<void> {
+  return Promise.resolve();
+}
+
 test("websocket transport sends encoded input frames once connected", () => {
   const fake = new FakeWebSocket();
   const net = createLiveClientNet(
@@ -122,7 +126,7 @@ test("websocket transport sends encoded input frames once connected", () => {
   assert.equal(decoded.sequence, 2);
 });
 
-test("websocket transport ingests server snapshots via live net", () => {
+test("websocket transport ingests server snapshots via live net", async () => {
   const fake = new FakeWebSocket();
   const appliedTicks: number[] = [];
   const net = createLiveClientNet(
@@ -183,7 +187,107 @@ test("websocket transport ingests server snapshots via live net", () => {
     },
   }));
 
+  await flushMicrotasks();
   assert.deepEqual(appliedTicks, [7]);
+});
+
+test("websocket transport coalesces snapshot bursts to newest payload", async () => {
+  const fake = new FakeWebSocket();
+  const appliedTicks: number[] = [];
+  const net = createLiveClientNet(
+    {
+      applySnapshot(snapshot) {
+        return snapshot.tick;
+      },
+    },
+    {
+      playerId: "player-1",
+      carId: "car:player-1",
+    },
+  );
+
+  const transport = createWebSocketClientTransport({
+    url: "ws://localhost:8080/ws",
+    net,
+    webSocketFactory: () => fake as unknown as WebSocket,
+    onSnapshot(snapshotTick): void {
+      appliedTicks.push(snapshotTick);
+    },
+  });
+
+  transport.connect();
+  fake.emitOpen();
+
+  fake.emitMessage(encodeEvent({
+    type: "server.snapshot",
+    version: 1,
+    sequence: 1,
+    timestamp: 2_000,
+    tick: 7,
+    match: {
+      matchId: "room-main:match:runtime",
+      phase: "playing",
+      tick: 7,
+      scoreByTeam: {
+        "team:blue": 0,
+        "team:orange": 0,
+      },
+      timeRemainingMs: 295_000,
+    },
+    cars: [
+      {
+        id: "car:player-1",
+        ownerPlayerId: "player-1",
+        teamId: "team:blue",
+        position: { x: 0, y: 0, z: 0 },
+        velocity: { x: 0, y: 0, z: 0 },
+        rotation: { x: 0, y: 0, z: 0, w: 1 },
+        boost: 100,
+      },
+    ],
+    ball: {
+      id: "ball:main",
+      position: { x: 0, y: 0, z: 1.5 },
+      velocity: { x: 0, y: 0, z: 0 },
+    },
+  }));
+
+  fake.emitMessage(encodeEvent({
+    type: "server.snapshot",
+    version: 1,
+    sequence: 2,
+    timestamp: 2_001,
+    tick: 8,
+    match: {
+      matchId: "room-main:match:runtime",
+      phase: "playing",
+      tick: 8,
+      scoreByTeam: {
+        "team:blue": 0,
+        "team:orange": 0,
+      },
+      timeRemainingMs: 294_000,
+    },
+    cars: [
+      {
+        id: "car:player-1",
+        ownerPlayerId: "player-1",
+        teamId: "team:blue",
+        position: { x: 1, y: 0, z: 0 },
+        velocity: { x: 0, y: 0, z: 0 },
+        rotation: { x: 0, y: 0, z: 0, w: 1 },
+        boost: 100,
+      },
+    ],
+    ball: {
+      id: "ball:main",
+      position: { x: 0, y: 0, z: 1.5 },
+      velocity: { x: 0, y: 0, z: 0 },
+    },
+  }));
+
+  await flushMicrotasks();
+  assert.deepEqual(appliedTicks, [8]);
 });
 
 test("websocket transport disconnects cleanly", () => {

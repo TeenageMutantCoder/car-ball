@@ -506,8 +506,10 @@ export class ServerRuntime {
       room.rapierAuthorityTelemetry.rejectedDisplacementTransitions += 1;
     }
 
-    room.sim.world.ball.position = cloneVec3(previousBallState.position);
-    room.sim.world.ball.velocity = cloneVec3(previousBallState.velocity);
+    room.sim.setAuthoritativeBallState(
+      cloneVec3(previousBallState.position),
+      cloneVec3(previousBallState.velocity)
+    );
   }
 
   private updateMatchState(room: RuntimeRoomInternal): void {
@@ -527,8 +529,7 @@ export class ServerRuntime {
       room.matchPhase = "goal_pause";
       room.goalPauseTicksRemaining = 1;
 
-      room.sim.world.ball.position = { x: 0, y: 0, z: 1.5 };
-      room.sim.world.ball.velocity = { x: 0, y: 0, z: 0 };
+      room.sim.setAuthoritativeBallState({ x: 0, y: 0, z: 1.5 }, { x: 0, y: 0, z: 0 });
       resetCarsToKickoff(room);
       return;
     }

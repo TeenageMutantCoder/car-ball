@@ -15,6 +15,7 @@ import type { ServerRuntime } from "./runtime.ts";
 const ROOM_MATCH_TOKEN = ":match:";
 const DEFAULT_HOST = "127.0.0.1";
 const DEFAULT_PATH = "/ws";
+const DEFAULT_MAX_BUFFERED_AMOUNT_BYTES = 256 * 1024;
 
 export interface LiveTransportConfig {
   runtime: ServerRuntime;
@@ -23,12 +24,14 @@ export interface LiveTransportConfig {
   path?: string;
   now?: () => number;
   tickIntervalMs?: number;
+  maxBufferedAmountBytes?: number;
 }
 
 export interface LiveTransportMetrics {
   activeSessions: number;
   inboundPackets: number;
   outboundPackets: number;
+  droppedSnapshotsBackpressure: number;
 }
 
 export interface LiveTransportServer {
@@ -96,6 +99,9 @@ export function createLiveTransportServer(config: LiveTransportConfig): LiveTran
   const path = config.path ?? DEFAULT_PATH;
   const now = config.now ?? Date.now;
   const tickIntervalMs = Math.max(1, Math.floor(config.tickIntervalMs ?? config.runtime.fixedStepMs));
+  const maxBufferedAmountBytes = Number.isFinite(config.maxBufferedAmountBytes)
+    ? Math.max(0, Math.floor(config.maxBufferedAmountBytes!))
+    : DEFAULT_MAX_BUFFERED_AMOUNT_BYTES;
 
   const runtime = config.runtime;
   const socketSessions = new Map<WebSocket, ClientSession>();
@@ -103,6 +109,7 @@ export function createLiveTransportServer(config: LiveTransportConfig): LiveTran
 
   let inboundPackets = 0;
   let outboundPackets = 0;
+  let droppedSnapshotsBackpressure = 0;
 
   let httpServer: HttpServer | null = null;
   let webSocketServer: WebSocketServer | null = null;
@@ -164,7 +171,12 @@ export function createLiveTransportServer(config: LiveTransportConfig): LiveTran
     session.nextOutboundSequence += 1;
   };
 
-  const sendSnapshot = (session: ClientSession, snapshot: Snapshot): void => {
+  const sendSnapshot = (session: ClientSession, snapshot: Snapshot, force = false): void => {
+    if (!force && session.socket.bufferedAmount >= maxBufferedAmountBytes) {
+      droppedSnapshotsBackpressure += 1;
+      return;
+    }
+
     sendEvent(session, {
       type: "server.snapshot",
       ...snapshot,
@@ -294,7 +306,7 @@ export function createLiveTransportServer(config: LiveTransportConfig): LiveTran
     }
     roomSessions.add(session);
 
-    sendSnapshot(session, reconnectSnapshot);
+    sendSnapshot(session, reconnectSnapshot, true);
 
     socket.on("message", (rawPayload: RawData) => {
       const activeSession = socketSessions.get(socket);
@@ -390,6 +402,7 @@ export function createLiveTransportServer(config: LiveTransportConfig): LiveTran
         activeSessions: socketSessions.size,
         inboundPackets,
         outboundPackets,
+        droppedSnapshotsBackpressure,
       };
     },
   };
