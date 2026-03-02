@@ -263,3 +263,27 @@ test("runtime rejects impossible rapier ball-authority transitions and emits tel
     rejectedDisplacementTransitions: 0
   });
 });
+
+test("restartMatch resets finished room to a fresh playing state", () => {
+  const runtime = createServerRuntime({
+    now: createMonotonicNow(80_000, 1)
+  });
+
+  runtime.createRoomRuntime("room-restart-a");
+  const room = runtime.attachPlayerIds("room-restart-a", ["player-1", "player-2"]);
+
+  room.sim.world.clock.remainingSeconds = 0;
+  room.sim.world.clock.isOver = true;
+  runtime.tickOnce();
+
+  const beforeRestartTick = room.sim.world.clock.tick;
+  const restarted = runtime.restartMatch("room-restart-a");
+
+  assert.equal(beforeRestartTick > 0, true);
+  assert.equal(restarted.sim.world.clock.tick, 0);
+  assert.equal(restarted.sim.world.clock.isOver, false);
+
+  const snapshot = runtime.reconnectPlayer("room-restart-a", "player-1").snapshot;
+  assert.equal(snapshot.match.phase, "playing");
+  assert.equal(snapshot.tick, 0);
+});

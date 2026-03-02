@@ -79,6 +79,13 @@ test("live client net encodes protocol-compliant input and ping payloads", () =>
   assert.equal(pingDecoded.type, "client.ping");
   assert.equal(pingDecoded.sequence, 4);
   assert.equal(pingDecoded.clientTimeMs, 5_000);
+
+  const readyPayload = net.encodeReady(5, true);
+  const readyDecoded = decodeEvent(readyPayload);
+  assert.equal(readyDecoded.type, "client.ready");
+  assert.equal(readyDecoded.sequence, 5);
+  assert.equal(readyDecoded.playerId, "player-1");
+  assert.equal(readyDecoded.ready, true);
 });
 
 test("live client net applies snapshot payloads and ignores non-snapshot events", () => {

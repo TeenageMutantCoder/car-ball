@@ -75,3 +75,25 @@ test("createInputFrameEmitter clones controls payload", () => {
     handbrake: false,
   });
 });
+
+test("createInputFrameEmitter reserves sequence for non-input events", () => {
+  const emitter = createInputFrameEmitter({
+    playerId: "player-1",
+    carId: "car:player-1",
+    now: () => 500,
+  });
+
+  const reserved = emitter.takeNextSequence();
+  assert.equal(reserved, 1);
+
+  const frame = emitter.emit(42, {
+    throttle: 0,
+    steer: 0,
+    jump: false,
+    boost: false,
+    handbrake: false,
+  });
+
+  assert.equal(frame.sequence, 2);
+  assert.equal(emitter.getNextSequence(), 3);
+});

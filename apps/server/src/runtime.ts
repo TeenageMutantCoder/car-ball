@@ -230,6 +230,7 @@ export class ServerRuntime {
         ballAuthority: this.rapierBallAuthority
       }
     });
+    room.sequence = 1;
     room.matchPhase = "playing";
     room.scoreByTeam = createInitialScoreByTeam();
     room.goalPauseTicksRemaining = 0;
@@ -317,6 +318,16 @@ export class ServerRuntime {
         }
       ]
     };
+  }
+
+  restartMatch(roomId: string): RuntimeRoom {
+    const room = this.requireRoom(roomId);
+
+    if (room.matchPhase !== "finished") {
+      throw new Error(`Cannot restart room ${roomId} while phase is ${room.matchPhase}.`);
+    }
+
+    return this.attachPlayerIds(roomId, room.playerIds);
   }
 
   tickOnce(stepMs = this.fixedStepMs): TickResult {

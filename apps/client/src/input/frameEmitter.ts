@@ -3,6 +3,7 @@ import { PROTOCOL_VERSION, type InputControls, type InputFrame, type ProtocolVer
 export interface InputFrameEmitter {
   emit: (tick: Tick, controls: InputControls) => InputFrame;
   getNextSequence: () => number;
+  takeNextSequence: () => number;
 }
 
 export interface InputFrameEmitterOptions {
@@ -41,6 +42,11 @@ export function createInputFrameEmitter(options: InputFrameEmitterOptions): Inpu
     },
     getNextSequence(): number {
       return nextSequence;
+    },
+    takeNextSequence(): number {
+      const sequence = nextSequence;
+      nextSequence += 1;
+      return sequence;
     },
   };
 }

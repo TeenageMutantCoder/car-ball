@@ -8,6 +8,10 @@ export interface MatchHud {
   dispose: () => void;
 }
 
+export interface MatchHudOptions {
+  onRestart?: () => void;
+}
+
 export interface MatchHudValues {
   blueScore: number;
   orangeScore: number;
@@ -19,6 +23,7 @@ interface MatchHudElement {
   style: Record<string, string>;
   textContent: string | null;
   append: (...elements: unknown[]) => void;
+  addEventListener: (type: string, listener: () => void) => void;
   remove: () => void;
 }
 
@@ -79,6 +84,7 @@ export function getMatchHudValuesForCar(
 export function createMatchHud(
   documentLike: MatchHudDocumentLike = resolveDocument(),
   localCarId?: string,
+  options: MatchHudOptions = {},
 ): MatchHud {
   const root = documentLike.createElement("div");
   root.style.position = "fixed";
@@ -153,8 +159,44 @@ export function createMatchHud(
   boostPanel.append(boostLabel, boostValue);
   boostRoot.append(boostPanel);
 
+  const gameOverRoot = documentLike.createElement("div");
+  gameOverRoot.style.position = "fixed";
+  gameOverRoot.style.left = "0";
+  gameOverRoot.style.right = "0";
+  gameOverRoot.style.bottom = "96px";
+  gameOverRoot.style.display = "none";
+  gameOverRoot.style.justifyContent = "center";
+  gameOverRoot.style.pointerEvents = "none";
+  gameOverRoot.style.zIndex = "1000";
+
+  const restartButton = documentLike.createElement("button");
+  restartButton.style.pointerEvents = "auto";
+  restartButton.style.padding = "10px 16px";
+  restartButton.style.borderRadius = "10px";
+  restartButton.style.border = "1px solid rgba(255, 255, 255, 0.2)";
+  restartButton.style.background = "rgba(12, 16, 24, 0.9)";
+  restartButton.style.color = "#f3f6ff";
+  restartButton.style.fontFamily = "system-ui, sans-serif";
+  restartButton.style.fontSize = "14px";
+  restartButton.style.fontWeight = "700";
+  restartButton.textContent = "Restart game";
+  restartButton.addEventListener("click", () => {
+    const fallbackRestart =
+      typeof window !== "undefined" && window.location
+        ? () => {
+            window.location.reload();
+          }
+        : undefined;
+
+    const restart = options.onRestart ?? fallbackRestart;
+    restart?.();
+  });
+
+  gameOverRoot.append(restartButton);
+
   documentLike.body.append(root);
   documentLike.body.append(boostRoot);
+  documentLike.body.append(gameOverRoot);
 
   return {
     update(snapshot: RenderSnapshotState): void {
@@ -163,10 +205,12 @@ export function createMatchHud(
       orangeScore.textContent = String(values.orangeScore);
       clock.textContent = values.clock;
       boostValue.textContent = String(values.boost);
+      gameOverRoot.style.display = snapshot.match.phase === "finished" ? "flex" : "none";
     },
     dispose(): void {
       root.remove();
       boostRoot.remove();
+      gameOverRoot.remove();
     },
   };
 }

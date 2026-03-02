@@ -37,6 +37,7 @@ export interface LiveClientNetOptions {
 export interface LiveClientNet<TRenderSnapshot> {
   encodeInputFrame: (frame: InputFrame) => string;
   encodePing: (sequence: number, clientTimeMs?: number) => string;
+  encodeReady: (sequence: number, ready?: boolean, playerId?: string) => string;
   ingestServerPayload: (payload: string) => TRenderSnapshot | null;
   getCorrectionMetrics: () => CorrectionMetrics;
   resetCorrectionMetrics: () => void;
@@ -141,6 +142,17 @@ export function createLiveClientNet<TRenderSnapshot>(
         sequence,
         timestamp: Math.round(now()),
         clientTimeMs,
+      });
+    },
+
+    encodeReady(sequence: number, ready = true, playerId = options.playerId): string {
+      return encodeEvent({
+        type: "client.ready",
+        version: 1,
+        sequence,
+        timestamp: Math.round(now()),
+        playerId,
+        ready,
       });
     },
 

@@ -124,6 +124,14 @@ test("websocket transport sends encoded input frames once connected", () => {
   const decoded = decodeEvent(fake.sent[0]!);
   assert.equal(decoded.type, "client.input");
   assert.equal(decoded.sequence, 2);
+
+  assert.equal(transport.sendReady(3, true, "player-1"), true);
+  assert.equal(fake.sent.length, 2);
+  const readyDecoded = decodeEvent(fake.sent[1]!);
+  assert.equal(readyDecoded.type, "client.ready");
+  assert.equal(readyDecoded.sequence, 3);
+  assert.equal(readyDecoded.playerId, "player-1");
+  assert.equal(readyDecoded.ready, true);
 });
 
 test("websocket transport ingests server snapshots via live net", async () => {

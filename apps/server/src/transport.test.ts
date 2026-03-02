@@ -295,3 +295,55 @@ test("live transport drops tick snapshots under backpressure", async () => {
     await transport.stop();
   }
 });
+
+test("live transport accepts restart request via client.ready when match is finished", async () => {
+  const runtime = createServerRuntime({
+    now: createMonotonicNow(340_000, 1)
+  });
+  runtime.createRoomRuntime("room-live-e");
+  const room = runtime.attachPlayerIds("room-live-e", ["player-1", "player-2"]);
+
+  const transport = createLiveTransportServer({
+    runtime,
+    tickIntervalMs: 2,
+  });
+
+  const endpoint = await transport.start();
+  const client = new WebSocket(
+    `ws://${endpoint.host}:${endpoint.port}${endpoint.path}?roomId=room-live-e&playerId=player-1`,
+  );
+
+  try {
+    await waitForOpen(client);
+    await waitForServerEvent(client, (event) => event.type === "server.snapshot");
+
+    room.sim.world.clock.remainingSeconds = 0;
+    room.sim.world.clock.isOver = true;
+    for (let tick = 0; tick < 6; tick += 1) {
+      runtime.tickOnce();
+    }
+    await waitForServerEvent(client, (event) => event.type === "server.snapshot" && event.match.phase === "finished");
+
+    client.send(
+      encodeEvent({
+        type: "client.ready",
+        version: 1,
+        sequence: 1,
+        timestamp: 340_000,
+        playerId: "player-1",
+        ready: true,
+      }),
+    );
+
+    const restartedSnapshot = await waitForServerEvent(
+      client,
+      (event) => event.type === "server.snapshot" && event.match.phase === "playing" && event.tick === 0,
+    );
+
+    assert.equal(restartedSnapshot.type, "server.snapshot");
+    assert.equal(restartedSnapshot.match.phase, "playing");
+  } finally {
+    client.close();
+    await transport.stop();
+  }
+});

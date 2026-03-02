@@ -28,7 +28,7 @@ import {
 } from "./render/camera.ts";
 import { RendererBridge, type RenderSnapshotState } from "./render/rendererBridge.ts";
 import { createDebugHud, type DebugHud } from "./debug/hud.ts";
-import { createMatchHud } from "./ui/matchHud.ts";
+import { createMatchHud, type MatchHudOptions } from "./ui/matchHud.ts";
 
 const INPUT_RATE_HZ = 60;
 const INPUT_EMIT_INTERVAL_MS = 1_000 / INPUT_RATE_HZ;
@@ -75,6 +75,7 @@ export interface BabylonSceneBootstrapOptions {
   canvas: HTMLCanvasElement;
   rendererBridge?: RendererBridge;
   debugHud?: DebugHud;
+  matchHudOptions?: MatchHudOptions;
   inputBindings?: InputBindings;
   inputFrameEmitter?: InputFrameEmitter;
   predictionHistory?: PredictionHistory;
@@ -136,7 +137,7 @@ export function bootstrapBabylonScene(options: BabylonSceneBootstrapOptions): Ba
       carId: inputFrameContext.carId,
     });
   const predictionHistory = options.predictionHistory ?? createPredictionHistory();
-  const matchHud = createMatchHud(undefined, inputFrameContext.carId);
+  const matchHud = createMatchHud(undefined, inputFrameContext.carId, options.matchHudOptions);
   const engine = new Engine(options.canvas, true);
   const scene = new Scene(engine);
 
@@ -468,6 +469,12 @@ export function bootstrapNetworkedBabylonScene(
   const base = bootstrapBabylonScene({
     ...options,
     rendererBridge,
+    matchHudOptions: {
+      onRestart: () => {
+        const sequence = base.inputFrameEmitter.takeNextSequence();
+        transport?.sendReady(sequence, true, inputFrameContext.playerId);
+      },
+    },
     inputFrameContext,
     onInputFrame(frame): void {
       transport?.sendInputFrame(frame);

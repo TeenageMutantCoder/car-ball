@@ -219,6 +219,29 @@ export function createLiveTransportServer(config: LiveTransportConfig): LiveTran
       if (event.type === "client.ready") {
         if (event.playerId !== session.playerId) {
           sendError(session, "BAD_MESSAGE", "client.ready playerId must match session player binding.");
+          return;
+        }
+
+        if (!event.ready) {
+          return;
+        }
+
+        try {
+          runtime.restartMatch(session.roomId);
+        } catch (error) {
+          const message = error instanceof Error ? error.message : "Unable to restart match.";
+          sendError(session, "BAD_MESSAGE", message);
+          return;
+        }
+
+        const roomSessions = sessionsByRoom.get(session.roomId);
+        if (!roomSessions || roomSessions.size === 0) {
+          return;
+        }
+
+        for (const roomSession of roomSessions) {
+          const snapshot = runtime.reconnectPlayer(roomSession.roomId, roomSession.playerId).snapshot;
+          sendSnapshot(roomSession, snapshot, true);
         }
         return;
       }

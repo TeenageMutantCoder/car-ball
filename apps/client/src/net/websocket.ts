@@ -19,6 +19,7 @@ export interface WebSocketClientTransport {
   isConnected: () => boolean;
   sendInputFrame: (frame: InputFrame) => boolean;
   sendPing: (sequence: number, clientTimeMs?: number) => boolean;
+  sendReady: (sequence: number, ready?: boolean, playerId?: string) => boolean;
 }
 
 const OPEN_READY_STATE = 1;
@@ -153,6 +154,15 @@ export function createWebSocketClientTransport<TRenderSnapshot>(
       }
 
       socket.send(options.net.encodePing(sequence, clientTimeMs));
+      return true;
+    },
+
+    sendReady(sequence: number, ready = true, playerId?: string): boolean {
+      if (!socket || socket.readyState !== OPEN_READY_STATE) {
+        return false;
+      }
+
+      socket.send(options.net.encodeReady(sequence, ready, playerId));
       return true;
     },
   };
