@@ -23,28 +23,28 @@ Update this section first.
 
 - Last updated: 2026-03-02
 - Sprint / Milestone: MVP-1
-- Overall completion: 94%
+- Overall completion: 97%
 - P0 gate pass rate: 0/0
 - Last full benchmark date: 2026-03-02
-- Last soak date: YYYY-MM-DD
+- Last soak date: 2026-03-02
 
 ### Counts
 
-- TODO: 2
+- TODO: 0
 - IN PROGRESS: 0
-- BLOCKED: 0
-- DONE: 33
+- BLOCKED: 1
+- DONE: 34
 
 ## Release Gate Summary
 
 | Gate | Threshold | Latest Value | Evidence | Status |
 |---|---|---|---|---|
-| Frame p95 | <= 16.7ms | 0.0701ms | artifacts/benchmarks/2026-03-02T01-05-50-229Z/summary.json | PASS |
-| Physics p95 | <= 6ms | 0.0017ms | artifacts/benchmarks/2026-03-02T01-05-50-229Z/impairment_matrix__loss_5pct.json | PASS |
-| Render p95 | <= 9ms | 0.0031ms | artifacts/benchmarks/2026-03-02T01-05-50-229Z/impairment_matrix__loss_5pct.json | PASS |
-| Server tick p95/p99 | <= 8.3ms / <= 12ms | 0.0022ms / 0.0443ms | artifacts/benchmarks/2026-03-02T01-05-50-229Z/summary.json | PASS |
-| Corrections/min/player | <= 12 clean, <= 30 at 5% loss | clean=0, loss_5pct=15 | artifacts/benchmarks/2026-03-02T01-13-39-870Z/summary.json | PASS |
-| Replay drift | <= 0.5% sampled ticks | loss_5pct=100% | artifacts/benchmarks/2026-03-02T01-13-39-870Z/summary.json | FAIL |
+| Frame p95 | <= 16.7ms | hybrid max=0.086ms | artifacts/benchmarks/2026-03-02T01-32-06-665Z/summary.json | PASS |
+| Physics p95 | <= 6ms | hybrid max=0.0019ms | artifacts/gates/hybrid-slo-gate-report.json | PASS |
+| Render p95 | <= 9ms | hybrid max=0.0034ms | artifacts/gates/hybrid-slo-gate-report.json | PASS |
+| Server tick p95/p99 | <= 8.3ms / <= 12ms | hybrid max p99=0.0387ms | artifacts/benchmarks/2026-03-02T01-32-06-665Z/summary.json | PASS |
+| Corrections/min/player | <= 12 clean, <= 30 at 5% loss | loss_5pct authority=15 | artifacts/gates/hybrid-slo-gate-report.json | PASS |
+| Replay drift | <= 0.5% sampled ticks | loss_5pct authority=100% | artifacts/gates/hybrid-slo-gate-report.json | FAIL |
 
 ## In Progress
 
@@ -56,14 +56,13 @@ Update this section first.
 
 | ID | Workstream | Task | Blocked By | Since | Unblock Plan | Metrics Snapshot |
 |---|---|---|---|---|---|---|
-| - | - | - | - | - | - | - |
+| WS-G-006 | WS-G | Run hybrid soak cycles and recommendation | Hybrid impairment authority runs fail replay drift and correction magnitude thresholds | 2026-03-01 | Reduce impairment replay drift + correction p95, rerun hybrid benchmarks, then rerun two-cycle soak | `hybrid-soak-release-decision`: NO_GO, 0/2 consecutive passes |
 
 ## To Do
 
 | ID | Workstream | Task | Priority | Dependency |
 |---|---|---|---|---|
-| WS-G-005 | WS-G | Add hybrid Rapier benchmark gate suite | P1 | WS-F-004, WS-G-003 |
-| WS-G-006 | WS-G | Run hybrid soak cycles and recommendation | P1 | WS-G-005 |
+| - | - | - | - | - |
 
 ## Done
 
@@ -102,6 +101,7 @@ Update this section first.
 | WS-G-003 | WS-G | Implement SLO gate evaluation | 2026-02-28 | scripts/evaluate_slo_gates.ts | PASS |
 | WS-G-004 | WS-G | Run soak tests and release check | 2026-02-28 | scripts/soak_release_check.ts | PASS |
 | WS-F-004 | WS-F | Tune reconciliation for hybrid collisions | 2026-03-02 | artifacts/benchmarks/2026-03-02T01-13-39-870Z/summary.json | PASS |
+| WS-G-005 | WS-G | Add hybrid Rapier benchmark gate suite | 2026-03-01 | artifacts/gates/hybrid-slo-gate-report.json | PASS |
 
 ## Workstream Rollup
 
@@ -113,7 +113,7 @@ Update this section first.
 | WS-D Client | DONE | 100 | TBD | - | Completed |
 | WS-E Server | DONE | 100 | TBD | Runtime Rapier authority validation + telemetry integrated | Completed |
 | WS-F Netcode | DONE | 100 | TBD | Reconciliation tuning validated for clean/loss correction targets | Completed |
-| WS-G QA/Perf | TODO | 67 | TBD | Hybrid benchmark/gates pending | WS-G-005 |
+| WS-G QA/Perf | BLOCKED | 83 | TBD | Hybrid soak recommendation blocked on impairment drift/correction gates | WS-G-006 unblock |
 
 ## Update Rules (2-minute routine)
 

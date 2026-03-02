@@ -15,6 +15,7 @@ type BenchmarkArtifact = {
   durationMinutes: number;
   browser: string;
   networkProfile: NetworkProfile;
+  rapierMode?: 'legacy' | 'shadow' | 'authority';
   constants: {
     tickRateHz: number;
     snapshotRateHz: number;
@@ -242,10 +243,11 @@ function main(): number {
 
   for (let cycle = 1; cycle <= cycles; cycle += 1) {
     const cycleBenchmarkDir = path.join(resolvedBenchmarksDir, `soak-cycle-${cycle}`);
+    fs.rmSync(cycleBenchmarkDir, { recursive: true, force: true });
     const generatedArtifacts: string[] = [];
 
-    for (const scenario of scenarios) {
-      if (!harnessCmd) {
+    if (!harnessCmd) {
+      for (const scenario of scenarios) {
         generatedArtifacts.push(
           runSampleHarness({
             fs,
@@ -256,18 +258,27 @@ function main(): number {
             cycleDir: cycleBenchmarkDir,
           }),
         );
-      } else {
-        const command = harnessCmd
-          .replaceAll('{scenario}', scenario)
-          .replaceAll('{cycle}', String(cycle))
-          .replaceAll('{duration}', String(durationMinutes))
-          .replaceAll('{out}', cycleBenchmarkDir);
+      }
+    } else {
+      const command = harnessCmd
+        .replaceAll('{scenario}', 'hybrid')
+        .replaceAll('{cycle}', String(cycle))
+        .replaceAll('{duration}', String(durationMinutes))
+        .replaceAll('{out}', cycleBenchmarkDir);
 
-        childProcess.execSync(command, {
-          cwd: process.cwd(),
-          stdio: 'pipe',
-          encoding: 'utf8',
-        });
+      childProcess.execSync(command, {
+        cwd: process.cwd(),
+        stdio: 'pipe',
+        encoding: 'utf8',
+      });
+
+      if (fs.existsSync(cycleBenchmarkDir)) {
+        const nestedArtifactFiles = fs
+          .readdirSync(cycleBenchmarkDir, { recursive: true })
+          .map((entry) => String(entry))
+          .filter((entry) => entry.endsWith('.json') && !entry.endsWith('summary.json'))
+          .map((entry) => path.relative(process.cwd(), path.join(cycleBenchmarkDir, entry)));
+        generatedArtifacts.push(...nestedArtifactFiles);
       }
     }
 

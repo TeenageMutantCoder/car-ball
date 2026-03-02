@@ -14,6 +14,7 @@ type BenchmarkArtifact = {
   durationMinutes: number;
   browser: string;
   networkProfile: NetworkProfile;
+  rapierMode?: 'legacy' | 'shadow' | 'authority';
   constants: {
     tickRateHz: number;
     snapshotRateHz: number;
@@ -53,8 +54,13 @@ type ArtifactGateResult = {
   benchmarkId: string;
   scenario: Scenario;
   networkProfile: NetworkProfile;
+  rapierMode: 'legacy' | 'shadow' | 'authority' | 'unknown';
   pass: boolean;
   failedMetrics: GateFailure[];
+};
+
+type ScenarioArtifact = {
+  benchmarkArtifact: BenchmarkArtifact;
 };
 
 type SloGateReport = {
@@ -198,9 +204,28 @@ function evaluateArtifact(artifactPath: string, artifact: BenchmarkArtifact): Ar
     benchmarkId: artifact.benchmarkId,
     scenario: artifact.scenario,
     networkProfile: artifact.networkProfile,
+    rapierMode: artifact.rapierMode ?? 'unknown',
     pass: failedMetrics.length === 0,
     failedMetrics,
   };
+}
+
+function normalizeBenchmarkArtifact(input: unknown): BenchmarkArtifact | null {
+  if (!input || typeof input !== 'object') {
+    return null;
+  }
+
+  const direct = input as Partial<BenchmarkArtifact>;
+  if (typeof direct.benchmarkId === 'string' && direct.sloResults && typeof direct.sloResults === 'object') {
+    return direct as BenchmarkArtifact;
+  }
+
+  const nested = (input as Partial<ScenarioArtifact>).benchmarkArtifact;
+  if (nested && typeof nested === 'object' && typeof nested.benchmarkId === 'string' && nested.sloResults) {
+    return nested as BenchmarkArtifact;
+  }
+
+  return null;
 }
 
 function createSampleArtifact(artifactsDir: string): BenchmarkArtifact {
@@ -263,18 +288,30 @@ function main(): number {
   }
 
   const results: ArtifactGateResult[] = [];
+  let skippedFiles = 0;
 
   for (const artifactPath of artifactFiles) {
-    let parsed: BenchmarkArtifact;
+    let parsed: unknown;
     try {
-      parsed = JSON.parse(fs.readFileSync(artifactPath, 'utf8')) as BenchmarkArtifact;
+      parsed = JSON.parse(fs.readFileSync(artifactPath, 'utf8')) as unknown;
     } catch (error) {
       console.error(`Failed to parse artifact JSON: ${artifactPath}`);
       console.error(String(error));
       return 2;
     }
 
-    results.push(evaluateArtifact(path.relative(process.cwd(), artifactPath), parsed));
+    const normalized = normalizeBenchmarkArtifact(parsed);
+    if (!normalized) {
+      skippedFiles += 1;
+      continue;
+    }
+
+    results.push(evaluateArtifact(path.relative(process.cwd(), artifactPath), normalized));
+  }
+
+  if (results.length === 0) {
+    console.error(`No benchmark artifacts with gate-compatible payload found in ${artifactsDir}`);
+    return 2;
   }
 
   const failedArtifacts = results.filter((result) => !result.pass).length;
@@ -301,6 +338,9 @@ function main(): number {
   console.log(
     `SLO gate status: ${report.summary.pass ? 'PASS' : 'FAIL'} (${report.summary.passedArtifacts}/${report.inputs.artifactCount} passing artifacts)`,
   );
+  if (skippedFiles > 0) {
+    console.log(`Skipped non-artifact JSON files: ${skippedFiles}`);
+  }
 
   return report.summary.pass ? 0 : 1;
 }

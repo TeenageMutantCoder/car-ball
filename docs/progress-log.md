@@ -31,6 +31,47 @@ Chronological append-only implementation log. Add one entry per meaningful updat
 
 ## Entries
 
+### 2026-03-01T01:36:30Z | Agent: copilot
+
+- changed_tasks:
+  - id: WS-G-006
+    from: TODO
+    to: BLOCKED
+- summary: Executed two-cycle hybrid soak release check using the real benchmark harness and cleaned per-cycle artifact directories for deterministic evidence. Both cycles failed SLO gates (10/12 passing artifacts each), resulting in `NO_GO` release recommendation due impairment authority replay-drift and correction magnitude failures.
+- blockers:
+  - task_id: WS-G-006
+    blocked_by: Hybrid `impairment_matrix` authority artifacts fail `replayDriftRatePct` and correction magnitude thresholds in both soak cycles.
+    unblock_plan: Improve impairment authority reconciliation/drift behavior, regenerate hybrid benchmark artifacts, and rerun two consecutive soak cycles.
+- evidence:
+  - path: scripts/soak_release_check.ts
+  - path: artifacts/gates/soak-cycle-1-slo-gate-report.json
+  - path: artifacts/gates/soak-cycle-2-slo-gate-report.json
+  - path: artifacts/releases/hybrid-soak-release-decision.json
+  - path: docs/agent-task-registry.yaml
+  - path: docs/progress-board.md
+- next_actions:
+  - Investigate replay drift root cause in impairment authority path (input ordering/candidate baseline divergence) before next soak rerun.
+- related_pr_or_commit: n/a
+
+### 2026-03-01T01:33:00Z | Agent: copilot
+
+- changed_tasks:
+  - id: WS-G-005
+    from: TODO
+    to: DONE
+- summary: Completed hybrid Rapier benchmark gate suite by extending benchmark scenarios to run `legacy`, `shadow`, and `authority` modes, enriching artifact SLO payloads with additive Rapier telemetry, and updating gate evaluation to process scenario artifact JSON plus rapier-mode reporting.
+- blockers: []
+- evidence:
+  - path: scripts/benchmark_harness.ts
+  - path: scripts/evaluate_slo_gates.ts
+  - path: artifacts/benchmarks/2026-03-02T01-32-06-665Z/summary.json
+  - path: artifacts/gates/hybrid-slo-gate-report.json
+  - path: docs/agent-task-registry.yaml
+  - path: docs/progress-board.md
+- next_actions:
+  - Execute WS-G-006 hybrid soak cycles and publish go/no-go recommendation with fallback risk summary.
+- related_pr_or_commit: n/a
+
 ### 2026-03-02T01:14:10Z | Agent: copilot
 
 - changed_tasks:

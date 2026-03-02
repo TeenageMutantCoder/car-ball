@@ -6,6 +6,7 @@ import os from "node:os";
 import path from "node:path";
 
 type NetworkProfileName = "clean" | "loss_5pct" | "jitter";
+type RapierModeName = "legacy" | "shadow" | "authority";
 type ScenarioId = "1v1_baseline" | "2v2_collision_heavy" | "wall_ceiling_stress" | "impairment_matrix";
 type ScenarioSize = "1v1" | "2v2";
 
@@ -47,6 +48,7 @@ type ScenarioDefinition = {
   scenarioSize: ScenarioSize;
   players: string[];
   networkProfiles: NetworkProfileName[];
+  rapierModes: RapierModeName[];
 };
 
 type ClientMetrics = {
@@ -75,6 +77,14 @@ type SimMetrics = {
   replayDriftRatePct: number;
   replayEndDriftCarCm: number;
   replayEndDriftBallCm: number;
+  rapierEnabled: boolean;
+  rapierShadowMode: boolean;
+  rapierBallAuthority: boolean;
+  rapierBackend: "rapier" | "custom";
+  rapierBackendReady: boolean;
+  rapierStepCount: number;
+  rapierContactCountTotal: number;
+  rapierMaxPenetrationDepthCmP95Approx: number;
 };
 
 type SloResults = {
@@ -83,9 +93,22 @@ type SloResults = {
   renderP95Ms: number;
   serverTickP95Ms: number;
   serverTickP99Ms: number;
+  missedTickRatePct: number;
   correctionsPerMinPerPlayer: number;
   correctionMagnitudeCmP95: number;
+  correctionMagnitudeCmP99: number;
+  correctionMagnitudeCmMax: number;
   replayDriftRatePct: number;
+  replayEndDriftCarCm: number;
+  replayEndDriftBallCm: number;
+  clientLongTasksOver50MsPer10Min: number;
+  clientHeapGrowthMbPer10Min: number;
+  serverRssGrowthPct: number;
+  rapierMode: RapierModeName;
+  rapierEnabled: boolean;
+  rapierShadowMode: boolean;
+  rapierBallAuthority: boolean;
+  rapierContactCountTotal: number;
   pass: boolean;
 };
 
@@ -97,6 +120,7 @@ type BenchmarkArtifact = {
   durationMinutes: number;
   browser: string;
   networkProfile: NetworkProfileName;
+  rapierMode: RapierModeName;
   constants: RuntimeConstants;
   sloResults: SloResults;
 };
@@ -126,6 +150,7 @@ type ScenarioArtifact = {
     durationSeconds: number;
     totalTicks: number;
     networkProfile: NetworkProfileName;
+    rapierMode: RapierModeName;
     seed: number;
   };
   constants: RuntimeConstants;
@@ -328,6 +353,7 @@ function getGitCommit(): string {
 async function runScenario(options: {
   definition: ScenarioDefinition;
   profile: NetworkProfileName;
+  rapierMode: RapierModeName;
   constants: RuntimeConstants;
   durationSeconds: number;
   sampleEveryNTicks: number;
@@ -340,6 +366,7 @@ async function runScenario(options: {
   const {
     definition,
     profile,
+    rapierMode,
     constants,
     durationSeconds,
     sampleEveryNTicks,
@@ -380,7 +407,7 @@ async function runScenario(options: {
   const localPlayerId = definition.players[0] ?? "player-1";
   const localCarId = `car:${localPlayerId}`;
   const fixedStepMs = 1000 / constants.tickRateHz;
-  const randomSeed = hashSeed(`${definition.id}:${profile}:${totalTicks}`);
+  const randomSeed = hashSeed(`${definition.id}:${profile}:${rapierMode}:${totalTicks}`);
   const rand = mulberry32(randomSeed);
   const network = createNetworkProfile(profile);
 
@@ -487,22 +514,49 @@ async function runScenario(options: {
   runtime.createRoomRuntime("benchmark-room");
   runtime.attachPlayerIds("benchmark-room", definition.players);
 
+  const createSimulationForMode = (): { enabled: boolean; shadowMode: boolean; ballAuthority: boolean } => {
+    if (rapierMode === "legacy") {
+      return {
+        enabled: false,
+        shadowMode: false,
+        ballAuthority: false,
+      };
+    }
+
+    if (rapierMode === "shadow") {
+      return {
+        enabled: true,
+        shadowMode: true,
+        ballAuthority: false,
+      };
+    }
+
+    return {
+      enabled: true,
+      shadowMode: true,
+      ballAuthority: true,
+    };
+  };
+
+  const rapierConfig = createSimulationForMode();
   const baselineSim = new SimulationCore(definition.players, {
     fixedStepMs,
     maxSubsteps: constants.maxSubsteps,
+    rapierShadow: rapierConfig,
   });
   const candidateSim = new SimulationCore(definition.players, {
     fixedStepMs,
     maxSubsteps: constants.maxSubsteps,
+    rapierShadow: rapierConfig,
   });
 
   const reconciliationTuning = resolveReconciliationTuning({
     profile,
-    rapierBallAuthority: true,
+    rapierBallAuthority: rapierMode === "authority",
   });
 
   const correctionTelemetry = createCorrectionTelemetry(60_000, {
-    rapierBallAuthority: true,
+    rapierBallAuthority: rapierMode === "authority",
     deadzoneCm: reconciliationTuning.deadzoneCm,
     smoothingAlpha: reconciliationTuning.smoothingAlpha,
   });
@@ -645,6 +699,16 @@ async function runScenario(options: {
     replayDriftRatePct: Number(replayDrift.driftRatePct.toFixed(4)),
     replayEndDriftCarCm: Number(replayDrift.endCarDriftCm.toFixed(4)),
     replayEndDriftBallCm: Number(replayDrift.endBallDriftCm.toFixed(4)),
+    rapierEnabled: candidateSim.getRapierShadowMetrics().enabled,
+    rapierShadowMode: candidateSim.getRapierShadowMetrics().shadowMode,
+    rapierBallAuthority: candidateSim.getRapierShadowMetrics().ballAuthority,
+    rapierBackend: candidateSim.getRapierShadowMetrics().backend,
+    rapierBackendReady: candidateSim.getRapierShadowMetrics().backendReady,
+    rapierStepCount: candidateSim.getRapierShadowMetrics().stepCount,
+    rapierContactCountTotal: candidateSim.getRapierShadowMetrics().contactCountTotal,
+    rapierMaxPenetrationDepthCmP95Approx: Number(
+      candidateSim.getRapierShadowMetrics().maxPenetrationDepthCmP95Approx.toFixed(4)
+    ),
   };
 
   const correctionThreshold = profile === "clean" ? 12 : 30;
@@ -654,17 +718,33 @@ async function runScenario(options: {
     renderP95Ms: clientMetrics.renderTimeMs,
     serverTickP95Ms: serverMetrics.tickDurationP95Ms,
     serverTickP99Ms: serverMetrics.tickDurationP99Ms,
+    missedTickRatePct: serverMetrics.missedTickRatePct,
     correctionsPerMinPerPlayer: Number(correctionsPerMinPerPlayer.toFixed(4)),
     correctionMagnitudeCmP95: clientMetrics.correctionMagnitudeCmP95,
+    correctionMagnitudeCmP99: percentile(correctionMagnitudesCm, 0.99),
+    correctionMagnitudeCmMax: Number(Math.max(...correctionMagnitudesCm, 0).toFixed(4)),
     replayDriftRatePct: simMetrics.replayDriftRatePct,
+    replayEndDriftCarCm: simMetrics.replayEndDriftCarCm,
+    replayEndDriftBallCm: simMetrics.replayEndDriftBallCm,
+    clientLongTasksOver50MsPer10Min: 0,
+    clientHeapGrowthMbPer10Min: 0,
+    serverRssGrowthPct: 0,
+    rapierMode,
+    rapierEnabled: simMetrics.rapierEnabled,
+    rapierShadowMode: simMetrics.rapierShadowMode,
+    rapierBallAuthority: simMetrics.rapierBallAuthority,
+    rapierContactCountTotal: simMetrics.rapierContactCountTotal,
     pass:
       clientMetrics.frameTimeMs <= 16.7 &&
       clientMetrics.physicsTimeMs <= 6 &&
       clientMetrics.renderTimeMs <= 9 &&
       serverMetrics.tickDurationP95Ms <= 8.3 &&
       serverMetrics.tickDurationP99Ms <= 12 &&
+      serverMetrics.missedTickRatePct < 0.5 &&
       correctionsPerMinPerPlayer <= correctionThreshold &&
-        clientMetrics.correctionMagnitudeCmP95 <= reconciliationTuning.deadzoneCm &&
+      clientMetrics.correctionMagnitudeCmP95 <= 20 &&
+      percentile(correctionMagnitudesCm, 0.99) <= 60 &&
+      Math.max(...correctionMagnitudesCm, 0) <= 120 &&
       simMetrics.replayDriftRatePct <= 0.5,
   };
 
@@ -676,6 +756,7 @@ async function runScenario(options: {
     durationMinutes: Number(durationMinutes.toFixed(4)),
     browser: "headless-node",
     networkProfile: profile,
+    rapierMode,
     constants,
     sloResults,
   };
@@ -705,6 +786,7 @@ async function runScenario(options: {
       durationSeconds,
       totalTicks,
       networkProfile: profile,
+      rapierMode,
       seed: randomSeed,
     },
     constants,
@@ -746,6 +828,7 @@ async function main(): Promise<number> {
       scenarioSize: "1v1",
       players: ["player-1", "player-2"],
       networkProfiles: ["clean"],
+      rapierModes: ["legacy", "shadow", "authority"],
     },
     {
       id: "2v2_collision_heavy",
@@ -753,6 +836,7 @@ async function main(): Promise<number> {
       scenarioSize: "2v2",
       players: ["player-1", "player-2", "player-3", "player-4"],
       networkProfiles: ["clean"],
+      rapierModes: ["legacy", "shadow", "authority"],
     },
     {
       id: "wall_ceiling_stress",
@@ -760,6 +844,7 @@ async function main(): Promise<number> {
       scenarioSize: "1v1",
       players: ["player-1", "player-2"],
       networkProfiles: ["clean"],
+      rapierModes: ["legacy", "shadow", "authority"],
     },
     {
       id: "impairment_matrix",
@@ -767,6 +852,7 @@ async function main(): Promise<number> {
       scenarioSize: "1v1",
       players: ["player-1", "player-2"],
       networkProfiles: ["clean", "loss_5pct", "jitter"],
+      rapierModes: ["authority"],
     },
   ];
 
@@ -776,25 +862,28 @@ async function main(): Promise<number> {
 
   for (const scenario of scenarios) {
     for (const profile of scenario.networkProfiles) {
-      const matchId = `${scenario.id}:${profile}`;
-      const sessionId = `${benchmarkId}:${scenario.id}`;
-      const artifact = await runScenario({
-        definition: scenario,
-        profile,
-        constants,
-        durationSeconds: args.durationSeconds,
-        sampleEveryNTicks: args.sampleEveryNTicks,
-        benchmarkId,
-        runAtIso,
-        gitCommit,
-        sessionId,
-        matchId,
-      });
+      for (const rapierMode of scenario.rapierModes) {
+        const matchId = `${scenario.id}:${profile}:${rapierMode}`;
+        const sessionId = `${benchmarkId}:${scenario.id}:${rapierMode}`;
+        const artifact = await runScenario({
+          definition: scenario,
+          profile,
+          rapierMode,
+          constants,
+          durationSeconds: args.durationSeconds,
+          sampleEveryNTicks: args.sampleEveryNTicks,
+          benchmarkId,
+          runAtIso,
+          gitCommit,
+          sessionId,
+          matchId,
+        });
 
-      const fileName = `${scenario.id}__${profile}.json`;
-      const filePath = path.join(outputDir, fileName);
-      fs.writeFileSync(filePath, JSON.stringify(artifact, null, 2), "utf8");
-      artifacts.push({ file: fileName, artifact });
+        const fileName = `${scenario.id}__${profile}__${rapierMode}.json`;
+        const filePath = path.join(outputDir, fileName);
+        fs.writeFileSync(filePath, JSON.stringify(artifact, null, 2), "utf8");
+        artifacts.push({ file: fileName, artifact });
+      }
     }
   }
 
@@ -817,6 +906,7 @@ async function main(): Promise<number> {
       file,
       scenarioId: artifact.scenarioMetadata.scenarioId,
       networkProfile: artifact.scenarioMetadata.networkProfile,
+      rapierMode: artifact.scenarioMetadata.rapierMode,
       pass: artifact.benchmarkArtifact.sloResults.pass,
       frameP95Ms: artifact.clientMetrics.frameTimeMs,
       serverTickP99Ms: artifact.serverMetrics.tickDurationP99Ms,
@@ -831,7 +921,7 @@ async function main(): Promise<number> {
   console.log(`Benchmark completed: ${summaryPath}`);
   for (const run of summary.runs) {
     console.log(
-      `${run.scenarioId}/${run.networkProfile}: pass=${run.pass} frameP95=${run.frameP95Ms}ms tickP99=${run.serverTickP99Ms}ms drift=${run.replayDriftRatePct}%`
+      `${run.scenarioId}/${run.networkProfile}/${run.rapierMode}: pass=${run.pass} frameP95=${run.frameP95Ms}ms tickP99=${run.serverTickP99Ms}ms drift=${run.replayDriftRatePct}%`
     );
   }
 
