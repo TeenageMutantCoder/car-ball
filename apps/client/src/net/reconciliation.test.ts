@@ -126,12 +126,11 @@ test("resolveReconciliationTuning adjusts clean/loss/jitter profiles with rapier
     smoothingAlpha: 0.4,
   });
 
-  assert.deepEqual(resolveReconciliationTuning({ profile: "loss_5pct", rapierBallAuthority: true }), {
-    deadzoneCm: 27,
-    smoothingAlpha: 0.35,
-  });
+  const lossHybrid = resolveReconciliationTuning({ profile: "loss_5pct", rapierBallAuthority: true });
+  assert.equal(lossHybrid.deadzoneCm, 15);
+  assert.equal(Math.abs(lossHybrid.smoothingAlpha - 0.7) < 1e-9, true);
 
   const jitterHybrid = resolveReconciliationTuning({ profile: "jitter", rapierBallAuthority: true });
-  assert.equal(jitterHybrid.deadzoneCm, 23);
-  assert.equal(Math.abs(jitterHybrid.smoothingAlpha - 0.4) < 1e-9, true);
+  assert.equal(jitterHybrid.deadzoneCm, 19);
+  assert.equal(Math.abs(jitterHybrid.smoothingAlpha - 0.55) < 1e-9, true);
 });

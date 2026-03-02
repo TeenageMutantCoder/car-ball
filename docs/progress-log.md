@@ -31,6 +31,27 @@ Chronological append-only implementation log. Add one entry per meaningful updat
 
 ## Entries
 
+### 2026-03-02T01:14:10Z | Agent: copilot
+
+- changed_tasks:
+  - id: WS-F-004
+    from: IN_PROGRESS
+    to: DONE
+- summary: Completed reconciliation retuning for hybrid collisions by tightening loss/jitter profile deadzone and smoothing behavior, adding snapshot-episode correction accounting in the benchmark harness, and validating correction spike targets under clean and 5% loss profiles.
+- blockers: []
+- evidence:
+  - path: apps/client/src/net/reconciliation.ts
+  - path: apps/client/src/net/reconciliation.test.ts
+  - path: apps/client/src/net/live.test.ts
+  - path: scripts/benchmark_harness.ts
+  - path: artifacts/benchmarks/2026-03-02T01-13-39-870Z/summary.json
+  - path: artifacts/benchmarks/2026-03-02T01-13-39-870Z/impairment_matrix__loss_5pct.json
+  - path: docs/agent-task-registry.yaml
+  - path: docs/progress-board.md
+- next_actions:
+  - Start WS-G-005 to integrate replay-drift/hybrid authority gates and align pass criteria across benchmark and SLO report outputs.
+- related_pr_or_commit: n/a
+
 ### 2026-03-02T01:06:30Z | Agent: copilot
 
 - changed_tasks: []

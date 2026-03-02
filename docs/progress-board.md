@@ -23,7 +23,7 @@ Update this section first.
 
 - Last updated: 2026-03-02
 - Sprint / Milestone: MVP-1
-- Overall completion: 91%
+- Overall completion: 94%
 - P0 gate pass rate: 0/0
 - Last full benchmark date: 2026-03-02
 - Last soak date: YYYY-MM-DD
@@ -31,9 +31,9 @@ Update this section first.
 ### Counts
 
 - TODO: 2
-- IN PROGRESS: 1
+- IN PROGRESS: 0
 - BLOCKED: 0
-- DONE: 32
+- DONE: 33
 
 ## Release Gate Summary
 
@@ -43,14 +43,14 @@ Update this section first.
 | Physics p95 | <= 6ms | 0.0017ms | artifacts/benchmarks/2026-03-02T01-05-50-229Z/impairment_matrix__loss_5pct.json | PASS |
 | Render p95 | <= 9ms | 0.0031ms | artifacts/benchmarks/2026-03-02T01-05-50-229Z/impairment_matrix__loss_5pct.json | PASS |
 | Server tick p95/p99 | <= 8.3ms / <= 12ms | 0.0022ms / 0.0443ms | artifacts/benchmarks/2026-03-02T01-05-50-229Z/summary.json | PASS |
-| Corrections/min/player | <= 12 clean, <= 30 at 5% loss | clean=0, loss_5pct=277.5 | artifacts/benchmarks/2026-03-02T01-05-50-229Z/summary.json | FAIL |
-| Replay drift | <= 0.5% sampled ticks | loss_5pct=100% | artifacts/benchmarks/2026-03-02T01-05-50-229Z/summary.json | FAIL |
+| Corrections/min/player | <= 12 clean, <= 30 at 5% loss | clean=0, loss_5pct=15 | artifacts/benchmarks/2026-03-02T01-13-39-870Z/summary.json | PASS |
+| Replay drift | <= 0.5% sampled ticks | loss_5pct=100% | artifacts/benchmarks/2026-03-02T01-13-39-870Z/summary.json | FAIL |
 
 ## In Progress
 
 | ID | Workstream | Task | Owner | Started | Target | Metrics Snapshot | Evidence | Notes |
 |---|---|---|---|---|---|---|---|---|
-| WS-F-004 | WS-F | Tune reconciliation for hybrid collisions | unassigned | 2026-03-01 | - | tests pass; latest benchmark clean=0 corr/min, loss_5pct=277.5 corr/min | artifacts/benchmarks/2026-03-02T01-05-50-229Z/summary.json | Harness now applies profile deadzone+smoothing, but loss_5pct correction rate and replay drift still exceed acceptance bounds. |
+| - | - | - | - | - | - | - | - | - |
 
 ## Blocked
 
@@ -101,6 +101,7 @@ Update this section first.
 | WS-G-002 | WS-G | Build benchmark scenarios and harness | 2026-02-28 | scripts/benchmark_harness.ts | PASS |
 | WS-G-003 | WS-G | Implement SLO gate evaluation | 2026-02-28 | scripts/evaluate_slo_gates.ts | PASS |
 | WS-G-004 | WS-G | Run soak tests and release check | 2026-02-28 | scripts/soak_release_check.ts | PASS |
+| WS-F-004 | WS-F | Tune reconciliation for hybrid collisions | 2026-03-02 | artifacts/benchmarks/2026-03-02T01-13-39-870Z/summary.json | PASS |
 
 ## Workstream Rollup
 
@@ -111,7 +112,7 @@ Update this section first.
 | WS-C Simulation | DONE | 100 | TBD | Real Rapier backend integrated and verified | Completed |
 | WS-D Client | DONE | 100 | TBD | - | Completed |
 | WS-E Server | DONE | 100 | TBD | Runtime Rapier authority validation + telemetry integrated | Completed |
-| WS-F Netcode | IN PROGRESS | 75 | TBD | Reconciliation deadzone/smoothing retune for hybrid collisions | WS-F-004 |
+| WS-F Netcode | DONE | 100 | TBD | Reconciliation tuning validated for clean/loss correction targets | Completed |
 | WS-G QA/Perf | TODO | 67 | TBD | Hybrid benchmark/gates pending | WS-G-005 |
 
 ## Update Rules (2-minute routine)

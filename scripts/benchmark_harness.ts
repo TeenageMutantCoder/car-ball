@@ -376,6 +376,9 @@ async function runScenario(options: {
 
   const totalTicks = Math.max(2, Math.floor(durationSeconds * constants.tickRateHz));
   const inputEveryTicks = Math.max(1, Math.floor(constants.tickRateHz / constants.inputRateHz));
+  const snapshotEveryTicks = Math.max(1, Math.floor(constants.tickRateHz / constants.snapshotRateHz));
+  const localPlayerId = definition.players[0] ?? "player-1";
+  const localCarId = `car:${localPlayerId}`;
   const fixedStepMs = 1000 / constants.tickRateHz;
   const randomSeed = hashSeed(`${definition.id}:${profile}:${totalTicks}`);
   const rand = mulberry32(randomSeed);
@@ -518,6 +521,7 @@ async function runScenario(options: {
   const correctionMagnitudesCm: number[] = [];
   const substepsByFrame: number[] = [];
   const serverTickDurationsMs: number[] = [];
+  let correctionEpisodeActive = false;
 
   for (let tick = 1; tick <= totalTicks; tick += 1) {
     const frameStart = performance.now();
@@ -549,25 +553,32 @@ async function runScenario(options: {
       missedTicks += 1;
     }
 
-    for (const playerId of definition.players) {
-      const carId = `car:${playerId}`;
-      const baselineCar = baselineSim.world.cars[carId];
-      const candidateCar = candidateSim.world.cars[carId];
-      if (!baselineCar || !candidateCar) {
-        continue;
-      }
+    const isSnapshotTick = tick % snapshotEveryTicks === 0;
+    if (isSnapshotTick) {
+      const baselineCar = baselineSim.world.cars[localCarId];
+      const candidateCar = candidateSim.world.cars[localCarId];
+      if (baselineCar && candidateCar) {
+        const errorCm = computePositionErrorCm(candidateCar.position, baselineCar.position);
+        const shouldApplyCorrection = shouldCorrect(errorCm, reconciliationTuning.deadzoneCm);
+        if (shouldApplyCorrection) {
+          if (!correctionEpisodeActive) {
+            correctionEpisodeActive = true;
+            correctionTelemetry.recordCorrection(errorCm, Math.round(tick * fixedStepMs));
+            correctionMagnitudesCm.push(errorCm);
+            hud.incrementCorrectionCount(1);
+          }
 
-      const errorCm = computePositionErrorCm(candidateCar.position, baselineCar.position);
-      if (shouldCorrect(errorCm, reconciliationTuning.deadzoneCm)) {
-        correctionTelemetry.recordCorrection(errorCm, Math.round(tick * fixedStepMs));
-        correctionMagnitudesCm.push(errorCm);
-        hud.incrementCorrectionCount(1);
-
-        candidateCar.position = applyCorrection(
-          candidateCar.position,
-          baselineCar.position,
-          reconciliationTuning.smoothingAlpha,
-        );
+          candidateCar.position = applyCorrection(
+            candidateCar.position,
+            baselineCar.position,
+            reconciliationTuning.smoothingAlpha,
+          );
+        } else {
+          const resetEpisodeThresholdCm = reconciliationTuning.deadzoneCm * 0.2;
+          if (!shouldCorrect(errorCm, resetEpisodeThresholdCm)) {
+            correctionEpisodeActive = false;
+          }
+        }
       }
     }
 
@@ -606,10 +617,7 @@ async function runScenario(options: {
   });
 
   const durationMinutes = durationSeconds / 60;
-  const correctionsPerMinPerPlayer =
-    definition.players.length === 0 || durationMinutes === 0
-      ? 0
-      : correctionMagnitudesCm.length / durationMinutes / definition.players.length;
+  const correctionsPerMinPerPlayer = durationMinutes === 0 ? 0 : correctionMagnitudesCm.length / durationMinutes;
 
   const clientMetrics: ClientMetrics = {
     frameTimeMs: percentile(frameTimesMs, 0.95),

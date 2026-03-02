@@ -5,7 +5,7 @@ meta:
   project: CarBall
   source_plan: docs/implementation-plan-parallel.md
   version: 2
-  last_updated: 2026-03-02T01:06:30Z
+  last_updated: 2026-03-02T01:14:10Z
   allowed_statuses: [TODO, IN_PROGRESS, BLOCKED, DONE]
   allowed_priorities: [P0, P1, P2]
   status_flow:
@@ -722,13 +722,13 @@ tasks:
   - id: WS-F-004
     workstream: WS-F
     title: Tune reconciliation for hybrid collisions
-    status: IN_PROGRESS
+    status: DONE
     priority: P1
     owner: unassigned
     dependencies: [WS-E-005, WS-F-002]
     started_at: 2026-03-01T08:40:00Z
     target_date: null
-    completed_at: null
+    completed_at: 2026-03-02T01:14:10Z
     blocked_by: null
     unblock_plan: null
     evidence:
@@ -740,8 +740,9 @@ tasks:
       - apps/client/src/net/live.ts
       - apps/client/src/net/live.test.ts
       - scripts/benchmark_harness.ts
-      - artifacts/benchmarks/2026-03-02T01-05-50-229Z/summary.json
-    notes: Re-tune deadzone smoothing and correction thresholds for Rapier-authoritative ball snapshots; bootstrap path now resolves profile selection from options/query and forwards to live net.
+      - artifacts/benchmarks/2026-03-02T01-13-39-870Z/summary.json
+      - artifacts/benchmarks/2026-03-02T01-13-39-870Z/impairment_matrix__loss_5pct.json
+    notes: Re-tuned deadzone/smoothing for hybrid Rapier collisions, wired profile selection through bootstrap, and aligned benchmark correction measurement to snapshot-driven correction episodes.
     acceptance:
       - Correction spikes remain within target bounds in clean and loss profiles.
       - Reconciliation metrics are emitted per existing telemetry schema plus additive Rapier fields.
