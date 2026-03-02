@@ -68,7 +68,7 @@ const GOAL_VOLUMES: GoalVolume[] = [
 export interface InputFrameContext {
   playerId: string;
   carId: string;
-  getTick?: () => number;
+  getTick?: () => number | null;
 }
 
 export interface BabylonSceneBootstrapOptions {
@@ -243,7 +243,13 @@ export function bootstrapBabylonScene(options: BabylonSceneBootstrapOptions): Ba
 
     inputAccumulatorMs += deltaMs;
     while (inputAccumulatorMs >= INPUT_EMIT_INTERVAL_MS) {
-      const tick = inputFrameContext.getTick?.() ?? inputTick;
+      const resolvedTick = inputFrameContext.getTick?.();
+      if (resolvedTick === null) {
+        inputAccumulatorMs = Math.min(inputAccumulatorMs, INPUT_EMIT_INTERVAL_MS);
+        break;
+      }
+
+      const tick = resolvedTick ?? inputTick;
       const inputFrame = inputFrameEmitter.emit(tick, inputBindings.getControls());
       rendererBridge.applyInputFrame(inputFrame);
       predictionHistory.enqueue(inputFrame);
@@ -415,6 +421,28 @@ export function renderToSceneVector3(value: Vec3): Vector3 {
   return new Vector3(value.x, value.y, value.z);
 }
 
+export function createNetworkInputTickResolver(
+  getLatestSnapshotTick: () => number | undefined,
+  minInputTickDelta = NETWORK_MIN_INPUT_TICK_DELTA,
+): () => number | null {
+  let nextNetworkInputTick = 1;
+
+  return () => {
+    const latestSnapshotTick = getLatestSnapshotTick();
+    if (latestSnapshotTick === undefined) {
+      return null;
+    }
+
+    if (nextNetworkInputTick <= latestSnapshotTick) {
+      nextNetworkInputTick = latestSnapshotTick + minInputTickDelta;
+    }
+
+    const tick = nextNetworkInputTick;
+    nextNetworkInputTick += minInputTickDelta;
+    return tick;
+  };
+}
+
 export function bootstrapNetworkedBabylonScene(
   options: NetworkedBabylonSceneBootstrapOptions,
 ): NetworkedBabylonSceneBootstrap {
@@ -425,21 +453,14 @@ export function bootstrapNetworkedBabylonScene(
     carId: "car:player-1",
   };
 
-  let nextNetworkInputTick = 1;
   const inputFrameContext: InputFrameContext = baseInputFrameContext.getTick
     ? baseInputFrameContext
     : {
       ...baseInputFrameContext,
-      getTick: () => {
-        const latestSnapshotTick = rendererBridge.getLatestSnapshot()?.tick;
-        if (latestSnapshotTick !== undefined && nextNetworkInputTick <= latestSnapshotTick) {
-          nextNetworkInputTick = latestSnapshotTick + NETWORK_MIN_INPUT_TICK_DELTA;
-        }
-
-        const tick = nextNetworkInputTick;
-        nextNetworkInputTick += NETWORK_MIN_INPUT_TICK_DELTA;
-        return tick;
-      },
+      getTick: createNetworkInputTickResolver(
+        () => rendererBridge.getLatestSnapshot()?.tick,
+        NETWORK_MIN_INPUT_TICK_DELTA,
+      ),
     };
 
   let transport: WebSocketClientTransport | null = null;

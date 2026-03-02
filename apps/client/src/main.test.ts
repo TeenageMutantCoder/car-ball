@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { renderToSceneVector3 } from "./main.ts";
+import { createNetworkInputTickResolver, renderToSceneVector3 } from "./main.ts";
 
 test("renderToSceneVector3 keeps rendererBridge coordinates unchanged", () => {
   const renderPosition = { x: 11, y: 7, z: -3 };
@@ -15,4 +15,27 @@ test("renderToSceneVector3 keeps rendererBridge coordinates unchanged", () => {
     },
     renderPosition,
   );
+});
+
+test("createNetworkInputTickResolver waits for authoritative snapshot tick", () => {
+  let latestSnapshotTick: number | undefined;
+  const resolveTick = createNetworkInputTickResolver(() => latestSnapshotTick, 2);
+
+  assert.equal(resolveTick(), null);
+
+  latestSnapshotTick = 100;
+  assert.equal(resolveTick(), 102);
+  assert.equal(resolveTick(), 104);
+});
+
+test("createNetworkInputTickResolver re-bases when authoritative tick jumps ahead", () => {
+  let latestSnapshotTick = 20;
+  const resolveTick = createNetworkInputTickResolver(() => latestSnapshotTick, 2);
+
+  assert.equal(resolveTick(), 22);
+  assert.equal(resolveTick(), 24);
+
+  latestSnapshotTick = 40;
+  assert.equal(resolveTick(), 42);
+  assert.equal(resolveTick(), 44);
 });
