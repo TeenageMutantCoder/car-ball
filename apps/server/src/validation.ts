@@ -39,6 +39,7 @@ export interface ValidateInputFrameContext {
 }
 
 const EMPTY_ACCEPT: InputValidationAccept = { ok: true };
+const MAX_FUTURE_INPUT_WINDOWS = 4;
 
 export function createInputValidationRoomState(): InputValidationRoomState {
   return {
@@ -130,9 +131,18 @@ function hasImpossibleAcceleration(frame: InputFrame): InputValidationReject | n
 
 function hasCooldownAbuse(
   frame: InputFrame,
+  sim: SimulationCore,
   state: InputValidationRoomState,
   minTickDelta: number
 ): InputValidationReject | null {
+  const maxAcceptedFutureTick = sim.world.clock.tick + minTickDelta * MAX_FUTURE_INPUT_WINDOWS;
+  if (frame.tick > maxAcceptedFutureTick) {
+    return reject(
+      "COOLDOWN_ABUSE",
+      `input cadence exceeded: tick ${frame.tick} is too far ahead of server tick ${sim.world.clock.tick} (max ${maxAcceptedFutureTick}).`
+    );
+  }
+
   const previousTick = state.lastAcceptedTickByPlayerId.get(frame.playerId);
   if (previousTick === undefined) {
     return null;
@@ -187,7 +197,7 @@ export function validateInputFrame(context: ValidateInputFrameContext): InputVal
     return invalidBoostUsage;
   }
 
-  const cooldownAbuse = hasCooldownAbuse(frame, state, minTickDelta);
+  const cooldownAbuse = hasCooldownAbuse(frame, sim, state, minTickDelta);
   if (cooldownAbuse) {
     return cooldownAbuse;
   }

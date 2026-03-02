@@ -122,7 +122,7 @@ test("validateInputFrame rejects cooldown abuse for sub-threshold tick cadence",
   const state = createInputValidationRoomState();
 
   const accepted = validateInputFrame({
-    frame: createInputFrame({ tick: 10 }),
+    frame: createInputFrame({ tick: 6 }),
     sim,
     state,
     minTickDelta: 2
@@ -130,7 +130,7 @@ test("validateInputFrame rejects cooldown abuse for sub-threshold tick cadence",
   assert.deepEqual(accepted, { ok: true });
 
   const rejected = validateInputFrame({
-    frame: createInputFrame({ tick: 11, sequence: 2 }),
+    frame: createInputFrame({ tick: 7, sequence: 2 }),
     sim,
     state,
     minTickDelta: 2
@@ -138,6 +138,31 @@ test("validateInputFrame rejects cooldown abuse for sub-threshold tick cadence",
 
   assert.equal(rejected.ok, false);
   assert.equal(rejected.code, "COOLDOWN_ABUSE");
+});
+
+test("validateInputFrame rejects far-future tick without poisoning subsequent cadence", () => {
+  const sim = new SimulationCore(["player-1"]);
+  const state = createInputValidationRoomState();
+
+  const farFuture = validateInputFrame({
+    frame: createInputFrame({ tick: 9 }),
+    sim,
+    state,
+    minTickDelta: 2
+  });
+
+  assert.equal(farFuture.ok, false);
+  assert.equal(farFuture.code, "COOLDOWN_ABUSE");
+
+  const nearFuture = validateInputFrame({
+    frame: createInputFrame({ tick: 2, sequence: 2 }),
+    sim,
+    state,
+    minTickDelta: 2
+  });
+
+  assert.deepEqual(nearFuture, { ok: true });
+  assert.equal(state.lastAcceptedTickByPlayerId.get("player-1"), 2);
 });
 
 test("recordValidationResult tracks accepted and rejected counters", () => {
