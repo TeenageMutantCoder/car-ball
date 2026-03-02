@@ -164,10 +164,22 @@ export function bootstrapBabylonScene(options: BabylonSceneBootstrapOptions): Ba
   const neutralMaterial = new StandardMaterial("team-neutral", scene);
   neutralMaterial.diffuseColor = new Color3(0.85, 0.85, 0.85);
 
-  const arenaMaterial = new StandardMaterial("arena-material", scene);
-  arenaMaterial.diffuseColor = new Color3(0.2, 0.24, 0.28);
+  const arenaFloorMaterial = new StandardMaterial("arena-floor-material", scene);
+  arenaFloorMaterial.diffuseColor = new Color3(0.2, 0.24, 0.28);
 
-  createArenaMeshes(scene, ARENA_BOUNDS, arenaMaterial);
+  const arenaWallMaterial = new StandardMaterial("arena-wall-material", scene);
+  arenaWallMaterial.diffuseColor = new Color3(0.2, 0.24, 0.28);
+  arenaWallMaterial.alpha = 0.35;
+
+  const goalBlueMaterial = new StandardMaterial("goal-blue", scene);
+  goalBlueMaterial.diffuseColor = new Color3(0.25, 0.5, 1);
+  goalBlueMaterial.alpha = 0.35;
+
+  const goalOrangeMaterial = new StandardMaterial("goal-orange", scene);
+  goalOrangeMaterial.diffuseColor = new Color3(1, 0.6, 0.2);
+  goalOrangeMaterial.alpha = 0.35;
+
+  createArenaMeshes(scene, ARENA_BOUNDS, arenaFloorMaterial, arenaWallMaterial);
 
   for (const goalVolume of GOAL_VOLUMES) {
     const goalCenter = protocolToRenderVector3(centerOfVolume(goalVolume));
@@ -182,7 +194,7 @@ export function bootstrapBabylonScene(options: BabylonSceneBootstrapOptions): Ba
       scene,
     );
     goalMesh.position = goalCenter;
-    goalMesh.material = goalVolume.teamId === "team:blue" ? blueTeamMaterial : orangeTeamMaterial;
+    goalMesh.material = goalVolume.teamId === "team:blue" ? goalBlueMaterial : goalOrangeMaterial;
   }
 
   const syncRenderMeshes = (renderSnapshot: RenderSnapshotState): void => {
@@ -313,7 +325,12 @@ function centerOfVolume(goalVolume: GoalVolume): { x: number; y: number; z: numb
   };
 }
 
-function createArenaMeshes(scene: Scene, bounds: BoxVolume, material: StandardMaterial): void {
+function createArenaMeshes(
+  scene: Scene,
+  bounds: BoxVolume,
+  floorMaterial: StandardMaterial,
+  wallMaterial: StandardMaterial,
+): void {
   const halfThickness = ARENA_WALL_THICKNESS / 2;
   const centerX = (bounds.min.x + bounds.max.x) / 2;
   const centerY = (bounds.min.y + bounds.max.y) / 2;
@@ -328,7 +345,7 @@ function createArenaMeshes(scene: Scene, bounds: BoxVolume, material: StandardMa
     { x: centerX, y: centerY, z: bounds.min.z - halfThickness },
     scene,
   );
-  floorMesh.material = material;
+  floorMesh.material = floorMaterial;
 
   const wallXMinMesh = createProtocolAlignedBox(
     "arena:wall-x-min",
@@ -336,7 +353,7 @@ function createArenaMeshes(scene: Scene, bounds: BoxVolume, material: StandardMa
     { x: bounds.min.x - halfThickness, y: centerY, z: centerZ },
     scene,
   );
-  wallXMinMesh.material = material;
+  wallXMinMesh.material = wallMaterial;
 
   const wallXMaxMesh = createProtocolAlignedBox(
     "arena:wall-x-max",
@@ -344,7 +361,7 @@ function createArenaMeshes(scene: Scene, bounds: BoxVolume, material: StandardMa
     { x: bounds.max.x + halfThickness, y: centerY, z: centerZ },
     scene,
   );
-  wallXMaxMesh.material = material;
+  wallXMaxMesh.material = wallMaterial;
 
   const wallYMinMesh = createProtocolAlignedBox(
     "arena:wall-y-min",
@@ -352,7 +369,7 @@ function createArenaMeshes(scene: Scene, bounds: BoxVolume, material: StandardMa
     { x: centerX, y: bounds.min.y - halfThickness, z: centerZ },
     scene,
   );
-  wallYMinMesh.material = material;
+  wallYMinMesh.material = wallMaterial;
 
   const wallYMaxMesh = createProtocolAlignedBox(
     "arena:wall-y-max",
@@ -360,7 +377,7 @@ function createArenaMeshes(scene: Scene, bounds: BoxVolume, material: StandardMa
     { x: centerX, y: bounds.max.y + halfThickness, z: centerZ },
     scene,
   );
-  wallYMaxMesh.material = material;
+  wallYMaxMesh.material = wallMaterial;
 }
 
 function createProtocolAlignedBox(
