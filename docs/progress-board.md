@@ -129,4 +129,4 @@ Update this section first.
 2. Update this board tables for those same IDs.
 3. Append one structured entry to `docs/progress-log.md`.
 4. Preserve statuses exactly: `TODO`, `IN_PROGRESS`, `BLOCKED`, `DONE`.
-5. Run validator before handoff: `node --experimental-strip-types scripts/validate_task_registry.ts`.
+5. Run validator before handoff: `npm run validate:task_registry`.
