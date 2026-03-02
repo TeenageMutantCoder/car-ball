@@ -236,8 +236,9 @@ export function tickWorld(world: WorldState, inputFrames: InputFrame[], dtSecond
 
     const steer = clamp(controls.steer, -1, 1);
     const throttle = clamp(controls.throttle, -1, 1);
+    const steeringDirection = throttle < 0 ? -1 : 1;
 
-    car.heading += steer * STEER_RADIANS_PER_SECOND * dtSeconds;
+    car.heading -= steer * steeringDirection * STEER_RADIANS_PER_SECOND * dtSeconds;
 
     const forwardX = Math.cos(car.heading);
     const forwardY = Math.sin(car.heading);

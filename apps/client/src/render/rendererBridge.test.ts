@@ -5,6 +5,11 @@ import type { InputFrame, Snapshot } from "@car-ball/protocol";
 
 import { RendererBridge } from "./rendererBridge.ts";
 
+interface HeadingCase {
+  headingRadians: number;
+  expectedRenderRotation: { x: number; y: number; z: number; w: number };
+}
+
 function buildSnapshot(): Snapshot {
   return {
     version: 1,
@@ -61,6 +66,27 @@ function deepFreeze<T>(value: T): T {
   return value;
 }
 
+function headingToProtocolRotation(heading: number): { x: number; y: number; z: number; w: number } {
+  const half = heading / 2;
+  return {
+    x: 0,
+    y: 0,
+    z: Math.sin(half),
+    w: Math.cos(half),
+  };
+}
+
+function expectRotationAlmostEqual(
+  actual: { x: number; y: number; z: number; w: number },
+  expected: { x: number; y: number; z: number; w: number },
+  epsilon = 1e-12,
+): void {
+  assert.ok(Math.abs(actual.x - expected.x) <= epsilon, `x mismatch: ${actual.x} vs ${expected.x}`);
+  assert.ok(Math.abs(actual.y - expected.y) <= epsilon, `y mismatch: ${actual.y} vs ${expected.y}`);
+  assert.ok(Math.abs(actual.z - expected.z) <= epsilon, `z mismatch: ${actual.z} vs ${expected.z}`);
+  assert.ok(Math.abs(actual.w - expected.w) <= epsilon, `w mismatch: ${actual.w} vs ${expected.w}`);
+}
+
 test("applySnapshot is deterministic for equivalent snapshots", () => {
   const bridge = new RendererBridge();
   const snapshot = buildSnapshot();
@@ -70,6 +96,59 @@ test("applySnapshot is deterministic for equivalent snapshots", () => {
 
   assert.deepEqual(firstApplied, secondApplied);
   assert.notEqual(firstApplied, secondApplied);
+});
+
+test("applySnapshot converts protocol z-up coordinates to render y-up", () => {
+  const bridge = new RendererBridge();
+  const snapshot = buildSnapshot();
+  snapshot.cars[1]!.rotation = {
+    x: 0,
+    y: 0,
+    z: Math.sin(Math.PI / 4),
+    w: Math.cos(Math.PI / 4),
+  };
+  const applied = bridge.applySnapshot(snapshot);
+
+  assert.deepEqual(applied.cars[0]!.position, { x: -1, y: 3, z: 1 });
+  assert.deepEqual(applied.cars[0]!.velocity, { x: 2, y: -2, z: 0 });
+  assert.deepEqual(applied.ball.position, { x: 0, y: 0, z: 1 });
+  assert.deepEqual(applied.ball.velocity, { x: 1, y: -1, z: 0 });
+  assert.deepEqual(applied.cars[0]!.rotation, {
+    x: 0,
+    y: -Math.sin(Math.PI / 4),
+    z: 0,
+    w: Math.cos(Math.PI / 4),
+  });
+});
+
+test("rotation basis sanity: cardinal headings convert from sim z-up to render y-up", () => {
+  const bridge = new RendererBridge();
+  const headingCases: HeadingCase[] = [
+    {
+      headingRadians: 0,
+      expectedRenderRotation: { x: 0, y: 0, z: 0, w: 1 },
+    },
+    {
+      headingRadians: Math.PI / 2,
+      expectedRenderRotation: { x: 0, y: -Math.sin(Math.PI / 4), z: 0, w: Math.cos(Math.PI / 4) },
+    },
+    {
+      headingRadians: Math.PI,
+      expectedRenderRotation: { x: 0, y: -1, z: 0, w: 0 },
+    },
+    {
+      headingRadians: -Math.PI / 2,
+      expectedRenderRotation: { x: 0, y: Math.sin(Math.PI / 4), z: 0, w: Math.cos(Math.PI / 4) },
+    },
+  ];
+
+  for (const testCase of headingCases) {
+    const snapshot = buildSnapshot();
+    snapshot.cars[1]!.rotation = headingToProtocolRotation(testCase.headingRadians);
+
+    const applied = bridge.applySnapshot(snapshot);
+    expectRotationAlmostEqual(applied.cars[0]!.rotation, testCase.expectedRenderRotation);
+  }
 });
 
 test("applySnapshot clones input and does not retain mutable references", () => {
@@ -85,7 +164,7 @@ test("applySnapshot clones input and does not retain mutable references", () => 
   assert.equal(applied.match.scoreByTeam["team-a"], 3);
   assert.equal(applied.cars[0]!.id, "car-1");
   assert.equal(applied.cars[0]!.position.x, -1);
-  assert.equal(applied.ball.position.y, 1);
+  assert.equal(applied.ball.position.y, 0);
   assert.deepEqual(bridge.getLatestSnapshot(), applied);
 });
 
@@ -125,9 +204,9 @@ test("getInterpolatedSnapshot interpolates car and ball transforms deterministic
   assert.equal(interpolated.sequence, 20);
   assert.equal(interpolated.tick, 130);
   assert.equal(interpolated.cars[0]!.id, "car-1");
-  assert.deepEqual(interpolated.cars[0]!.position, { x: 4, y: 6, z: 8 });
-  assert.deepEqual(interpolated.ball.position, { x: 5, y: 2, z: -4 });
-  assert.deepEqual(interpolated.ball.velocity, { x: 2, y: 1, z: -3 });
+  assert.deepEqual(interpolated.cars[0]!.position, { x: 4, y: 8, z: 6 });
+  assert.deepEqual(interpolated.ball.position, { x: 5, y: -4, z: 2 });
+  assert.deepEqual(interpolated.ball.velocity, { x: 2, y: -3, z: 1 });
 
   const repeated = bridge.getInterpolatedSnapshot(0.5);
   assert.deepEqual(repeated, interpolated);
@@ -154,7 +233,7 @@ test("getInterpolatedSnapshot clamps alpha bounds", () => {
   const highCarOne = high.cars.find((car) => car.id === "car-1");
   assert.ok(lowCarOne);
   assert.ok(highCarOne);
-  assert.deepEqual(lowCarOne.position, { x: -1, y: 1, z: 3 });
+  assert.deepEqual(lowCarOne.position, { x: -1, y: 3, z: 1 });
   assert.deepEqual(highCarOne.position, { x: 99, y: 99, z: 99 });
 });
 

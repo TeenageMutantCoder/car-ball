@@ -105,9 +105,9 @@ function normalizeSnapshot(snapshot: Snapshot): RenderSnapshotState {
       id: car.id,
       ownerPlayerId: car.ownerPlayerId,
       teamId: car.teamId,
-      position: cloneVec3(car.position),
-      velocity: cloneVec3(car.velocity),
-      rotation: cloneRotation(car.rotation),
+      position: protocolToRenderVec3(car.position),
+      velocity: protocolToRenderVec3(car.velocity),
+      rotation: protocolToRenderRotation(car.rotation),
       boost: car.boost,
     }))
     .sort((left, right) => left.id.localeCompare(right.id));
@@ -123,8 +123,8 @@ function normalizeSnapshot(snapshot: Snapshot): RenderSnapshotState {
     cars,
     ball: {
       id: snapshot.ball.id,
-      position: cloneVec3(snapshot.ball.position),
-      velocity: cloneVec3(snapshot.ball.velocity),
+      position: protocolToRenderVec3(snapshot.ball.position),
+      velocity: protocolToRenderVec3(snapshot.ball.velocity),
     },
   };
 }
@@ -256,6 +256,27 @@ function cloneVec3(value: Vec3): Vec3 {
     x: value.x,
     y: value.y,
     z: value.z,
+  };
+}
+
+function protocolToRenderVec3(value: Vec3): Vec3 {
+  return {
+    x: value.x,
+    y: value.z,
+    z: value.y,
+  };
+}
+
+function protocolToRenderRotation(value: Rotation): Rotation {
+  const x = -value.x;
+  const y = -value.z;
+  const z = -value.y;
+
+  return {
+    x: x === 0 ? 0 : x,
+    y: y === 0 ? 0 : y,
+    z: z === 0 ? 0 : z,
+    w: value.w,
   };
 }
 

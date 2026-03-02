@@ -142,7 +142,7 @@ export function bootstrapBabylonScene(options: BabylonSceneBootstrapOptions): Ba
     for (const car of renderSnapshot.cars) {
       let mesh = carMeshes.get(car.id);
       if (!mesh) {
-        mesh = MeshBuilder.CreateBox(car.id, { width: 1.6, height: 0.8, depth: 2.6 }, scene);
+        mesh = MeshBuilder.CreateBox(car.id, { width: 2.6, height: 0.8, depth: 1.6 }, scene);
         mesh.material =
           car.teamId === "team:blue"
             ? blueTeamMaterial
