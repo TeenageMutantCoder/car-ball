@@ -409,3 +409,23 @@ Chronological append-only implementation log. Add one entry per meaningful updat
   - Start WS-F-004 reconciliation tuning for hybrid authority mode.
   - Add WS-G-005 benchmark gate variants using Rapier backend readiness metrics.
 - related_pr_or_commit: n/a
+
+### 2026-03-01T08:10:00Z | Agent: copilot
+
+- changed_tasks:
+  - id: WS-E-005
+    from: IN_PROGRESS
+    to: DONE
+- summary: Completed runtime Rapier ball-authority integration by adding impossible-transition validation guardrails, rollback handling, and room/global telemetry reporting with regression coverage.
+- blockers: []
+- evidence:
+  - path: apps/server/src/runtime.ts
+  - path: apps/server/src/runtime.test.ts
+  - path: apps/server/src/start.ts
+  - path: packages/sim/src/simulation.ts
+  - path: packages/sim/src/rapierShadow.ts
+- next_actions:
+  - Start WS-F-004 reconciliation threshold tuning for hybrid collision scenarios.
+  - Extend benchmark/gate scenarios for Rapier authority paths in WS-G-005.
+  - Prepare hybrid soak recommendation workflow after WS-G-005 gates.
+- related_pr_or_commit: n/a

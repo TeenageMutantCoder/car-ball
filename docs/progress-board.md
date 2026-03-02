@@ -23,7 +23,7 @@ Update this section first.
 
 - Last updated: 2026-03-01
 - Sprint / Milestone: MVP-1
-- Overall completion: 89%
+- Overall completion: 91%
 - P0 gate pass rate: 0/0
 - Last full benchmark date: YYYY-MM-DD
 - Last soak date: YYYY-MM-DD
@@ -31,9 +31,9 @@ Update this section first.
 ### Counts
 
 - TODO: 3
-- IN PROGRESS: 1
+- IN PROGRESS: 0
 - BLOCKED: 0
-- DONE: 31
+- DONE: 32
 
 ## Release Gate Summary
 
@@ -50,7 +50,7 @@ Update this section first.
 
 | ID | Workstream | Task | Owner | Started | Target | Metrics Snapshot | Evidence | Notes |
 |---|---|---|---|---|---|---|---|---|
-| WS-E-005 | WS-E | Integrate Rapier ball authority in runtime | unassigned | 2026-03-01 | - | runtime.test pass 7/7 | apps/server/src/runtime.ts | Feature-flag plumbing complete; authority path integration pending. |
+| - | - | - | - | - | - | - | - | - |
 
 ## Blocked
 
@@ -94,6 +94,7 @@ Update this section first.
 | WS-E-002 | WS-E | Implement server tick and snapshot loop | 2026-02-28 | apps/server/src/runtime.ts | PASS |
 | WS-E-003 | WS-E | Add server validation checks | 2026-02-28 | apps/server/src/validation.ts | PASS |
 | WS-E-004 | WS-E | Implement reconnect and resync flow | 2026-02-28 | apps/server/src/runtime.reconnect.test.ts | PASS |
+| WS-E-005 | WS-E | Integrate Rapier ball authority in runtime | 2026-03-01 | apps/server/src/runtime.test.ts | PASS |
 | WS-F-001 | WS-F | Implement client prediction history buffer | 2026-02-28 | apps/client/src/net/prediction.test.ts | PASS |
 | WS-F-002 | WS-F | Implement reconciliation smoothing metrics | 2026-02-28 | apps/client/src/net/reconciliation.test.ts | PASS |
 | WS-F-003 | WS-F | Add network impairment simulation controls | 2026-02-28 | apps/client/src/net/impairment.test.ts | PASS |
@@ -110,7 +111,7 @@ Update this section first.
 | WS-B Protocol | DONE | 100 | TBD | - | Completed |
 | WS-C Simulation | DONE | 100 | TBD | Real Rapier backend integrated and verified | Completed |
 | WS-D Client | DONE | 100 | TBD | - | Completed |
-| WS-E Server | IN PROGRESS | 80 | TBD | Runtime feature-flag path for hybrid authority | WS-E-005 |
+| WS-E Server | DONE | 100 | TBD | Runtime Rapier authority validation + telemetry integrated | Completed |
 | WS-F Netcode | TODO | 75 | TBD | Reconciliation retune pending hybrid authority | WS-F-004 |
 | WS-G QA/Perf | TODO | 67 | TBD | Hybrid benchmark/gates pending | WS-G-005 |
 

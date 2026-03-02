@@ -40,6 +40,13 @@ export interface RuntimeMetrics {
   roomCount: number;
 }
 
+export interface RapierAuthorityTelemetry {
+  rejectedImpossibleTransitions: number;
+  rejectedNonFiniteTransitions: number;
+  rejectedOverspeedTransitions: number;
+  rejectedDisplacementTransitions: number;
+}
+
 export interface RuntimeInputReject {
   ok: false;
   code: "PLAYER_DISCONNECTED" | "PLAYER_NOT_IN_ROOM";
@@ -65,7 +72,16 @@ interface RuntimeRoomInternal {
   disconnectedPlayerIds: Set<PlayerId>;
   validationState: InputValidationRoomState;
   validationTelemetry: InputValidationTelemetry;
+  rapierAuthorityTelemetry: RapierAuthorityTelemetry;
 }
+
+interface BallKinematicState {
+  position: Vec3;
+  velocity: Vec3;
+}
+
+const MAX_RAPIER_BALL_SPEED_UNITS_PER_SECOND = 140;
+const RAPIER_BALL_TRANSITION_POSITION_TOLERANCE_UNITS = 0.5;
 
 function createInitialScoreByTeam(): Record<TeamId, number> {
   return {
@@ -87,6 +103,35 @@ function isInsideBox(position: Vec3, volume: { min: Vec3; max: Vec3 }): boolean 
 
 function uniqueSortedPlayerIds(playerIds: PlayerId[]): PlayerId[] {
   return [...new Set(playerIds)].sort();
+}
+
+function cloneVec3(value: Vec3): Vec3 {
+  return {
+    x: value.x,
+    y: value.y,
+    z: value.z
+  };
+}
+
+function isFiniteVec3(value: Vec3): boolean {
+  return Number.isFinite(value.x) && Number.isFinite(value.y) && Number.isFinite(value.z);
+}
+
+function magnitude3(value: Vec3): number {
+  return Math.hypot(value.x, value.y, value.z);
+}
+
+function distance3(left: Vec3, right: Vec3): number {
+  return Math.hypot(left.x - right.x, left.y - right.y, left.z - right.z);
+}
+
+function createRapierAuthorityTelemetry(): RapierAuthorityTelemetry {
+  return {
+    rejectedImpossibleTransitions: 0,
+    rejectedNonFiniteTransitions: 0,
+    rejectedOverspeedTransitions: 0,
+    rejectedDisplacementTransitions: 0
+  };
 }
 
 function assertPositiveFiniteInteger(value: number, name: string): void {
@@ -168,6 +213,7 @@ export class ServerRuntime {
     room.disconnectedPlayerIds = new Set<PlayerId>();
     room.validationState = createInputValidationRoomState();
     room.validationTelemetry = createInputValidationTelemetry();
+    room.rapierAuthorityTelemetry = createRapierAuthorityTelemetry();
 
     return this.toRuntimeRoom(room);
   }
@@ -261,6 +307,11 @@ export class ServerRuntime {
       const pending = room.pendingInputs;
       room.pendingInputs = [];
 
+      const previousBallState: BallKinematicState = {
+        position: cloneVec3(room.sim.world.ball.position),
+        velocity: cloneVec3(room.sim.world.ball.velocity)
+      };
+
       if (pending.length > 0) {
         room.sim.enqueueInputs(pending);
       }
@@ -270,6 +321,8 @@ export class ServerRuntime {
       if (advanceResult.substeps === 0) {
         continue;
       }
+
+      this.validateRapierBallAuthorityTransition(room, previousBallState, stepMs, advanceResult.substeps);
 
       this.updateMatchState(room);
 
@@ -330,6 +383,28 @@ export class ServerRuntime {
     );
   }
 
+  getRapierAuthorityTelemetry(roomId?: string): RapierAuthorityTelemetry {
+    if (roomId) {
+      const room = this.requireRoom(roomId);
+      return {
+        rejectedImpossibleTransitions: room.rapierAuthorityTelemetry.rejectedImpossibleTransitions,
+        rejectedNonFiniteTransitions: room.rapierAuthorityTelemetry.rejectedNonFiniteTransitions,
+        rejectedOverspeedTransitions: room.rapierAuthorityTelemetry.rejectedOverspeedTransitions,
+        rejectedDisplacementTransitions: room.rapierAuthorityTelemetry.rejectedDisplacementTransitions
+      };
+    }
+
+    const totals = createRapierAuthorityTelemetry();
+    for (const room of this.rooms.values()) {
+      totals.rejectedImpossibleTransitions += room.rapierAuthorityTelemetry.rejectedImpossibleTransitions;
+      totals.rejectedNonFiniteTransitions += room.rapierAuthorityTelemetry.rejectedNonFiniteTransitions;
+      totals.rejectedOverspeedTransitions += room.rapierAuthorityTelemetry.rejectedOverspeedTransitions;
+      totals.rejectedDisplacementTransitions += room.rapierAuthorityTelemetry.rejectedDisplacementTransitions;
+    }
+
+    return totals;
+  }
+
   private createInternalRoom(roomId: string, playerIds: PlayerId[]): RuntimeRoomInternal {
     const normalizedPlayerIds = uniqueSortedPlayerIds(playerIds);
     const enableRapierForRoom = this.rapierEnabled && normalizedPlayerIds.length > 0;
@@ -352,8 +427,63 @@ export class ServerRuntime {
       pendingInputs: [],
       disconnectedPlayerIds: new Set<PlayerId>(),
       validationState: createInputValidationRoomState(),
-      validationTelemetry: createInputValidationTelemetry()
+      validationTelemetry: createInputValidationTelemetry(),
+      rapierAuthorityTelemetry: createRapierAuthorityTelemetry()
     };
+  }
+
+  private validateRapierBallAuthorityTransition(
+    room: RuntimeRoomInternal,
+    previousBallState: BallKinematicState,
+    stepMs: number,
+    substeps: number
+  ): void {
+    if (!this.rapierEnabled || !this.rapierBallAuthority) {
+      return;
+    }
+
+    const ball = room.sim.world.ball;
+    const currentPosition = ball.position;
+    const currentVelocity = ball.velocity;
+
+    if (!isFiniteVec3(currentPosition) || !isFiniteVec3(currentVelocity)) {
+      this.rejectRapierBallTransition(room, previousBallState, "non-finite");
+      return;
+    }
+
+    const speed = magnitude3(currentVelocity);
+    if (speed > MAX_RAPIER_BALL_SPEED_UNITS_PER_SECOND) {
+      this.rejectRapierBallTransition(room, previousBallState, "overspeed");
+      return;
+    }
+
+    const elapsedSeconds = Math.max(0, (stepMs * substeps) / 1000);
+    const maxDistance =
+      MAX_RAPIER_BALL_SPEED_UNITS_PER_SECOND * elapsedSeconds + RAPIER_BALL_TRANSITION_POSITION_TOLERANCE_UNITS;
+    const traveledDistance = distance3(previousBallState.position, currentPosition);
+
+    if (traveledDistance > maxDistance) {
+      this.rejectRapierBallTransition(room, previousBallState, "displacement");
+    }
+  }
+
+  private rejectRapierBallTransition(
+    room: RuntimeRoomInternal,
+    previousBallState: BallKinematicState,
+    reason: "non-finite" | "overspeed" | "displacement"
+  ): void {
+    room.rapierAuthorityTelemetry.rejectedImpossibleTransitions += 1;
+
+    if (reason === "non-finite") {
+      room.rapierAuthorityTelemetry.rejectedNonFiniteTransitions += 1;
+    } else if (reason === "overspeed") {
+      room.rapierAuthorityTelemetry.rejectedOverspeedTransitions += 1;
+    } else {
+      room.rapierAuthorityTelemetry.rejectedDisplacementTransitions += 1;
+    }
+
+    room.sim.world.ball.position = cloneVec3(previousBallState.position);
+    room.sim.world.ball.velocity = cloneVec3(previousBallState.velocity);
   }
 
   private updateMatchState(room: RuntimeRoomInternal): void {

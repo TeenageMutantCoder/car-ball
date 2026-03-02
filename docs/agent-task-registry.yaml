@@ -5,7 +5,7 @@ meta:
   project: CarBall
   source_plan: docs/implementation-plan-parallel.md
   version: 2
-  last_updated: 2026-03-01T07:35:00Z
+  last_updated: 2026-03-01T08:10:00Z
   allowed_statuses: [TODO, IN_PROGRESS, BLOCKED, DONE]
   allowed_priorities: [P0, P1, P2]
   status_flow:
@@ -699,16 +699,21 @@ tasks:
   - id: WS-E-005
     workstream: WS-E
     title: Integrate Rapier ball authority in runtime
-    status: IN_PROGRESS
+    status: DONE
     priority: P0
     owner: unassigned
     dependencies: [WS-C-008, WS-E-003]
     started_at: 2026-03-01T06:20:00Z
     target_date: null
-    completed_at: null
+    completed_at: 2026-03-01T08:10:00Z
     blocked_by: null
     unblock_plan: null
-    evidence: []
+    evidence:
+      - apps/server/src/runtime.ts
+      - apps/server/src/runtime.test.ts
+      - apps/server/src/start.ts
+      - packages/sim/src/simulation.ts
+      - packages/sim/src/rapierShadow.ts
     notes: Wire runtime tick snapshot and validation paths for Rapier-authoritative ball behavior.
     acceptance:
       - Runtime tick path supports feature-flag switch between legacy and Rapier ball authority.

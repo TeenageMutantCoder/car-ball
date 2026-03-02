@@ -219,3 +219,47 @@ test("runtime propagates rapier ball authority flag", () => {
   assert.equal(metrics.shadowMode, false);
   assert.equal(metrics.ballAuthority, true);
 });
+
+test("runtime rejects impossible rapier ball-authority transitions and emits telemetry", () => {
+  const runtime = createServerRuntime({
+    rapierEnabled: true,
+    rapierShadowMode: false,
+    rapierBallAuthority: true,
+    now: createMonotonicNow(70_000, 1)
+  });
+
+  runtime.createRoomRuntime("room-rapier-guard");
+  const room = runtime.attachPlayerIds("room-rapier-guard", ["player-1"]);
+
+  const simWithPatchedAdvance = room.sim as unknown as {
+    world: typeof room.sim.world;
+    advance: (elapsedMs: number) => {
+      substeps: number;
+      droppedMs: number;
+      accumulatorMs: number;
+      tick: number;
+    };
+  };
+  const originalAdvance = simWithPatchedAdvance.advance.bind(room.sim);
+  simWithPatchedAdvance.advance = (elapsedMs: number) => {
+    const result = originalAdvance(elapsedMs);
+    simWithPatchedAdvance.world.ball.position.x = Number.NaN;
+    return result;
+  };
+
+  const before = {
+    position: { ...room.sim.world.ball.position },
+    velocity: { ...room.sim.world.ball.velocity }
+  };
+
+  runtime.tickOnce();
+
+  assert.deepEqual(room.sim.world.ball.position, before.position);
+  assert.deepEqual(room.sim.world.ball.velocity, before.velocity);
+  assert.deepEqual(runtime.getRapierAuthorityTelemetry("room-rapier-guard"), {
+    rejectedImpossibleTransitions: 1,
+    rejectedNonFiniteTransitions: 1,
+    rejectedOverspeedTransitions: 0,
+    rejectedDisplacementTransitions: 0
+  });
+});
