@@ -19,10 +19,11 @@ class FakeKeyboardTarget {
     this.listeners[type].delete(listener);
   }
 
-  dispatch(type: "keydown" | "keyup", code: string): { prevented: boolean } {
+  dispatch(type: "keydown" | "keyup", code: string, repeat = false): { prevented: boolean } {
     let prevented = false;
     const eventLike = {
       code,
+      repeat,
       preventDefault(): void {
         prevented = true;
       },
@@ -122,4 +123,32 @@ test("createInputBindings dispose detaches listeners and resets controls", () =>
     boost: false,
     handbrake: false,
   });
+});
+
+test("createInputBindings invokes camera toggle callback on KeyC keydown only", () => {
+  const target = new FakeKeyboardTarget();
+  let cameraToggleCount = 0;
+  const bindings = createInputBindings({
+    target,
+    onCameraToggle: () => {
+      cameraToggleCount += 1;
+    },
+  });
+
+  const initial = target.dispatch("keydown", "KeyC");
+  const repeated = target.dispatch("keydown", "KeyC", true);
+  target.dispatch("keyup", "KeyC");
+
+  assert.equal(initial.prevented, true);
+  assert.equal(repeated.prevented, true);
+  assert.equal(cameraToggleCount, 1);
+  assert.deepEqual(bindings.getControls(), {
+    throttle: 0,
+    steer: 0,
+    jump: false,
+    boost: false,
+    handbrake: false,
+  });
+
+  bindings.dispose();
 });

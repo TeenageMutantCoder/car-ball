@@ -113,7 +113,6 @@ export function bootstrapBabylonScene(options: BabylonSceneBootstrapOptions): Ba
 
   const rendererBridge = options.rendererBridge ?? new RendererBridge();
   const debugHud = options.debugHud ?? createDebugHud();
-  const inputBindings = options.inputBindings ?? createInputBindings();
   const inputFrameContext = options.inputFrameContext ?? {
     playerId: "player-1",
     carId: "car:player-1",
@@ -132,6 +131,13 @@ export function bootstrapBabylonScene(options: BabylonSceneBootstrapOptions): Ba
   const camera = new ArcRotateCamera("camera", Math.PI / 2, Math.PI / 3, 24, Vector3.Zero(), scene);
   camera.attachControl(options.canvas, true);
   const cameraController = createCameraController({ initialMode: options.initialCameraMode });
+  const inputBindings =
+    options.inputBindings ??
+    createInputBindings({
+      onCameraToggle: () => {
+        cameraController.toggleMode();
+      },
+    });
 
   const light = new HemisphericLight("sun", new Vector3(0, 1, 0), scene);
   light.intensity = 0.95;
@@ -228,9 +234,9 @@ export function bootstrapBabylonScene(options: BabylonSceneBootstrapOptions): Ba
       matchHud.update(renderSnapshot);
 
       const cameraPose = resolveCameraPose(cameraController.getMode(), renderSnapshot, inputFrameContext.carId);
-      camera.alpha = cameraPose.alpha;
-      camera.beta = cameraPose.beta;
-      camera.radius = cameraPose.radius;
+      camera.setPosition(
+        new Vector3(cameraPose.position.x, cameraPose.position.y, cameraPose.position.z),
+      );
       camera.setTarget(new Vector3(cameraPose.target.x, cameraPose.target.y, cameraPose.target.z));
     }
 

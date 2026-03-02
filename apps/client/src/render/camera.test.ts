@@ -38,35 +38,42 @@ function buildRenderSnapshot(): RenderSnapshotState {
   };
 }
 
-test("resolveNextCameraMode toggles forward and ball", () => {
-  assert.equal(resolveNextCameraMode("forward"), "ball");
-  assert.equal(resolveNextCameraMode("ball"), "forward");
+test("resolveNextCameraMode toggles car and ball", () => {
+  assert.equal(resolveNextCameraMode("car"), "ball");
+  assert.equal(resolveNextCameraMode("ball"), "car");
 });
 
 test("createCameraController exposes mode state and toggle behavior", () => {
   const controller = createCameraController({ initialMode: "ball" });
 
   assert.equal(controller.getMode(), "ball");
-  assert.equal(controller.toggleMode(), "forward");
+  assert.equal(controller.toggleMode(), "car");
   assert.equal(controller.setMode("ball"), "ball");
   assert.equal(controller.getMode(), "ball");
 });
 
-test("resolveCameraPose targets focus car in forward mode", () => {
+test("resolveCameraPose uses third-person car camera behind focus car", () => {
   const snapshot = buildRenderSnapshot();
-  const pose = resolveCameraPose("forward", snapshot, "car-1");
+  const pose = resolveCameraPose("car", snapshot, "car-1");
 
-  assert.deepEqual(pose.target, { x: 3, y: 1, z: 2 });
-  assert.equal(pose.radius, 24);
+  assert.deepEqual(pose.position, { x: -11, y: 6, z: 2 });
+  assert.deepEqual(pose.target, { x: 21, y: 2.5, z: 2 });
 });
 
-test("resolveCameraPose targets ball in ball mode and missing-car fallback", () => {
+test("resolveCameraPose ball mode keeps position but targets ball", () => {
   const snapshot = buildRenderSnapshot();
 
   const ballPose = resolveCameraPose("ball", snapshot, "car-1");
-  assert.deepEqual(ballPose.target, { x: -5, y: 2, z: 6 });
-  assert.equal(ballPose.radius, 14);
+  const carPose = resolveCameraPose("car", snapshot, "car-1");
 
-  const fallbackPose = resolveCameraPose("forward", snapshot, "car-missing");
-  assert.deepEqual(fallbackPose.target, { x: -5, y: 2, z: 6 });
+  assert.deepEqual(ballPose.position, carPose.position);
+  assert.deepEqual(ballPose.target, { x: -5, y: 2, z: 6 });
+});
+
+test("resolveCameraPose missing-car fallback anchors camera from ball", () => {
+  const snapshot = buildRenderSnapshot();
+
+  const fallbackPose = resolveCameraPose("car", snapshot, "car-missing");
+  assert.deepEqual(fallbackPose.position, { x: -19, y: 7, z: 6 });
+  assert.deepEqual(fallbackPose.target, { x: 13, y: 3.5, z: 6 });
 });

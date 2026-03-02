@@ -15,6 +15,7 @@ const STEER_RIGHT_CODES = new Set(["KeyD"]);
 const JUMP_CODES = new Set(["Space"]);
 const BOOST_CODES = new Set(["ArrowUp"]);
 const HANDBRAKE_CODES = new Set(["ShiftLeft", "ShiftRight"]);
+const CAMERA_TOGGLE_CODES = new Set(["KeyC"]);
 
 type KeyStateCode =
   | "throttle.forward"
@@ -35,6 +36,7 @@ export interface InputBindings {
 export interface InputBindingsOptions {
   target?: KeyboardInputTarget;
   preventDefault?: boolean;
+  onCameraToggle?: () => void;
 }
 
 export interface KeyboardInputTarget {
@@ -48,6 +50,18 @@ export function createInputBindings(options: InputBindingsOptions = {}): InputBi
   const shouldPreventDefault = options.preventDefault ?? true;
 
   const handleKeyDown = (event: KeyboardEvent): void => {
+    if (CAMERA_TOGGLE_CODES.has(event.code)) {
+      if (shouldPreventDefault) {
+        event.preventDefault();
+      }
+
+      if (!event.repeat) {
+        options.onCameraToggle?.();
+      }
+
+      return;
+    }
+
     const keyStateCode = mapEventToStateCode(event.code);
     if (keyStateCode === undefined) {
       return;
