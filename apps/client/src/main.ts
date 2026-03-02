@@ -28,6 +28,7 @@ import {
 } from "./render/camera.ts";
 import { RendererBridge, type RenderSnapshotState } from "./render/rendererBridge.ts";
 import { createDebugHud, type DebugHud } from "./debug/hud.ts";
+import { createMatchHud } from "./ui/matchHud.ts";
 
 const INPUT_RATE_HZ = 60;
 const INPUT_EMIT_INTERVAL_MS = 1_000 / INPUT_RATE_HZ;
@@ -124,6 +125,7 @@ export function bootstrapBabylonScene(options: BabylonSceneBootstrapOptions): Ba
       carId: inputFrameContext.carId,
     });
   const predictionHistory = options.predictionHistory ?? createPredictionHistory();
+  const matchHud = createMatchHud();
   const engine = new Engine(options.canvas, true);
   const scene = new Scene(engine);
 
@@ -223,6 +225,7 @@ export function bootstrapBabylonScene(options: BabylonSceneBootstrapOptions): Ba
     const renderSnapshot = rendererBridge.getInterpolatedSnapshot(interpolationAlpha);
     if (renderSnapshot !== null) {
       syncRenderMeshes(renderSnapshot);
+      matchHud.update(renderSnapshot);
 
       const cameraPose = resolveCameraPose(cameraController.getMode(), renderSnapshot, inputFrameContext.carId);
       camera.alpha = cameraPose.alpha;
@@ -277,6 +280,7 @@ export function bootstrapBabylonScene(options: BabylonSceneBootstrapOptions): Ba
       engine.stopRenderLoop(renderTick);
       window.removeEventListener("resize", handleResize);
       inputBindings.dispose();
+      matchHud.dispose();
       scene.dispose();
       engine.dispose();
     },
