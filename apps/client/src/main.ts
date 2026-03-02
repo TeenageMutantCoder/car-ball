@@ -33,6 +33,25 @@ const INPUT_RATE_HZ = 60;
 const INPUT_EMIT_INTERVAL_MS = 1_000 / INPUT_RATE_HZ;
 const NETWORK_MIN_INPUT_TICK_DELTA = 2;
 
+interface GoalVolume {
+  teamId: string;
+  min: { x: number; y: number; z: number };
+  max: { x: number; y: number; z: number };
+}
+
+const GOAL_VOLUMES: GoalVolume[] = [
+  {
+    teamId: "team:blue",
+    min: { x: -58, y: -8, z: 0 },
+    max: { x: -54, y: 8, z: 6 },
+  },
+  {
+    teamId: "team:orange",
+    min: { x: 54, y: -8, z: 0 },
+    max: { x: 58, y: 8, z: 6 },
+  },
+];
+
 export interface InputFrameContext {
   playerId: string;
   carId: string;
@@ -127,6 +146,22 @@ export function bootstrapBabylonScene(options: BabylonSceneBootstrapOptions): Ba
   orangeTeamMaterial.diffuseColor = new Color3(1, 0.6, 0.2);
   const neutralMaterial = new StandardMaterial("team-neutral", scene);
   neutralMaterial.diffuseColor = new Color3(0.85, 0.85, 0.85);
+
+  for (const goalVolume of GOAL_VOLUMES) {
+    const goalCenter = protocolToRenderVector3(centerOfVolume(goalVolume));
+    const goalSize = sizeInRenderSpace(goalVolume);
+    const goalMesh = MeshBuilder.CreateBox(
+      `goal:${goalVolume.teamId}`,
+      {
+        width: goalSize.x,
+        height: goalSize.y,
+        depth: goalSize.z,
+      },
+      scene,
+    );
+    goalMesh.position = goalCenter;
+    goalMesh.material = goalVolume.teamId === "team:blue" ? blueTeamMaterial : orangeTeamMaterial;
+  }
 
   const syncRenderMeshes = (renderSnapshot: RenderSnapshotState): void => {
     ballMesh.position.set(renderSnapshot.ball.position.x, renderSnapshot.ball.position.y, renderSnapshot.ball.position.z);
@@ -246,6 +281,26 @@ export function bootstrapBabylonScene(options: BabylonSceneBootstrapOptions): Ba
       engine.dispose();
     },
   };
+}
+
+function centerOfVolume(goalVolume: GoalVolume): { x: number; y: number; z: number } {
+  return {
+    x: (goalVolume.min.x + goalVolume.max.x) / 2,
+    y: (goalVolume.min.y + goalVolume.max.y) / 2,
+    z: (goalVolume.min.z + goalVolume.max.z) / 2,
+  };
+}
+
+function sizeInRenderSpace(goalVolume: GoalVolume): { x: number; y: number; z: number } {
+  return {
+    x: Math.abs(goalVolume.max.x - goalVolume.min.x),
+    y: Math.abs(goalVolume.max.z - goalVolume.min.z),
+    z: Math.abs(goalVolume.max.y - goalVolume.min.y),
+  };
+}
+
+function protocolToRenderVector3(value: { x: number; y: number; z: number }): Vector3 {
+  return new Vector3(value.x, value.z, value.y);
 }
 
 export function bootstrapNetworkedBabylonScene(
