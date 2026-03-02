@@ -3,22 +3,60 @@ import {
   bootstrapNetworkedBabylonScene,
   type NetworkedBabylonSceneBootstrap,
 } from "./main.ts";
+import type { ReconciliationProfile } from "./net/reconciliation.ts";
 
 const DEFAULT_CANVAS_ID = "car-ball-canvas";
 const DEFAULT_ROOM_ID = "room-main";
 const DEFAULT_PLAYER_ID = "player-1";
 const DEFAULT_WS_PATH = "/ws";
 const DEFAULT_WS_PORT = "8080";
+const VALID_RECONCILIATION_PROFILES: ReconciliationProfile[] = ["clean", "loss_5pct", "jitter"];
+const DEFAULT_RECONCILIATION_PROFILE: ReconciliationProfile = "clean";
 
 export interface StartClientAppOptions {
   canvas?: HTMLCanvasElement;
   canvasId?: string;
   roomId?: string;
   playerId?: string;
+  reconciliationProfile?: ReconciliationProfile;
+  networkProfile?: ReconciliationProfile;
   websocketUrl?: string;
   websocketPath?: string;
   autoStartRender?: boolean;
   autoConnectNetwork?: boolean;
+}
+
+function isReconciliationProfile(value: string | null | undefined): value is ReconciliationProfile {
+  if (value === undefined || value === null) {
+    return false;
+  }
+
+  return VALID_RECONCILIATION_PROFILES.includes(value as ReconciliationProfile);
+}
+
+export function resolveStartReconciliationProfile(
+  options: Pick<StartClientAppOptions, "reconciliationProfile" | "networkProfile">,
+  locationSearch?: string,
+): ReconciliationProfile {
+  if (isReconciliationProfile(options.reconciliationProfile)) {
+    return options.reconciliationProfile;
+  }
+
+  if (isReconciliationProfile(options.networkProfile)) {
+    return options.networkProfile;
+  }
+
+  const search =
+    locationSearch ??
+    (typeof window !== "undefined" && window.location ? window.location.search : "");
+  const params = new URLSearchParams(search);
+  const profileFromQuery = params.get("reconciliationProfile") ?? params.get("networkProfile");
+
+  if (isReconciliationProfile(profileFromQuery)) {
+    return profileFromQuery;
+  }
+
+  return DEFAULT_RECONCILIATION_PROFILE;
 }
 
 function ensureCanvas(options: StartClientAppOptions): HTMLCanvasElement {
@@ -75,6 +113,7 @@ export function startClientApp(options: StartClientAppOptions = {}): NetworkedBa
     canvas: ensureCanvas(options),
     websocketUrl: resolveWebSocketUrl(options),
     inputFrameContext,
+    reconciliationProfile: resolveStartReconciliationProfile(options),
   });
 
   if (options.autoConnectNetwork ?? true) {

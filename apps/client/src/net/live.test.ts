@@ -224,3 +224,22 @@ test("live client net applies profile-based deadzone when threshold is not overr
   assert.equal(metrics.deadzoneCm, 27);
   assert.equal(Math.abs(metrics.smoothingAlpha - 0.35) < 1e-9, true);
 });
+
+test("live client net defaults to clean reconciliation tuning when profile is unspecified", () => {
+  const net = createLiveClientNet(
+    {
+      applySnapshot(snapshot) {
+        return snapshot.tick;
+      },
+    },
+    {
+      playerId: "player-1",
+      carId: "car:player-1",
+      getPredictedPosition: () => null,
+    },
+  );
+
+  const metrics = net.getCorrectionMetrics();
+  assert.equal(metrics.deadzoneCm, 17);
+  assert.equal(Math.abs(metrics.smoothingAlpha - 0.45) < 1e-9, true);
+});

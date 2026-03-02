@@ -5,7 +5,7 @@ meta:
   project: CarBall
   source_plan: docs/implementation-plan-parallel.md
   version: 2
-  last_updated: 2026-03-01T08:40:00Z
+  last_updated: 2026-03-02T01:06:30Z
   allowed_statuses: [TODO, IN_PROGRESS, BLOCKED, DONE]
   allowed_priorities: [P0, P1, P2]
   status_flow:
@@ -732,11 +732,16 @@ tasks:
     blocked_by: null
     unblock_plan: null
     evidence:
+      - apps/client/src/start.ts
+      - apps/client/src/start.test.ts
+      - apps/client/src/main.ts
       - apps/client/src/net/reconciliation.ts
       - apps/client/src/net/reconciliation.test.ts
       - apps/client/src/net/live.ts
       - apps/client/src/net/live.test.ts
-    notes: Re-tune deadzone smoothing and correction thresholds for Rapier-authoritative ball snapshots.
+      - scripts/benchmark_harness.ts
+      - artifacts/benchmarks/2026-03-02T01-05-50-229Z/summary.json
+    notes: Re-tune deadzone smoothing and correction thresholds for Rapier-authoritative ball snapshots; bootstrap path now resolves profile selection from options/query and forwards to live net.
     acceptance:
       - Correction spikes remain within target bounds in clean and loss profiles.
       - Reconciliation metrics are emitted per existing telemetry schema plus additive Rapier fields.

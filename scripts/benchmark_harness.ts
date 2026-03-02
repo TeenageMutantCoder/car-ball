@@ -355,7 +355,13 @@ async function runScenario(options: {
     { SimulationCore, worldToProtocolSnapshot, runReplayDriftReport },
     { createInputFrameEmitter },
     { createPredictionHistory },
-    { computePositionErrorCm, shouldCorrect, createCorrectionTelemetry },
+    {
+      applyCorrection,
+      computePositionErrorCm,
+      createCorrectionTelemetry,
+      resolveReconciliationTuning,
+      shouldCorrect,
+    },
     { createDebugHud },
     { RendererBridge },
   ] = await Promise.all([
@@ -487,7 +493,16 @@ async function runScenario(options: {
     maxSubsteps: constants.maxSubsteps,
   });
 
-  const correctionTelemetry = createCorrectionTelemetry(60_000);
+  const reconciliationTuning = resolveReconciliationTuning({
+    profile,
+    rapierBallAuthority: true,
+  });
+
+  const correctionTelemetry = createCorrectionTelemetry(60_000, {
+    rapierBallAuthority: true,
+    deadzoneCm: reconciliationTuning.deadzoneCm,
+    smoothingAlpha: reconciliationTuning.smoothingAlpha,
+  });
   const hud = createDebugHud();
   const rendererBridge = new RendererBridge();
 
@@ -543,10 +558,16 @@ async function runScenario(options: {
       }
 
       const errorCm = computePositionErrorCm(candidateCar.position, baselineCar.position);
-      if (shouldCorrect(errorCm, constants.reconcileThresholdCm)) {
+      if (shouldCorrect(errorCm, reconciliationTuning.deadzoneCm)) {
         correctionTelemetry.recordCorrection(errorCm, Math.round(tick * fixedStepMs));
         correctionMagnitudesCm.push(errorCm);
         hud.incrementCorrectionCount(1);
+
+        candidateCar.position = applyCorrection(
+          candidateCar.position,
+          baselineCar.position,
+          reconciliationTuning.smoothingAlpha,
+        );
       }
     }
 
@@ -635,7 +656,7 @@ async function runScenario(options: {
       serverMetrics.tickDurationP95Ms <= 8.3 &&
       serverMetrics.tickDurationP99Ms <= 12 &&
       correctionsPerMinPerPlayer <= correctionThreshold &&
-      clientMetrics.correctionMagnitudeCmP95 <= constants.reconcileThresholdCm &&
+        clientMetrics.correctionMagnitudeCmP95 <= reconciliationTuning.deadzoneCm &&
       simMetrics.replayDriftRatePct <= 0.5,
   };
 

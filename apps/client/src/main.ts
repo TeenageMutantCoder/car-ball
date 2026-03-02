@@ -15,6 +15,7 @@ import type { InputFrame, Snapshot } from "@car-ball/protocol";
 import { createInputBindings, type InputBindings } from "./input/bindings.ts";
 import { createInputFrameEmitter, type InputFrameEmitter } from "./input/frameEmitter.ts";
 import { createLiveClientNet, type LiveClientNet } from "./net/live.ts";
+import type { ReconciliationProfile } from "./net/reconciliation.ts";
 import { createPredictionHistory, type PredictionHistory } from "./net/prediction.ts";
 import {
   createWebSocketClientTransport,
@@ -74,6 +75,7 @@ export interface NetworkedBabylonSceneBootstrapOptions extends BabylonSceneBoots
   websocketUrl: string;
   websocketProtocols?: string | string[];
   reconnectThresholdCm?: number;
+  reconciliationProfile?: ReconciliationProfile;
 }
 
 export interface NetworkedBabylonSceneBootstrap extends BabylonSceneBootstrap {
@@ -298,6 +300,7 @@ export function bootstrapNetworkedBabylonScene(
       playerId: inputFrameContext.playerId,
       carId: inputFrameContext.carId,
       reconcileThresholdCm: options.reconnectThresholdCm,
+      reconciliationProfile: options.reconciliationProfile,
       getPredictedPosition: () => {
         const latest = base.rendererBridge.getLatestSnapshot();
         if (!latest) {

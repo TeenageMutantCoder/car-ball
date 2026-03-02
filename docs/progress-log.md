@@ -31,6 +31,39 @@ Chronological append-only implementation log. Add one entry per meaningful updat
 
 ## Entries
 
+### 2026-03-02T01:06:30Z | Agent: copilot
+
+- changed_tasks: []
+- summary: Ran fresh benchmark evidence for WS-F-004 and updated benchmark harness to apply reconciliation profile tuning (deadzone + smoothing) while measuring impaired runs. This reduced loss-profile correction magnitude/rate materially, but acceptance remains unmet due elevated `loss_5pct` corrections/min and replay drift.
+- blockers: []
+- evidence:
+  - path: scripts/benchmark_harness.ts
+  - path: artifacts/benchmarks/2026-03-02T01-05-50-229Z/summary.json
+  - path: artifacts/benchmarks/2026-03-02T01-05-50-229Z/impairment_matrix__loss_5pct.json
+  - path: docs/agent-task-registry.yaml
+  - path: docs/progress-board.md
+- next_actions:
+  - Investigate loss-profile correction-rate inflation path in benchmark methodology versus live client cadence.
+  - Decide whether replay drift should be decoupled from WS-F-004 acceptance and shifted fully under WS-G-005 gate suite.
+- related_pr_or_commit: n/a
+
+### 2026-03-02T01:01:19Z | Agent: copilot
+
+- changed_tasks: []
+- summary: Wired reconciliation profile selection (`clean`/`loss_5pct`/`jitter`) through client startup (options and query params) into network bootstrap so `createLiveClientNet` applies the intended deadzone/smoothing tuning; added startup resolution tests and default-profile live-net behavior coverage.
+- blockers: []
+- evidence:
+  - path: apps/client/src/start.ts
+  - path: apps/client/src/start.test.ts
+  - path: apps/client/src/main.ts
+  - path: apps/client/src/net/live.test.ts
+  - path: docs/agent-task-registry.yaml
+  - path: docs/progress-board.md
+- next_actions:
+  - Run hybrid benchmark/gate scenarios to gather WS-F-004 correction spike bound evidence across clean and loss profiles.
+  - Promote WS-F-004 to DONE after benchmark artifacts validate acceptance thresholds.
+- related_pr_or_commit: n/a
+
 ### 2026-02-28T00:00:00Z | Agent: copilot
 
 - changed_tasks:

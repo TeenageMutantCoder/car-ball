@@ -21,11 +21,11 @@ Use this file as the quick status dashboard.
 
 Update this section first.
 
-- Last updated: 2026-03-01
+- Last updated: 2026-03-02
 - Sprint / Milestone: MVP-1
 - Overall completion: 91%
 - P0 gate pass rate: 0/0
-- Last full benchmark date: YYYY-MM-DD
+- Last full benchmark date: 2026-03-02
 - Last soak date: YYYY-MM-DD
 
 ### Counts
@@ -39,18 +39,18 @@ Update this section first.
 
 | Gate | Threshold | Latest Value | Evidence | Status |
 |---|---|---|---|---|
-| Frame p95 | <= 16.7ms | - | - | PENDING |
-| Physics p95 | <= 6ms | - | - | PENDING |
-| Render p95 | <= 9ms | - | - | PENDING |
-| Server tick p95/p99 | <= 8.3ms / <= 12ms | - | - | PENDING |
-| Corrections/min/player | <= 12 clean, <= 30 at 5% loss | - | - | PENDING |
-| Replay drift | <= 0.5% sampled ticks | - | - | PENDING |
+| Frame p95 | <= 16.7ms | 0.0701ms | artifacts/benchmarks/2026-03-02T01-05-50-229Z/summary.json | PASS |
+| Physics p95 | <= 6ms | 0.0017ms | artifacts/benchmarks/2026-03-02T01-05-50-229Z/impairment_matrix__loss_5pct.json | PASS |
+| Render p95 | <= 9ms | 0.0031ms | artifacts/benchmarks/2026-03-02T01-05-50-229Z/impairment_matrix__loss_5pct.json | PASS |
+| Server tick p95/p99 | <= 8.3ms / <= 12ms | 0.0022ms / 0.0443ms | artifacts/benchmarks/2026-03-02T01-05-50-229Z/summary.json | PASS |
+| Corrections/min/player | <= 12 clean, <= 30 at 5% loss | clean=0, loss_5pct=277.5 | artifacts/benchmarks/2026-03-02T01-05-50-229Z/summary.json | FAIL |
+| Replay drift | <= 0.5% sampled ticks | loss_5pct=100% | artifacts/benchmarks/2026-03-02T01-05-50-229Z/summary.json | FAIL |
 
 ## In Progress
 
 | ID | Workstream | Task | Owner | Started | Target | Metrics Snapshot | Evidence | Notes |
 |---|---|---|---|---|---|---|---|---|
-| WS-F-004 | WS-F | Tune reconciliation for hybrid collisions | unassigned | 2026-03-01 | - | reconciliation/live tests pass 12/12 | apps/client/src/net/reconciliation.ts | Profile-based deadzone/smoothing tuning and Rapier telemetry fields in progress. |
+| WS-F-004 | WS-F | Tune reconciliation for hybrid collisions | unassigned | 2026-03-01 | - | tests pass; latest benchmark clean=0 corr/min, loss_5pct=277.5 corr/min | artifacts/benchmarks/2026-03-02T01-05-50-229Z/summary.json | Harness now applies profile deadzone+smoothing, but loss_5pct correction rate and replay drift still exceed acceptance bounds. |
 
 ## Blocked
 
