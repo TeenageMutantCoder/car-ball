@@ -12,6 +12,6 @@
     "dev": "vite --config vite.config.ts",
     "start": "vite preview --config vite.config.ts",
     "typecheck": "tsc --noEmit -p tsconfig.json",
-    "test": "node --experimental-strip-types --test src/**/*.test.ts"
+    "test": "node --experimental-strip-types --test \"**/*.test.ts\""
   }
 }

@@ -10,7 +10,7 @@ import {
   Vector3,
   Color3,
 } from "@babylonjs/core";
-import type { InputFrame, Snapshot } from "@car-ball/protocol";
+import type { InputFrame, Snapshot, Vec3 } from "@car-ball/protocol";
 
 import { createInputBindings, type InputBindings } from "./input/bindings.ts";
 import { createInputFrameEmitter, type InputFrameEmitter } from "./input/frameEmitter.ts";
@@ -39,6 +39,18 @@ interface GoalVolume {
   min: { x: number; y: number; z: number };
   max: { x: number; y: number; z: number };
 }
+
+interface BoxVolume {
+  min: { x: number; y: number; z: number };
+  max: { x: number; y: number; z: number };
+}
+
+const ARENA_BOUNDS: BoxVolume = {
+  min: { x: -60, y: -40, z: 0 },
+  max: { x: 60, y: 40, z: 30 },
+};
+
+const ARENA_WALL_THICKNESS = 0.6;
 
 const GOAL_VOLUMES: GoalVolume[] = [
   {
@@ -142,9 +154,6 @@ export function bootstrapBabylonScene(options: BabylonSceneBootstrapOptions): Ba
   const light = new HemisphericLight("sun", new Vector3(0, 1, 0), scene);
   light.intensity = 0.95;
 
-  const ground = MeshBuilder.CreateGround("ground", { width: 40, height: 26 }, scene);
-  ground.position.y = -0.5;
-
   const ballMesh = MeshBuilder.CreateSphere("ball", { diameter: 1.2 }, scene);
   const carMeshes = new Map<string, Mesh>();
 
@@ -154,6 +163,11 @@ export function bootstrapBabylonScene(options: BabylonSceneBootstrapOptions): Ba
   orangeTeamMaterial.diffuseColor = new Color3(1, 0.6, 0.2);
   const neutralMaterial = new StandardMaterial("team-neutral", scene);
   neutralMaterial.diffuseColor = new Color3(0.85, 0.85, 0.85);
+
+  const arenaMaterial = new StandardMaterial("arena-material", scene);
+  arenaMaterial.diffuseColor = new Color3(0.2, 0.24, 0.28);
+
+  createArenaMeshes(scene, ARENA_BOUNDS, arenaMaterial);
 
   for (const goalVolume of GOAL_VOLUMES) {
     const goalCenter = protocolToRenderVector3(centerOfVolume(goalVolume));
@@ -172,7 +186,7 @@ export function bootstrapBabylonScene(options: BabylonSceneBootstrapOptions): Ba
   }
 
   const syncRenderMeshes = (renderSnapshot: RenderSnapshotState): void => {
-    ballMesh.position.set(renderSnapshot.ball.position.x, renderSnapshot.ball.position.y, renderSnapshot.ball.position.z);
+    ballMesh.position.copyFrom(renderToSceneVector3(renderSnapshot.ball.position));
 
     const activeCarIds = new Set(renderSnapshot.cars.map((car) => car.id));
     for (const [carId, mesh] of carMeshes) {
@@ -195,7 +209,7 @@ export function bootstrapBabylonScene(options: BabylonSceneBootstrapOptions): Ba
         carMeshes.set(car.id, mesh);
       }
 
-      mesh.position.set(car.position.x, car.position.y, car.position.z);
+      mesh.position.copyFrom(renderToSceneVector3(car.position));
       mesh.rotationQuaternion = new Quaternion(
         car.rotation.x,
         car.rotation.y,
@@ -234,10 +248,8 @@ export function bootstrapBabylonScene(options: BabylonSceneBootstrapOptions): Ba
       matchHud.update(renderSnapshot);
 
       const cameraPose = resolveCameraPose(cameraController.getMode(), renderSnapshot, inputFrameContext.carId);
-      camera.setPosition(
-        new Vector3(cameraPose.position.x, cameraPose.position.y, cameraPose.position.z),
-      );
-      camera.setTarget(new Vector3(cameraPose.target.x, cameraPose.target.y, cameraPose.target.z));
+      camera.setPosition(renderToSceneVector3(cameraPose.position));
+      camera.setTarget(renderToSceneVector3(cameraPose.target));
     }
 
     options.onFrame?.({ scene, deltaMs, rendererBridge });
@@ -301,6 +313,75 @@ function centerOfVolume(goalVolume: GoalVolume): { x: number; y: number; z: numb
   };
 }
 
+function createArenaMeshes(scene: Scene, bounds: BoxVolume, material: StandardMaterial): void {
+  const halfThickness = ARENA_WALL_THICKNESS / 2;
+  const centerX = (bounds.min.x + bounds.max.x) / 2;
+  const centerY = (bounds.min.y + bounds.max.y) / 2;
+  const centerZ = (bounds.min.z + bounds.max.z) / 2;
+  const sizeX = Math.abs(bounds.max.x - bounds.min.x);
+  const sizeY = Math.abs(bounds.max.y - bounds.min.y);
+  const sizeZ = Math.abs(bounds.max.z - bounds.min.z);
+
+  const floorMesh = createProtocolAlignedBox(
+    "arena:floor",
+    { x: sizeX, y: sizeY, z: ARENA_WALL_THICKNESS },
+    { x: centerX, y: centerY, z: bounds.min.z - halfThickness },
+    scene,
+  );
+  floorMesh.material = material;
+
+  const wallXMinMesh = createProtocolAlignedBox(
+    "arena:wall-x-min",
+    { x: ARENA_WALL_THICKNESS, y: sizeY, z: sizeZ },
+    { x: bounds.min.x - halfThickness, y: centerY, z: centerZ },
+    scene,
+  );
+  wallXMinMesh.material = material;
+
+  const wallXMaxMesh = createProtocolAlignedBox(
+    "arena:wall-x-max",
+    { x: ARENA_WALL_THICKNESS, y: sizeY, z: sizeZ },
+    { x: bounds.max.x + halfThickness, y: centerY, z: centerZ },
+    scene,
+  );
+  wallXMaxMesh.material = material;
+
+  const wallYMinMesh = createProtocolAlignedBox(
+    "arena:wall-y-min",
+    { x: sizeX + ARENA_WALL_THICKNESS * 2, y: ARENA_WALL_THICKNESS, z: sizeZ },
+    { x: centerX, y: bounds.min.y - halfThickness, z: centerZ },
+    scene,
+  );
+  wallYMinMesh.material = material;
+
+  const wallYMaxMesh = createProtocolAlignedBox(
+    "arena:wall-y-max",
+    { x: sizeX + ARENA_WALL_THICKNESS * 2, y: ARENA_WALL_THICKNESS, z: sizeZ },
+    { x: centerX, y: bounds.max.y + halfThickness, z: centerZ },
+    scene,
+  );
+  wallYMaxMesh.material = material;
+}
+
+function createProtocolAlignedBox(
+  name: string,
+  size: { x: number; y: number; z: number },
+  center: { x: number; y: number; z: number },
+  scene: Scene,
+): Mesh {
+  const mesh = MeshBuilder.CreateBox(
+    name,
+    {
+      width: size.x,
+      height: size.z,
+      depth: size.y,
+    },
+    scene,
+  );
+  mesh.position = protocolToRenderVector3(center);
+  return mesh;
+}
+
 function sizeInRenderSpace(goalVolume: GoalVolume): { x: number; y: number; z: number } {
   return {
     x: Math.abs(goalVolume.max.x - goalVolume.min.x),
@@ -311,6 +392,10 @@ function sizeInRenderSpace(goalVolume: GoalVolume): { x: number; y: number; z: n
 
 function protocolToRenderVector3(value: { x: number; y: number; z: number }): Vector3 {
   return new Vector3(value.x, value.z, value.y);
+}
+
+export function renderToSceneVector3(value: Vec3): Vector3 {
+  return new Vector3(value.x, value.y, value.z);
 }
 
 export function bootstrapNetworkedBabylonScene(

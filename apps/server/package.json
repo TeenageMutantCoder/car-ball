@@ -13,7 +13,7 @@
     "dev": "node --experimental-strip-types src/start.ts",
     "start": "node --experimental-strip-types src/start.ts",
     "typecheck": "tsc --noEmit -p tsconfig.json",
-    "test": "node --experimental-strip-types --test src/**/*.test.ts"
+    "test": "node --experimental-strip-types --test \"**/*.test.ts\""
   },
   "devDependencies": {
     "@types/ws": "^8.18.1"
