@@ -5,7 +5,7 @@ meta:
   project: CarBall
   source_plan: docs/implementation-plan-parallel.md
   version: 2
-  last_updated: 2026-03-01T08:10:00Z
+  last_updated: 2026-03-01T08:40:00Z
   allowed_statuses: [TODO, IN_PROGRESS, BLOCKED, DONE]
   allowed_priorities: [P0, P1, P2]
   status_flow:
@@ -722,16 +722,20 @@ tasks:
   - id: WS-F-004
     workstream: WS-F
     title: Tune reconciliation for hybrid collisions
-    status: TODO
+    status: IN_PROGRESS
     priority: P1
     owner: unassigned
     dependencies: [WS-E-005, WS-F-002]
-    started_at: null
+    started_at: 2026-03-01T08:40:00Z
     target_date: null
     completed_at: null
     blocked_by: null
     unblock_plan: null
-    evidence: []
+    evidence:
+      - apps/client/src/net/reconciliation.ts
+      - apps/client/src/net/reconciliation.test.ts
+      - apps/client/src/net/live.ts
+      - apps/client/src/net/live.test.ts
     notes: Re-tune deadzone smoothing and correction thresholds for Rapier-authoritative ball snapshots.
     acceptance:
       - Correction spikes remain within target bounds in clean and loss profiles.

@@ -4,10 +4,31 @@ import type { Vec3 } from "@car-ball/protocol";
 const CM_PER_METER = 100;
 const DEFAULT_TELEMETRY_WINDOW_MS = 60_000;
 
+export type ReconciliationProfile = "clean" | "loss_5pct" | "jitter";
+
+export interface ReconciliationTuning {
+  deadzoneCm: number;
+  smoothingAlpha: number;
+}
+
+export interface ReconciliationTuningContext {
+  profile: ReconciliationProfile;
+  rapierBallAuthority?: boolean;
+}
+
+export interface CorrectionTelemetryMetadata {
+  rapierBallAuthority: boolean;
+  deadzoneCm: number;
+  smoothingAlpha: number;
+}
+
 export interface CorrectionMetrics {
   correctionsPerMinuteWindow: number;
   averageMagnitudeCm: number;
   maxSpikeCm: number;
+  rapierBallAuthority: boolean;
+  deadzoneCm: number;
+  smoothingAlpha: number;
 }
 
 export interface CorrectionTelemetry {
@@ -35,6 +56,24 @@ export function shouldCorrect(positionErrorCm: number, deadzoneCm: number): bool
   return normalizedErrorCm > normalizedDeadzoneCm;
 }
 
+export function resolveReconciliationTuning(context: ReconciliationTuningContext): ReconciliationTuning {
+  const baseTuning =
+    context.profile === "loss_5pct"
+      ? { deadzoneCm: 30, smoothingAlpha: 0.3 }
+      : context.profile === "jitter"
+        ? { deadzoneCm: 26, smoothingAlpha: 0.35 }
+        : { deadzoneCm: 20, smoothingAlpha: 0.4 };
+
+  if (!context.rapierBallAuthority) {
+    return baseTuning;
+  }
+
+  return {
+    deadzoneCm: Math.max(0, baseTuning.deadzoneCm - 3),
+    smoothingAlpha: clampUnit(baseTuning.smoothingAlpha + 0.05)
+  };
+}
+
 export function applyCorrection(previous: Vec3, current: Vec3, alpha: number): Vec3 {
   const clampedAlpha = clampUnit(alpha);
   return {
@@ -44,7 +83,14 @@ export function applyCorrection(previous: Vec3, current: Vec3, alpha: number): V
   };
 }
 
-export function createCorrectionTelemetry(windowMs = DEFAULT_TELEMETRY_WINDOW_MS): CorrectionTelemetry {
+export function createCorrectionTelemetry(
+  windowMs = DEFAULT_TELEMETRY_WINDOW_MS,
+  metadata: CorrectionTelemetryMetadata = {
+    rapierBallAuthority: false,
+    deadzoneCm: 0,
+    smoothingAlpha: 0
+  }
+): CorrectionTelemetry {
   const normalizedWindowMs = Number.isFinite(windowMs) ? Math.max(1, windowMs) : DEFAULT_TELEMETRY_WINDOW_MS;
   const samples: CorrectionSample[] = [];
 
@@ -59,13 +105,13 @@ export function createCorrectionTelemetry(windowMs = DEFAULT_TELEMETRY_WINDOW_MS
       });
 
       pruneSamples(samples, normalizedTimestampMs, normalizedWindowMs);
-      return computeMetrics(samples);
+      return computeMetrics(samples, metadata);
     },
 
     getMetrics(timestampMs: number): CorrectionMetrics {
       const normalizedTimestampMs = Number.isFinite(timestampMs) ? timestampMs : 0;
       pruneSamples(samples, normalizedTimestampMs, normalizedWindowMs);
-      return computeMetrics(samples);
+      return computeMetrics(samples, metadata);
     },
 
     reset(): void {
@@ -81,12 +127,15 @@ function pruneSamples(samples: CorrectionSample[], nowMs: number, windowMs: numb
   }
 }
 
-function computeMetrics(samples: CorrectionSample[]): CorrectionMetrics {
+function computeMetrics(samples: CorrectionSample[], metadata: CorrectionTelemetryMetadata): CorrectionMetrics {
   if (samples.length === 0) {
     return {
       correctionsPerMinuteWindow: 0,
       averageMagnitudeCm: 0,
       maxSpikeCm: 0,
+      rapierBallAuthority: metadata.rapierBallAuthority,
+      deadzoneCm: metadata.deadzoneCm,
+      smoothingAlpha: metadata.smoothingAlpha
     };
   }
 
@@ -104,6 +153,9 @@ function computeMetrics(samples: CorrectionSample[]): CorrectionMetrics {
     correctionsPerMinuteWindow: samples.length,
     averageMagnitudeCm: magnitudeTotalCm / samples.length,
     maxSpikeCm,
+    rapierBallAuthority: metadata.rapierBallAuthority,
+    deadzoneCm: metadata.deadzoneCm,
+    smoothingAlpha: metadata.smoothingAlpha
   };
 }
 

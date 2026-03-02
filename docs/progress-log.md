@@ -429,3 +429,22 @@ Chronological append-only implementation log. Add one entry per meaningful updat
   - Extend benchmark/gate scenarios for Rapier authority paths in WS-G-005.
   - Prepare hybrid soak recommendation workflow after WS-G-005 gates.
 - related_pr_or_commit: n/a
+
+### 2026-03-01T08:40:00Z | Agent: copilot
+
+- changed_tasks:
+  - id: WS-F-004
+    from: TODO
+    to: IN_PROGRESS
+- summary: Started reconciliation retuning for hybrid collisions by adding profile-based deadzone/smoothing tuning (clean/loss/jitter), Rapier-aware tuning adjustments, and additive reconciliation telemetry fields with passing client net tests.
+- blockers: []
+- evidence:
+  - path: apps/client/src/net/reconciliation.ts
+  - path: apps/client/src/net/reconciliation.test.ts
+  - path: apps/client/src/net/live.ts
+  - path: apps/client/src/net/live.test.ts
+- next_actions:
+  - Integrate profile selection from runtime benchmark/network configuration into client bootstrap wiring.
+  - Validate correction spike behavior against clean/loss thresholds with benchmark artifacts.
+  - Promote WS-F-004 to DONE once gate-target evidence is captured.
+- related_pr_or_commit: n/a

@@ -172,8 +172,55 @@ test("live client net records correction metrics when authoritative snapshot exc
   assert.equal(metrics.correctionsPerMinuteWindow, 1);
   assert(metrics.maxSpikeCm >= 60);
   assert(metrics.averageMagnitudeCm >= 60);
+  assert.equal(metrics.rapierBallAuthority, true);
+  assert.equal(metrics.deadzoneCm, 20);
 
   net.resetCorrectionMetrics();
   const afterReset = net.getCorrectionMetrics();
   assert.equal(afterReset.correctionsPerMinuteWindow, 0);
+  assert.equal(afterReset.rapierBallAuthority, true);
+});
+
+test("live client net applies profile-based deadzone when threshold is not overridden", () => {
+  let nowMs = 31_000;
+  const net = createLiveClientNet(
+    {
+      applySnapshot(snapshot) {
+        return snapshot.tick;
+      },
+    },
+    {
+      playerId: "player-1",
+      carId: "car:player-1",
+      now: () => nowMs,
+      reconciliationProfile: "loss_5pct",
+      rapierBallAuthority: true,
+      getPredictedPosition: () => ({ x: 0, y: 0, z: 0 }),
+    },
+  );
+
+  const belowThresholdPayload = encodeEvent({
+    type: "server.snapshot",
+    ...createSnapshot({
+      tick: 13,
+      cars: [
+        {
+          id: "car:player-1",
+          ownerPlayerId: "player-1",
+          teamId: "team:blue",
+          position: { x: 0.26, y: 0, z: 0 },
+          velocity: { x: 0, y: 0, z: 0 },
+          rotation: { x: 0, y: 0, z: 0, w: 1 },
+          boost: 100,
+        },
+      ],
+    }),
+  });
+
+  net.ingestServerPayload(belowThresholdPayload);
+
+  const metrics = net.getCorrectionMetrics();
+  assert.equal(metrics.correctionsPerMinuteWindow, 0);
+  assert.equal(metrics.deadzoneCm, 27);
+  assert.equal(Math.abs(metrics.smoothingAlpha - 0.35) < 1e-9, true);
 });

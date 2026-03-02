@@ -30,8 +30,8 @@ Update this section first.
 
 ### Counts
 
-- TODO: 3
-- IN PROGRESS: 0
+- TODO: 2
+- IN PROGRESS: 1
 - BLOCKED: 0
 - DONE: 32
 
@@ -50,7 +50,7 @@ Update this section first.
 
 | ID | Workstream | Task | Owner | Started | Target | Metrics Snapshot | Evidence | Notes |
 |---|---|---|---|---|---|---|---|---|
-| - | - | - | - | - | - | - | - | - |
+| WS-F-004 | WS-F | Tune reconciliation for hybrid collisions | unassigned | 2026-03-01 | - | reconciliation/live tests pass 12/12 | apps/client/src/net/reconciliation.ts | Profile-based deadzone/smoothing tuning and Rapier telemetry fields in progress. |
 
 ## Blocked
 
@@ -62,7 +62,6 @@ Update this section first.
 
 | ID | Workstream | Task | Priority | Dependency |
 |---|---|---|---|---|
-| WS-F-004 | WS-F | Tune reconciliation for hybrid collisions | P1 | WS-E-005, WS-F-002 |
 | WS-G-005 | WS-G | Add hybrid Rapier benchmark gate suite | P1 | WS-F-004, WS-G-003 |
 | WS-G-006 | WS-G | Run hybrid soak cycles and recommendation | P1 | WS-G-005 |
 
@@ -112,7 +111,7 @@ Update this section first.
 | WS-C Simulation | DONE | 100 | TBD | Real Rapier backend integrated and verified | Completed |
 | WS-D Client | DONE | 100 | TBD | - | Completed |
 | WS-E Server | DONE | 100 | TBD | Runtime Rapier authority validation + telemetry integrated | Completed |
-| WS-F Netcode | TODO | 75 | TBD | Reconciliation retune pending hybrid authority | WS-F-004 |
+| WS-F Netcode | IN PROGRESS | 75 | TBD | Reconciliation deadzone/smoothing retune for hybrid collisions | WS-F-004 |
 | WS-G QA/Perf | TODO | 67 | TBD | Hybrid benchmark/gates pending | WS-G-005 |
 
 ## Update Rules (2-minute routine)

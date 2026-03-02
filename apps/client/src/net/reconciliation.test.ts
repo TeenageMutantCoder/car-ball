@@ -6,6 +6,7 @@ import {
   computePositionErrorCm,
   computeVelocityError,
   createCorrectionTelemetry,
+  resolveReconciliationTuning,
   shouldCorrect,
 } from "./reconciliation.ts";
 
@@ -51,13 +52,20 @@ test("applyCorrection interpolates and clamps alpha", () => {
 });
 
 test("correction telemetry tracks rolling window count, average magnitude, and max spike", () => {
-  const telemetry = createCorrectionTelemetry(60_000);
+  const telemetry = createCorrectionTelemetry(60_000, {
+    rapierBallAuthority: true,
+    deadzoneCm: 17,
+    smoothingAlpha: 0.45,
+  });
 
   const first = telemetry.recordCorrection(10, 0);
   assert.deepEqual(first, {
     correctionsPerMinuteWindow: 1,
     averageMagnitudeCm: 10,
     maxSpikeCm: 10,
+    rapierBallAuthority: true,
+    deadzoneCm: 17,
+    smoothingAlpha: 0.45,
   });
 
   const second = telemetry.recordCorrection(30, 20_000);
@@ -65,6 +73,9 @@ test("correction telemetry tracks rolling window count, average magnitude, and m
     correctionsPerMinuteWindow: 2,
     averageMagnitudeCm: 20,
     maxSpikeCm: 30,
+    rapierBallAuthority: true,
+    deadzoneCm: 17,
+    smoothingAlpha: 0.45,
   });
 
   const third = telemetry.recordCorrection(25, 61_000);
@@ -72,6 +83,9 @@ test("correction telemetry tracks rolling window count, average magnitude, and m
     correctionsPerMinuteWindow: 2,
     averageMagnitudeCm: 27.5,
     maxSpikeCm: 30,
+    rapierBallAuthority: true,
+    deadzoneCm: 17,
+    smoothingAlpha: 0.45,
   });
 
   const currentMetrics = telemetry.getMetrics(90_000);
@@ -79,11 +93,18 @@ test("correction telemetry tracks rolling window count, average magnitude, and m
     correctionsPerMinuteWindow: 1,
     averageMagnitudeCm: 25,
     maxSpikeCm: 25,
+    rapierBallAuthority: true,
+    deadzoneCm: 17,
+    smoothingAlpha: 0.45,
   });
 });
 
 test("correction telemetry reset clears counters", () => {
-  const telemetry = createCorrectionTelemetry(60_000);
+  const telemetry = createCorrectionTelemetry(60_000, {
+    rapierBallAuthority: false,
+    deadzoneCm: 20,
+    smoothingAlpha: 0.4,
+  });
   telemetry.recordCorrection(15, 10_000);
   telemetry.recordCorrection(25, 20_000);
 
@@ -93,5 +114,24 @@ test("correction telemetry reset clears counters", () => {
     correctionsPerMinuteWindow: 0,
     averageMagnitudeCm: 0,
     maxSpikeCm: 0,
+    rapierBallAuthority: false,
+    deadzoneCm: 20,
+    smoothingAlpha: 0.4,
   });
+});
+
+test("resolveReconciliationTuning adjusts clean/loss/jitter profiles with rapier authority", () => {
+  assert.deepEqual(resolveReconciliationTuning({ profile: "clean", rapierBallAuthority: false }), {
+    deadzoneCm: 20,
+    smoothingAlpha: 0.4,
+  });
+
+  assert.deepEqual(resolveReconciliationTuning({ profile: "loss_5pct", rapierBallAuthority: true }), {
+    deadzoneCm: 27,
+    smoothingAlpha: 0.35,
+  });
+
+  const jitterHybrid = resolveReconciliationTuning({ profile: "jitter", rapierBallAuthority: true });
+  assert.equal(jitterHybrid.deadzoneCm, 23);
+  assert.equal(Math.abs(jitterHybrid.smoothingAlpha - 0.4) < 1e-9, true);
 });

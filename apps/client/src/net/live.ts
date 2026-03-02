@@ -9,12 +9,15 @@ import {
 import {
   computePositionErrorCm,
   createCorrectionTelemetry,
+  resolveReconciliationTuning,
   shouldCorrect,
   type CorrectionMetrics,
   type CorrectionTelemetry,
+  type ReconciliationProfile,
 } from "./reconciliation.ts";
 
 const DEFAULT_RECONCILE_THRESHOLD_CM = 20;
+const DEFAULT_RECONCILIATION_PROFILE: ReconciliationProfile = "clean";
 
 export interface LiveClientNetSnapshotApplier<TRenderSnapshot> {
   applySnapshot: (snapshot: Snapshot) => TRenderSnapshot;
@@ -25,6 +28,8 @@ export interface LiveClientNetOptions {
   carId: string;
   now?: () => number;
   reconcileThresholdCm?: number;
+  reconciliationProfile?: ReconciliationProfile;
+  rapierBallAuthority?: boolean;
   correctionTelemetry?: CorrectionTelemetry;
   getPredictedPosition?: () => Vec3 | null;
 }
@@ -42,11 +47,21 @@ export function createLiveClientNet<TRenderSnapshot>(
   options: LiveClientNetOptions,
 ): LiveClientNet<TRenderSnapshot> {
   const now = options.now ?? Date.now;
-  const correctionTelemetry = options.correctionTelemetry ?? createCorrectionTelemetry();
+  const reconciliationProfile = options.reconciliationProfile ?? DEFAULT_RECONCILIATION_PROFILE;
+  const rapierBallAuthority = options.rapierBallAuthority ?? true;
+  const tuning = resolveReconciliationTuning({
+    profile: reconciliationProfile,
+    rapierBallAuthority
+  });
   const configuredThresholdCm = options.reconcileThresholdCm;
   const reconcileThresholdCm = configuredThresholdCm !== undefined && Number.isFinite(configuredThresholdCm)
     ? Math.max(0, configuredThresholdCm)
-    : DEFAULT_RECONCILE_THRESHOLD_CM;
+    : Math.max(0, tuning.deadzoneCm || DEFAULT_RECONCILE_THRESHOLD_CM);
+  const correctionTelemetry = options.correctionTelemetry ?? createCorrectionTelemetry(undefined, {
+    rapierBallAuthority,
+    deadzoneCm: reconcileThresholdCm,
+    smoothingAlpha: tuning.smoothingAlpha
+  });
 
   const recordCorrectionIfNeeded = (snapshot: Snapshot): void => {
     if (!options.getPredictedPosition) {
