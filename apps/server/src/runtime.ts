@@ -90,6 +90,30 @@ function createInitialScoreByTeam(): Record<TeamId, number> {
   };
 }
 
+function resetCarsToKickoff(room: RuntimeRoomInternal): void {
+  const orderedPlayerIds = [...room.playerIds].sort();
+
+  orderedPlayerIds.forEach((playerId, index) => {
+    const car = room.sim.world.cars[`car:${playerId}`];
+    if (!car) {
+      return;
+    }
+
+    const spawnX = index % 2 === 0 ? -10 - index * 2 : 10 + index * 2;
+    car.position = { x: spawnX, y: 0, z: 0 };
+    car.velocity = { x: 0, y: 0, z: 0 };
+    car.heading = 0;
+    car.boost = 100;
+    car.onGround = true;
+    car.tractionAttached = false;
+    car.tractionSurface = "none";
+    car.tractionNormal = { x: 0, y: 0, z: 0 };
+    car.jumpCount = 0;
+    car.jumpWindowTicksRemaining = 0;
+    car.jumpPressedLastTick = false;
+  });
+}
+
 function isInsideBox(position: Vec3, volume: { min: Vec3; max: Vec3 }): boolean {
   return (
     position.x >= volume.min.x &&
@@ -505,6 +529,7 @@ export class ServerRuntime {
 
       room.sim.world.ball.position = { x: 0, y: 0, z: 1.5 };
       room.sim.world.ball.velocity = { x: 0, y: 0, z: 0 };
+      resetCarsToKickoff(room);
       return;
     }
 

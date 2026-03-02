@@ -91,6 +91,55 @@ test("goal in orange volume awards blue", () => {
   });
 });
 
+test("goal reset returns cars to kickoff spawn states", () => {
+  const runtime = createServerRuntime({
+    tickRateHz: 120,
+    snapshotRateHz: 120,
+    now: createMonotonicNow(275_000, 1)
+  });
+
+  runtime.createRoomRuntime("room-score-kickoff");
+  const room = runtime.attachPlayerIds("room-score-kickoff", ["player-2", "player-1"]);
+
+  room.sim.world.cars["car:player-1"].position = { x: 22, y: 4, z: 3 };
+  room.sim.world.cars["car:player-1"].velocity = { x: 7, y: -2, z: 1 };
+  room.sim.world.cars["car:player-1"].boost = 34;
+  room.sim.world.cars["car:player-2"].position = { x: -25, y: -6, z: 5 };
+  room.sim.world.cars["car:player-2"].velocity = { x: -8, y: 3, z: -1 };
+  room.sim.world.cars["car:player-2"].boost = 12;
+
+  room.sim.world.ball.position = {
+    x: room.sim.world.goals.blue.volume.min.x + 0.5,
+    y: 0,
+    z: 1
+  };
+  room.sim.world.ball.velocity = {
+    x: 0,
+    y: 0,
+    z: 0
+  };
+
+  const tickResult = runtime.tickOnce();
+  assert.equal(tickResult.events.length, 1);
+  const event = tickResult.events[0];
+  assert(event);
+  assert.equal(event.type, "server.snapshot");
+  assert.equal(event.match.phase, "goal_pause");
+
+  const carOne = room.sim.world.cars["car:player-1"];
+  const carTwo = room.sim.world.cars["car:player-2"];
+
+  assert.deepEqual(carOne.position, { x: -10, y: 0, z: 0 });
+  assert.deepEqual(carOne.velocity, { x: 0, y: 0, z: 0 });
+  assert.equal(carOne.heading, 0);
+  assert.equal(carOne.boost, 100);
+
+  assert.deepEqual(carTwo.position, { x: 12, y: 0, z: 0 });
+  assert.deepEqual(carTwo.velocity, { x: 0, y: 0, z: 0 });
+  assert.equal(carTwo.heading, 0);
+  assert.equal(carTwo.boost, 100);
+});
+
 test("finished match phase takes precedence over goal scoring", () => {
   const runtime = createServerRuntime({
     tickRateHz: 120,
