@@ -143,6 +143,7 @@ export function bootstrapBabylonScene(options: BabylonSceneBootstrapOptions): Ba
 
   const camera = new ArcRotateCamera("camera", Math.PI / 2, Math.PI / 3, 24, Vector3.Zero(), scene);
   camera.attachControl(options.canvas, true);
+  camera.inputs.removeByType("ArcRotateCameraKeyboardMoveInput");
   const cameraController = createCameraController({ initialMode: options.initialCameraMode });
   const inputBindings =
     options.inputBindings ??
