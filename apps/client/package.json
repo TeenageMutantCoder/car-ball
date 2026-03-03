@@ -5,7 +5,8 @@
   "type": "module",
   "dependencies": {
     "@babylonjs/core": "^8.8.0",
-    "@car-ball/protocol": "0.1.0"
+    "@car-ball/protocol": "0.1.0",
+    "@car-ball/sim": "0.1.0"
   },
   "scripts": {
     "build": "vite build --config vite.config.ts",

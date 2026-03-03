@@ -1,5 +1,18 @@
-import type { BallId, CarId, GoalId, MatchId, PlayerId, TeamId, Vec3 } from "@car-ball/protocol";
-import { DEFAULT_MATCH_DURATION_SECONDS } from "./constants.ts";
+import {
+  type BallId,
+  type CarId,
+  type GoalId,
+  type MatchId,
+  type PlayerId,
+  type TeamId,
+  type Vec3
+} from "@car-ball/protocol";
+import {
+  DEFAULT_ARENA_BOUNDS,
+  DEFAULT_MATCH_DURATION_SECONDS,
+  createGoalVolumesForArena,
+  type BoxVolume
+} from "./constants.ts";
 
 export const TEAM_BLUE_ID = "team:blue" as TeamId;
 export const TEAM_ORANGE_ID = "team:orange" as TeamId;
@@ -7,6 +20,11 @@ export const ARENA_MAIN_ID = "arena:main";
 export const GOAL_BLUE_ID = "goal:blue" as GoalId;
 export const GOAL_ORANGE_ID = "goal:orange" as GoalId;
 export const MATCH_MAIN_ID = "match:main" as MatchId;
+
+const DEFAULT_CAR_SPAWN = {
+  baseOffsetX: 20,
+  staggerPerIndexX: 4
+} as const;
 
 export type TractionSurface =
   | "none"
@@ -39,11 +57,6 @@ export interface BallState {
   id: BallId;
   position: Vec3;
   velocity: Vec3;
-}
-
-export interface BoxVolume {
-  min: Vec3;
-  max: Vec3;
 }
 
 export interface ArenaState {
@@ -111,29 +124,25 @@ function createDefaultArenaState(): ArenaState {
   return {
     id: ARENA_MAIN_ID,
     bounds: {
-      min: vec3(-60, -40, 0),
-      max: vec3(60, 40, 30)
+      min: vec3(DEFAULT_ARENA_BOUNDS.min.x, DEFAULT_ARENA_BOUNDS.min.y, DEFAULT_ARENA_BOUNDS.min.z),
+      max: vec3(DEFAULT_ARENA_BOUNDS.max.x, DEFAULT_ARENA_BOUNDS.max.y, DEFAULT_ARENA_BOUNDS.max.z)
     }
   };
 }
 
-function createDefaultGoalsState(): GoalsState {
+function createDefaultGoalsState(arenaBounds: BoxVolume): GoalsState {
+  const goals = createGoalVolumesForArena(arenaBounds);
+
   return {
     blue: {
       id: GOAL_BLUE_ID,
       teamId: TEAM_BLUE_ID,
-      volume: {
-        min: vec3(-58, -8, 0),
-        max: vec3(-54, 8, 6)
-      }
+      volume: goals.minX
     },
     orange: {
       id: GOAL_ORANGE_ID,
       teamId: TEAM_ORANGE_ID,
-      volume: {
-        min: vec3(54, -8, 0),
-        max: vec3(58, 8, 6)
-      }
+      volume: goals.maxX
     }
   };
 }
@@ -145,7 +154,9 @@ export function createInitialWorldState(options: CreateWorldOptions): WorldState
 
   orderedPlayerIds.forEach((playerId, index) => {
     const teamId = index % 2 === 0 ? TEAM_BLUE_ID : TEAM_ORANGE_ID;
-    const spawnX = index % 2 === 0 ? -10 - index * 2 : 10 + index * 2;
+    const spawnX = index % 2 === 0
+      ? -DEFAULT_CAR_SPAWN.baseOffsetX - index * DEFAULT_CAR_SPAWN.staggerPerIndexX
+      : DEFAULT_CAR_SPAWN.baseOffsetX + index * DEFAULT_CAR_SPAWN.staggerPerIndexX;
     const car = createCarState(playerId, teamId, spawnX);
     cars[car.id] = car;
   });
@@ -156,6 +167,8 @@ export function createInitialWorldState(options: CreateWorldOptions): WorldState
     velocity: vec3()
   };
 
+  const arena = createDefaultArenaState();
+
   return {
     clock: {
       tick: 0,
@@ -165,7 +178,7 @@ export function createInitialWorldState(options: CreateWorldOptions): WorldState
     },
     cars,
     ball,
-    arena: createDefaultArenaState(),
-    goals: createDefaultGoalsState()
+    arena,
+    goals: createDefaultGoalsState(arena.bounds)
   };
 }

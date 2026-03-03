@@ -10,7 +10,16 @@ import {
   Vector3,
   Color3,
 } from "@babylonjs/core";
-import type { InputFrame, Snapshot, Vec3 } from "@car-ball/protocol";
+import {
+  type InputFrame,
+  type Snapshot,
+  type Vec3,
+} from "@car-ball/protocol";
+import {
+  DEFAULT_ARENA_BOUNDS,
+  createGoalVolumesForArena,
+  type BoxVolume,
+} from "@car-ball/sim";
 
 import { createInputBindings, type InputBindings } from "./input/bindings.ts";
 import { createInputFrameEmitter, type InputFrameEmitter } from "./input/frameEmitter.ts";
@@ -34,36 +43,15 @@ const INPUT_RATE_HZ = 60;
 const INPUT_EMIT_INTERVAL_MS = 1_000 / INPUT_RATE_HZ;
 const NETWORK_MIN_INPUT_TICK_DELTA = 2;
 
-interface GoalVolume {
+interface GoalVolume extends BoxVolume {
   teamId: string;
-  min: { x: number; y: number; z: number };
-  max: { x: number; y: number; z: number };
 }
 
-interface BoxVolume {
-  min: { x: number; y: number; z: number };
-  max: { x: number; y: number; z: number };
-}
-
-const ARENA_BOUNDS: BoxVolume = {
-  min: { x: -60, y: -40, z: 0 },
-  max: { x: 60, y: 40, z: 30 },
-};
+const ARENA_BOUNDS: BoxVolume = DEFAULT_ARENA_BOUNDS;
 
 const ARENA_WALL_THICKNESS = 0.6;
 
-const GOAL_VOLUMES: GoalVolume[] = [
-  {
-    teamId: "team:blue",
-    min: { x: -58, y: -8, z: 0 },
-    max: { x: -54, y: 8, z: 6 },
-  },
-  {
-    teamId: "team:orange",
-    min: { x: 54, y: -8, z: 0 },
-    max: { x: 58, y: 8, z: 6 },
-  },
-];
+const GOAL_VOLUMES: GoalVolume[] = createGoalVolumes(ARENA_BOUNDS);
 
 export interface InputFrameContext {
   playerId: string;
@@ -331,6 +319,23 @@ function centerOfVolume(goalVolume: GoalVolume): { x: number; y: number; z: numb
     y: (goalVolume.min.y + goalVolume.max.y) / 2,
     z: (goalVolume.min.z + goalVolume.max.z) / 2,
   };
+}
+
+function createGoalVolumes(arenaBounds: BoxVolume): GoalVolume[] {
+  const goals = createGoalVolumesForArena(arenaBounds);
+
+  return [
+    {
+      teamId: "team:blue",
+      min: goals.minX.min,
+      max: goals.minX.max,
+    },
+    {
+      teamId: "team:orange",
+      min: goals.maxX.min,
+      max: goals.maxX.max,
+    },
+  ];
 }
 
 function createArenaMeshes(

@@ -400,7 +400,7 @@ async function runScenario(options: {
     { RendererBridge },
   ] = await Promise.all([
     import("../apps/server/src/runtime.ts"),
-    import("../packages/sim/src/index.ts"),
+    import("../packages/sim/src/node.ts"),
     import("../apps/client/src/input/frameEmitter.ts"),
     import("../apps/client/src/net/prediction.ts"),
     import("../apps/client/src/net/reconciliation.ts"),
