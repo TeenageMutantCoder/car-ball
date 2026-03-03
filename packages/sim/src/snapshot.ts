@@ -25,13 +25,23 @@ function cloneVec3(value: Vec3): Vec3 {
   };
 }
 
-function headingToRotation(heading: number): Rotation {
-  const half = heading / 2;
+function orientationToRotation(heading: number, pitch: number, roll: number): Rotation {
+  const halfHeading = heading / 2;
+  const halfPitch = pitch / 2;
+  const halfRoll = roll / 2;
+
+  const cz = Math.cos(halfHeading);
+  const sz = Math.sin(halfHeading);
+  const cy = Math.cos(halfPitch);
+  const sy = Math.sin(halfPitch);
+  const cx = Math.cos(halfRoll);
+  const sx = Math.sin(halfRoll);
+
   return {
-    x: 0,
-    y: 0,
-    z: Math.sin(half),
-    w: Math.cos(half)
+    x: cz * cy * sx - sz * sy * cx,
+    y: cz * sy * cx + sz * cy * sx,
+    z: sz * cy * cx - cz * sy * sx,
+    w: cz * cy * cx + sz * sy * sx
   };
 }
 
@@ -48,7 +58,7 @@ export function worldToProtocolSnapshot(world: WorldState, options: ToProtocolSn
       teamId: car.teamId,
       position: cloneVec3(car.position),
       velocity: cloneVec3(car.velocity),
-      rotation: headingToRotation(car.heading),
+      rotation: orientationToRotation(car.heading, car.pitch, car.roll),
       boost: car.boost
     }));
 

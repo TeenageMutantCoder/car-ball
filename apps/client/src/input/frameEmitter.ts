@@ -34,6 +34,8 @@ export function createInputFrameEmitter(options: InputFrameEmitterOptions): Inpu
         controls: {
           throttle: controls.throttle,
           steer: controls.steer,
+          pitch: controls.pitch,
+          roll: controls.roll,
           jump: controls.jump,
           boost: controls.boost,
           handbrake: controls.handbrake,

@@ -23,6 +23,8 @@ export interface CarState {
   position: Vec3;
   velocity: Vec3;
   heading: number;
+  pitch: number;
+  roll: number;
   boost: number;
   onGround: boolean;
   tractionAttached: boolean;
@@ -92,6 +94,8 @@ function createCarState(playerId: PlayerId, teamId: TeamId, spawnX: number): Car
     position: vec3(spawnX, 0, 0),
     velocity: vec3(),
     heading: 0,
+    pitch: 0,
+    roll: 0,
     boost: 100,
     onGround: true,
     tractionAttached: false,

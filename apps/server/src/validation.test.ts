@@ -23,6 +23,8 @@ function createInputFrame(overrides: Partial<InputFrame> = {}): InputFrame {
     controls: {
       throttle: 1,
       steer: 0,
+      pitch: 0,
+      roll: 0,
       jump: false,
       boost: false,
       handbrake: false
@@ -55,6 +57,33 @@ test("validateInputFrame rejects impossible acceleration", () => {
       controls: {
         throttle: 1.2,
         steer: 0,
+        pitch: 0,
+        roll: 0,
+        jump: false,
+        boost: false,
+        handbrake: false
+      }
+    }),
+    sim,
+    state,
+    minTickDelta: 2
+  });
+
+  assert.equal(result.ok, false);
+  assert.equal(result.code, "IMPOSSIBLE_ACCELERATION");
+});
+
+test("validateInputFrame rejects impossible air pitch magnitude", () => {
+  const sim = new SimulationCore(["player-1"]);
+  const state = createInputValidationRoomState();
+
+  const result = validateInputFrame({
+    frame: createInputFrame({
+      controls: {
+        throttle: 1,
+        steer: 0,
+        pitch: 1.2,
+        roll: 0,
         jump: false,
         boost: false,
         handbrake: false
@@ -79,6 +108,8 @@ test("validateInputFrame rejects invalid boost usage for immediate tick when dep
       controls: {
         throttle: 1,
         steer: 0,
+        pitch: 0,
+        roll: 0,
         jump: false,
         boost: true,
         handbrake: false
@@ -104,6 +135,8 @@ test("validateInputFrame allows future-tick boost despite current depletion", ()
       controls: {
         throttle: 1,
         steer: 0,
+        pitch: 0,
+        roll: 0,
         jump: false,
         boost: true,
         handbrake: false

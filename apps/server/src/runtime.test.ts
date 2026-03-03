@@ -91,6 +91,8 @@ test("enqueueInputFrame rejects impossible acceleration and records telemetry", 
     controls: {
       throttle: 2,
       steer: 0,
+      pitch: 0,
+      roll: 0,
       jump: false,
       boost: false,
       handbrake: false
@@ -135,6 +137,8 @@ test("enqueueInputFrame enforces cooldown abuse checks", () => {
     controls: {
       throttle: 1,
       steer: 0,
+      pitch: 0,
+      roll: 0,
       jump: false,
       boost: false,
       handbrake: false
@@ -151,6 +155,8 @@ test("enqueueInputFrame enforces cooldown abuse checks", () => {
     controls: {
       throttle: 1,
       steer: 0,
+      pitch: 0,
+      roll: 0,
       jump: false,
       boost: false,
       handbrake: false

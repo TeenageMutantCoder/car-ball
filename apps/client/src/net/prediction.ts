@@ -47,6 +47,8 @@ export function createPredictionHistory(options: PredictionHistoryOptions = {}):
     controls: {
       throttle: frame.controls.throttle,
       steer: frame.controls.steer,
+      pitch: frame.controls.pitch,
+      roll: frame.controls.roll,
       jump: frame.controls.jump,
       boost: frame.controls.boost,
       handbrake: frame.controls.handbrake,

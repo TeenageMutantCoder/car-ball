@@ -111,6 +111,8 @@ function reject(code: InputValidationRejectionCode, reason: string): InputValida
 
 function hasImpossibleAcceleration(frame: InputFrame): InputValidationReject | null {
   const { throttle, steer } = frame.controls;
+  const pitch = frame.controls.pitch;
+  const roll = frame.controls.roll;
 
   if (!Number.isFinite(throttle) || Math.abs(throttle) > DEFAULT_MAX_CONTROL_MAGNITUDE) {
     return reject(
@@ -123,6 +125,20 @@ function hasImpossibleAcceleration(frame: InputFrame): InputValidationReject | n
     return reject(
       "IMPOSSIBLE_ACCELERATION",
       `steer must be finite and within [-${DEFAULT_MAX_CONTROL_MAGNITUDE}, ${DEFAULT_MAX_CONTROL_MAGNITUDE}].`
+    );
+  }
+
+  if (!Number.isFinite(pitch) || Math.abs(pitch) > DEFAULT_MAX_CONTROL_MAGNITUDE) {
+    return reject(
+      "IMPOSSIBLE_ACCELERATION",
+      `pitch must be finite and within [-${DEFAULT_MAX_CONTROL_MAGNITUDE}, ${DEFAULT_MAX_CONTROL_MAGNITUDE}].`
+    );
+  }
+
+  if (!Number.isFinite(roll) || Math.abs(roll) > DEFAULT_MAX_CONTROL_MAGNITUDE) {
+    return reject(
+      "IMPOSSIBLE_ACCELERATION",
+      `roll must be finite and within [-${DEFAULT_MAX_CONTROL_MAGNITUDE}, ${DEFAULT_MAX_CONTROL_MAGNITUDE}].`
     );
   }
 

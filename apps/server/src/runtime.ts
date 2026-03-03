@@ -103,6 +103,8 @@ function resetCarsToKickoff(room: RuntimeRoomInternal): void {
     car.position = { x: spawnX, y: 0, z: 0 };
     car.velocity = { x: 0, y: 0, z: 0 };
     car.heading = 0;
+    car.pitch = 0;
+    car.roll = 0;
     car.boost = 100;
     car.onGround = true;
     car.tractionAttached = false;

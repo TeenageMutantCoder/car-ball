@@ -93,6 +93,8 @@ test("e2e accepted input mutates authoritative car state", () => {
     controls: {
       throttle: 1,
       steer: 0,
+      pitch: 0,
+      roll: 0,
       jump: false,
       boost: false,
       handbrake: false
@@ -161,6 +163,8 @@ test("e2e rejected input leaves authoritative car state unchanged for invalid fr
     controls: {
       throttle: 2,
       steer: 0,
+      pitch: 0,
+      roll: 0,
       jump: false,
       boost: false,
       handbrake: false
@@ -271,6 +275,8 @@ test("e2e interleaved multi-player inputs apply only accepted owner frames", () 
         controls: {
           throttle: 1,
           steer: 0,
+          pitch: 0,
+          roll: 0,
           jump: false,
           boost: false,
           handbrake: false
@@ -292,6 +298,8 @@ test("e2e interleaved multi-player inputs apply only accepted owner frames", () 
         controls: {
           throttle: -1,
           steer: 0,
+          pitch: 0,
+          roll: 0,
           jump: false,
           boost: false,
           handbrake: false
@@ -313,6 +321,8 @@ test("e2e interleaved multi-player inputs apply only accepted owner frames", () 
         controls: {
           throttle: 1,
           steer: 0,
+          pitch: 0,
+          roll: 0,
           jump: false,
           boost: true,
           handbrake: false
@@ -366,6 +376,8 @@ test("e2e interleaved multi-player inputs apply only accepted owner frames", () 
         controls: {
           throttle: 1,
           steer: 0,
+          pitch: 0,
+          roll: 0,
           jump: false,
           boost: false,
           handbrake: false
@@ -388,6 +400,8 @@ test("e2e interleaved multi-player inputs apply only accepted owner frames", () 
         controls: {
           throttle: -1,
           steer: 0,
+          pitch: 0,
+          roll: 0,
           jump: false,
           boost: false,
           handbrake: false
@@ -452,6 +466,8 @@ test("e2e disconnect blocks input and reconnect returns authoritative resync sna
         controls: {
           throttle: 1,
           steer: 0,
+          pitch: 0,
+          roll: 0,
           jump: false,
           boost: false,
           handbrake: false
@@ -486,6 +502,8 @@ test("e2e disconnect blocks input and reconnect returns authoritative resync sna
         controls: {
           throttle: 1,
           steer: 0,
+          pitch: 0,
+          roll: 0,
           jump: false,
           boost: false,
           handbrake: false

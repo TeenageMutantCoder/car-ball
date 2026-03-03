@@ -16,6 +16,8 @@ test("createInputFrameEmitter emits protocol-aligned input frames", () => {
   const controls = {
     throttle: 1,
     steer: -1,
+    pitch: 1,
+    roll: -1,
     jump: false,
     boost: true,
     handbrake: false,
@@ -37,6 +39,8 @@ test("createInputFrameEmitter emits protocol-aligned input frames", () => {
   const second = emitter.emit(121, {
     throttle: 0,
     steer: 0,
+    pitch: 0,
+    roll: 0,
     jump: true,
     boost: false,
     handbrake: true,
@@ -58,6 +62,8 @@ test("createInputFrameEmitter clones controls payload", () => {
   const controls = {
     throttle: 0.5,
     steer: -0.25,
+    pitch: -0.5,
+    roll: 0.25,
     jump: false,
     boost: false,
     handbrake: false,
@@ -70,6 +76,8 @@ test("createInputFrameEmitter clones controls payload", () => {
   assert.deepEqual(frame.controls, {
     throttle: 0.5,
     steer: -0.25,
+    pitch: -0.5,
+    roll: 0.25,
     jump: false,
     boost: false,
     handbrake: false,
@@ -89,6 +97,8 @@ test("createInputFrameEmitter reserves sequence for non-input events", () => {
   const frame = emitter.emit(42, {
     throttle: 0,
     steer: 0,
+    pitch: 0,
+    roll: 0,
     jump: false,
     boost: false,
     handbrake: false,

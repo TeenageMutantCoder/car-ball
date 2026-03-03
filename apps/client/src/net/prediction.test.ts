@@ -16,6 +16,8 @@ function createFrame(sequence: number, tick: number): InputFrame {
     controls: {
       throttle: sequence % 2,
       steer: 0,
+      pitch: 0,
+      roll: 0,
       jump: false,
       boost: false,
       handbrake: false,

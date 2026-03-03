@@ -269,6 +269,8 @@ test("applyInputFrame stores a cloned latest input frame", () => {
     controls: {
       throttle: 1,
       steer: -1,
+      pitch: 0.5,
+      roll: -0.5,
       jump: true,
       boost: false,
       handbrake: false,
@@ -283,6 +285,8 @@ test("applyInputFrame stores a cloned latest input frame", () => {
   assert.deepEqual(applied.controls, {
     throttle: 1,
     steer: -1,
+    pitch: 0.5,
+    roll: -0.5,
     jump: true,
     boost: false,
     handbrake: false,

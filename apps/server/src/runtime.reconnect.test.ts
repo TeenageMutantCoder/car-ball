@@ -31,6 +31,8 @@ test("disconnect blocks input", () => {
     controls: {
       throttle: 1,
       steer: 0,
+      pitch: 0,
+      roll: 0,
       jump: false,
       boost: false,
       handbrake: false
@@ -60,6 +62,8 @@ test("reconnect restores input acceptance", () => {
     controls: {
       throttle: 1,
       steer: 0,
+      pitch: 0,
+      roll: 0,
       jump: false,
       boost: false,
       handbrake: false
@@ -81,6 +85,8 @@ test("reconnect restores input acceptance", () => {
     controls: {
       throttle: 1,
       steer: 0,
+      pitch: 0,
+      roll: 0,
       jump: false,
       boost: false,
       handbrake: false

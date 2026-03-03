@@ -59,3 +59,21 @@ test("worldToProtocolSnapshot maps world state deterministically", () => {
   assert.equal(first.cars[0].rotation.z, Math.sin(Math.PI / 4));
   assert.equal(first.cars[0].rotation.w, Math.cos(Math.PI / 4));
 });
+
+test("worldToProtocolSnapshot encodes pitch and roll into car rotation", () => {
+  const world = createInitialWorldState({ playerIds: ["player-a"] });
+  const car = world.cars["car:player-a"];
+
+  car.heading = 0;
+  car.pitch = Math.PI / 6;
+  car.roll = Math.PI / 8;
+
+  const snapshot = worldToProtocolSnapshot(world, {
+    sequence: 1,
+    timestamp: 1
+  });
+
+  const rotation = snapshot.cars[0].rotation;
+  assert.notEqual(rotation.x, 0);
+  assert.notEqual(rotation.y, 0);
+});

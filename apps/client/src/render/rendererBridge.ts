@@ -310,6 +310,8 @@ function cloneInputFrame(inputFrame: InputFrame): InputFrame {
     controls: {
       throttle: inputFrame.controls.throttle,
       steer: inputFrame.controls.steer,
+      pitch: inputFrame.controls.pitch,
+      roll: inputFrame.controls.roll,
       jump: inputFrame.controls.jump,
       boost: inputFrame.controls.boost,
       handbrake: inputFrame.controls.handbrake,

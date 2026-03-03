@@ -47,6 +47,7 @@ test("createInputBindings maps README controls into InputControls values", () =>
 
   target.dispatch("keydown", "KeyW");
   target.dispatch("keydown", "KeyD");
+  target.dispatch("keydown", "ArrowRight");
   target.dispatch("keydown", "Space");
   target.dispatch("keydown", "ArrowUp");
   target.dispatch("keydown", "ShiftLeft");
@@ -54,6 +55,8 @@ test("createInputBindings maps README controls into InputControls values", () =>
   assert.deepEqual(bindings.getControls(), {
     throttle: 1,
     steer: 1,
+    pitch: 1,
+    roll: 1,
     jump: true,
     boost: true,
     handbrake: true,
@@ -64,6 +67,8 @@ test("createInputBindings maps README controls into InputControls values", () =>
   assert.deepEqual(bindings.getControls(), {
     throttle: 0,
     steer: 0,
+    pitch: 0,
+    roll: 1,
     jump: true,
     boost: true,
     handbrake: true,
@@ -71,11 +76,14 @@ test("createInputBindings maps README controls into InputControls values", () =>
 
   target.dispatch("keyup", "Space");
   target.dispatch("keyup", "ArrowUp");
+  target.dispatch("keyup", "ArrowRight");
   target.dispatch("keyup", "ShiftLeft");
 
   assert.deepEqual(bindings.getControls(), {
     throttle: 0,
     steer: 0,
+    pitch: 0,
+    roll: 0,
     jump: false,
     boost: false,
     handbrake: false,
@@ -96,6 +104,8 @@ test("createInputBindings ignores unrelated keys and only prevents default for m
   assert.deepEqual(bindings.getControls(), {
     throttle: 1,
     steer: 0,
+    pitch: 1,
+    roll: 0,
     jump: false,
     boost: false,
     handbrake: false,
@@ -119,6 +129,8 @@ test("createInputBindings dispose detaches listeners and resets controls", () =>
   assert.deepEqual(bindings.getControls(), {
     throttle: 0,
     steer: 0,
+    pitch: 0,
+    roll: 0,
     jump: false,
     boost: false,
     handbrake: false,
@@ -145,6 +157,8 @@ test("createInputBindings invokes camera toggle callback on KeyC keydown only", 
   assert.deepEqual(bindings.getControls(), {
     throttle: 0,
     steer: 0,
+    pitch: 0,
+    roll: 0,
     jump: false,
     boost: false,
     handbrake: false,

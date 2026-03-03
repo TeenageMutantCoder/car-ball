@@ -35,6 +35,8 @@ export interface Envelope {
 export interface InputControls {
   throttle: number;
   steer: number;
+  pitch: number;
+  roll: number;
   jump: boolean;
   boost: boolean;
   handbrake: boolean;

@@ -96,6 +96,8 @@ test("websocket transport sends encoded input frames once connected", () => {
     controls: {
       throttle: 1,
       steer: 0,
+      pitch: 0,
+      roll: 0,
       jump: false,
       boost: false,
       handbrake: false,
@@ -114,6 +116,8 @@ test("websocket transport sends encoded input frames once connected", () => {
     controls: {
       throttle: 1,
       steer: 0,
+      pitch: 0,
+      roll: 0,
       jump: false,
       boost: false,
       handbrake: false,

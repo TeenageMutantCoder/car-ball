@@ -121,6 +121,8 @@ test("live transport sends snapshots and accepts valid bound player input", asyn
         controls: {
           throttle: 1,
           steer: 0,
+          pitch: 0,
+          roll: 0,
           jump: false,
           boost: false,
           handbrake: false,
@@ -171,6 +173,8 @@ test("live transport rejects ownership violations in client.input", async () => 
         controls: {
           throttle: 1,
           steer: 0,
+          pitch: 0,
+          roll: 0,
           jump: false,
           boost: false,
           handbrake: false,
@@ -224,6 +228,8 @@ test("live transport rejects non-monotonic inbound sequence", async () => {
         controls: {
           throttle: 1,
           steer: 0,
+          pitch: 0,
+          roll: 0,
           jump: false,
           boost: false,
           handbrake: false,
@@ -243,6 +249,8 @@ test("live transport rejects non-monotonic inbound sequence", async () => {
         controls: {
           throttle: 1,
           steer: 0,
+          pitch: 0,
+          roll: 0,
           jump: false,
           boost: false,
           handbrake: false,

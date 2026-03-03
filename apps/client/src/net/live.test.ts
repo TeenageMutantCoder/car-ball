@@ -65,6 +65,8 @@ test("live client net encodes protocol-compliant input and ping payloads", () =>
     controls: {
       throttle: 1,
       steer: 0,
+      pitch: 0,
+      roll: 0,
       jump: false,
       boost: false,
       handbrake: false,

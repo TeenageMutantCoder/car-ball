@@ -58,6 +58,8 @@ test("in-process client net maps input payload to exact client.input fields", ()
     controls: {
       throttle: 1,
       steer: 0,
+      pitch: 0,
+      roll: 0,
       jump: false,
       boost: false,
       handbrake: false,
@@ -76,6 +78,8 @@ test("in-process client net maps input payload to exact client.input fields", ()
   assert.deepEqual(decoded.controls, {
     throttle: 1,
     steer: 0,
+    pitch: 0,
+    roll: 0,
     jump: false,
     boost: false,
     handbrake: false,

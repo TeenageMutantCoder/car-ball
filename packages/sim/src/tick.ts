@@ -16,6 +16,8 @@ import type { TractionSurface, WorldState } from "./state.ts";
 const DEFAULT_CONTROLS: InputControls = {
   throttle: 0,
   steer: 0,
+  pitch: 0,
+  roll: 0,
   handbrake: false,
   boost: false,
   jump: false
@@ -30,6 +32,8 @@ const BOOST_DRAIN_PER_SECOND = 35;
 const JUMP_IMPULSE = 6;
 const BALL_DAMPING_PER_SECOND = 0.5;
 const GRAVITY_Z = -9.81;
+const AIR_PITCH_RADIANS_PER_SECOND = 6;
+const AIR_ROLL_RADIANS_PER_SECOND = 10;
 
 const TRACTION_NONE_SURFACE: TractionSurface = "none";
 
@@ -236,6 +240,8 @@ export function tickWorld(world: WorldState, inputFrames: InputFrame[], dtSecond
 
     const steer = clamp(controls.steer, -1, 1);
     const throttle = clamp(controls.throttle, -1, 1);
+    const pitch = clamp(controls.pitch, -1, 1);
+    const roll = clamp(controls.roll, -1, 1);
     const steeringDirection = throttle < 0 ? -1 : 1;
 
     car.heading -= steer * steeringDirection * STEER_RADIANS_PER_SECOND * dtSeconds;
@@ -250,6 +256,11 @@ export function tickWorld(world: WorldState, inputFrames: InputFrame[], dtSecond
 
     car.velocity.x += forwardX * accel * dtSeconds;
     car.velocity.y += forwardY * accel * dtSeconds;
+
+    if (!car.onGround && !car.tractionAttached) {
+      car.pitch += pitch * AIR_PITCH_RADIANS_PER_SECOND * dtSeconds;
+      car.roll += roll * AIR_ROLL_RADIANS_PER_SECOND * dtSeconds;
+    }
 
     if (jumpEdge && car.onGround) {
       car.velocity.z = JUMP_IMPULSE;
@@ -335,6 +346,8 @@ export function tickWorld(world: WorldState, inputFrames: InputFrame[], dtSecond
       car.position.z = 0;
       car.velocity.z = 0;
       car.onGround = true;
+      car.pitch = 0;
+      car.roll = 0;
       setTractionDetached(car);
       car.jumpCount = 0;
       car.jumpWindowTicksRemaining = 0;
