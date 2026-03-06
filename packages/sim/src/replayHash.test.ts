@@ -18,6 +18,8 @@ function buildScript(totalTicks: number): InputFrame[] {
       controls: {
         throttle: tick % 2 === 0 ? 1 : 0.8,
         steer: tick % 3 === 0 ? 0.3 : -0.25,
+        pitch: 0,
+        roll: 0,
         handbrake: tick % 10 === 0,
         boost: tick % 5 === 0,
         jump: tick % 37 === 0

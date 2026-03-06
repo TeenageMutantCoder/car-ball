@@ -38,6 +38,8 @@ test("rapier shadow mode preserves authoritative world outputs", () => {
       controls: {
         throttle: 1,
         steer: 0.3,
+        pitch: 0,
+        roll: 0,
         jump: false,
         boost: true,
         handbrake: false
@@ -53,6 +55,8 @@ test("rapier shadow mode preserves authoritative world outputs", () => {
       controls: {
         throttle: 0.8,
         steer: -0.2,
+        pitch: 0,
+        roll: 0,
         jump: true,
         boost: false,
         handbrake: false

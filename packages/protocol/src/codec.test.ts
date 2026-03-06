@@ -20,6 +20,8 @@ test("encodes and decodes v1 client input event roundtrip", () => {
     controls: {
       throttle: 1,
       steer: -0.3,
+      pitch: 0,
+      roll: 0,
       jump: false,
       boost: true,
       handbrake: false,

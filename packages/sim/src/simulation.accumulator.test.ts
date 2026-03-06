@@ -41,6 +41,8 @@ test("late input ticks clamp to next simulation tick", () => {
     controls: {
       throttle: 1,
       steer: 0,
+      pitch: 0,
+      roll: 0,
       jump: false,
       boost: false,
       handbrake: false

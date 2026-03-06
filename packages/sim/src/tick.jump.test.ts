@@ -12,6 +12,8 @@ const CAR_ID = `car:${PLAYER_ID}`;
 const DEFAULT_CONTROLS: InputControls = {
   throttle: 0,
   steer: 0,
+  pitch: 0,
+  roll: 0,
   jump: false,
   boost: false,
   handbrake: false
