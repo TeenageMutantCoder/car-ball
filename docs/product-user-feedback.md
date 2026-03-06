@@ -14,3 +14,4 @@ After manually testing this game in the web browser, I found things that I liked
 3. The camera behavior is not polished. When trying to fly by pitching the car up and using boost, the camera is often blocked by the floor. When in ball cam, there are many times where the car is not visible or is at the left/right edge of the screen.
 4. The handbrake is too aggressive and does not allow the car to drift when steering left/right and using the throttle. The handbrake should basically never have enough force to stop the car in that case, and the car should be able to drive donuts (spinning on an offset, vertical axis).
 5. The walls do not have any collision. I want them to be like Rocket League, where all corners are rounded enough for the car to drive on.
+6. The boost is too weak and does not allow the car to easily fly like in Rocket League. However, the maximum speed is currently too high.

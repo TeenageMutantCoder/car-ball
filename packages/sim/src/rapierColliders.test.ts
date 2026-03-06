@@ -11,26 +11,31 @@ test("rapier collider setup is deterministic and complete", () => {
   const collidersB = createRapierColliderSpecs(world);
 
   assert.deepEqual(collidersA, collidersB);
-  assert.equal(collidersA.length, 9);
+  assert.equal(collidersA.length, 809);
 
   const ids = collidersA.map((collider) => collider.id);
-  assert.deepEqual(ids, [
-    "arena:ceiling",
-    "arena:floor",
-    "arena:wall-x-max",
-    "arena:wall-x-min",
-    "arena:wall-y-max",
-    "arena:wall-y-min",
-    "ball:main",
-    "car:player-1",
-    "car:player-2"
-  ]);
+  assert.equal(ids.includes("arena:ceiling"), true);
+  assert.equal(ids.includes("arena:floor"), true);
+  assert.equal(ids.includes("arena:wall-x-max"), true);
+  assert.equal(ids.includes("arena:wall-x-min"), true);
+  assert.equal(ids.includes("arena:wall-y-max"), true);
+  assert.equal(ids.includes("arena:wall-y-min"), true);
+  assert.equal(ids.includes("ball:main"), true);
+  assert.equal(ids.includes("car:player-1"), true);
+  assert.equal(ids.includes("car:player-2"), true);
 
   const ball = collidersA.find((collider) => collider.id === "ball:main");
   assert.ok(ball);
   assert.equal(ball.bodyType, "dynamic");
   assert.equal(ball.materialPreset, "ball-dynamic");
   assert.equal(ball.shape.kind, "sphere");
+
+  const rampColliders = collidersA.filter((collider) => collider.id.startsWith("arena:ramp-"));
+  assert.equal(rampColliders.length, 800);
+  for (const rampCollider of rampColliders) {
+    assert.equal(rampCollider.shape.kind, "cuboid");
+    assert.ok(rampCollider.rotation);
+  }
 });
 
 test("rapier material table presets remain bounded", () => {
@@ -47,6 +52,6 @@ test("shadow init context includes colliders and materials", () => {
   const world = createInitialWorldState({ playerIds: ["player-1"] });
   const initContext = createRapierShadowInitContext(world);
 
-  assert.equal(initContext.colliders.length, 8);
+  assert.equal(initContext.colliders.length, 808);
   assert.equal(Object.keys(initContext.materials).length, 2);
 });

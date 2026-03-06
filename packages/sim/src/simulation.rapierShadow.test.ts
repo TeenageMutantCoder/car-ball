@@ -110,9 +110,9 @@ test("rapier shadow lifecycle initializes and steps when enabled", () => {
   assert.equal(initialMetrics.enabled, true);
   assert.equal(initialMetrics.shadowMode, true);
   assert.equal(initialMetrics.initialized, true);
-  assert.equal(initialMetrics.colliderCount, 8);
+  assert.equal(initialMetrics.colliderCount, 808);
   assert.equal(initialMetrics.materialPresetCount, 2);
-  assert.equal(calls.colliderCount, 8);
+  assert.equal(calls.colliderCount, 808);
   assert.equal(calls.materialPresetCount, 2);
   assert.equal(calls.init, 1);
 

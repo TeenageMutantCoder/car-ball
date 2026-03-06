@@ -7,6 +7,7 @@ import {
   Quaternion,
   Scene,
   StandardMaterial,
+  Axis,
   Vector3,
   Color3,
 } from "@babylonjs/core";
@@ -16,7 +17,9 @@ import {
   type Vec3,
 } from "@car-ball/protocol";
 import {
+  ARENA_WALL_THICKNESS,
   DEFAULT_ARENA_BOUNDS,
+  createRoundedArenaWallLayout,
   createGoalVolumesForArena,
   type BoxVolume,
 } from "@car-ball/sim";
@@ -47,8 +50,6 @@ interface GoalVolume extends BoxVolume {
 }
 
 const ARENA_BOUNDS: BoxVolume = DEFAULT_ARENA_BOUNDS;
-
-const ARENA_WALL_THICKNESS = 0.6;
 
 const GOAL_VOLUMES: GoalVolume[] = createGoalVolumes(ARENA_BOUNDS);
 
@@ -348,13 +349,13 @@ function createArenaMeshes(
   floorMaterial: StandardMaterial,
   wallMaterial: StandardMaterial,
 ): void {
+  const roundedWallLayout = createRoundedArenaWallLayout(bounds, ARENA_WALL_THICKNESS);
   const halfThickness = ARENA_WALL_THICKNESS / 2;
   const centerX = (bounds.min.x + bounds.max.x) / 2;
   const centerY = (bounds.min.y + bounds.max.y) / 2;
   const centerZ = (bounds.min.z + bounds.max.z) / 2;
   const sizeX = Math.abs(bounds.max.x - bounds.min.x);
   const sizeY = Math.abs(bounds.max.y - bounds.min.y);
-  const sizeZ = Math.abs(bounds.max.z - bounds.min.z);
 
   const floorMesh = createProtocolAlignedBox(
     "arena:floor",
@@ -364,37 +365,28 @@ function createArenaMeshes(
   );
   floorMesh.material = floorMaterial;
 
-  const wallXMinMesh = createProtocolAlignedBox(
-    "arena:wall-x-min",
-    { x: ARENA_WALL_THICKNESS, y: sizeY, z: sizeZ },
-    { x: bounds.min.x - halfThickness, y: centerY, z: centerZ },
-    scene,
-  );
-  wallXMinMesh.material = wallMaterial;
+  for (const wall of roundedWallLayout.straightWalls) {
+    const wallMesh = createProtocolAlignedBox(wall.id, wall.size, wall.center, scene);
+    wallMesh.material = wallMaterial;
+  }
 
-  const wallXMaxMesh = createProtocolAlignedBox(
-    "arena:wall-x-max",
-    { x: ARENA_WALL_THICKNESS, y: sizeY, z: sizeZ },
-    { x: bounds.max.x + halfThickness, y: centerY, z: centerZ },
-    scene,
-  );
-  wallXMaxMesh.material = wallMaterial;
+  for (const rampPanel of roundedWallLayout.rampPanels) {
+    const rampMesh = createProtocolAlignedBox(
+      rampPanel.id,
+      rampPanel.size,
+      rampPanel.center,
+      scene,
+    );
+    rampMesh.material = wallMaterial;
 
-  const wallYMinMesh = createProtocolAlignedBox(
-    "arena:wall-y-min",
-    { x: sizeX + ARENA_WALL_THICKNESS * 2, y: ARENA_WALL_THICKNESS, z: sizeZ },
-    { x: centerX, y: bounds.min.y - halfThickness, z: centerZ },
-    scene,
-  );
-  wallYMinMesh.material = wallMaterial;
-
-  const wallYMaxMesh = createProtocolAlignedBox(
-    "arena:wall-y-max",
-    { x: sizeX + ARENA_WALL_THICKNESS * 2, y: ARENA_WALL_THICKNESS, z: sizeZ },
-    { x: centerX, y: bounds.max.y + halfThickness, z: centerZ },
-    scene,
-  );
-  wallYMaxMesh.material = wallMaterial;
+    const axis =
+      rampPanel.rotationAxis === "x"
+        ? Axis.X
+        : rampPanel.rotationAxis === "y"
+          ? Axis.Z
+          : Axis.Y;
+    rampMesh.rotationQuaternion = Quaternion.RotationAxis(axis, rampPanel.rotationAngleRadians);
+  }
 }
 
 function createProtocolAlignedBox(

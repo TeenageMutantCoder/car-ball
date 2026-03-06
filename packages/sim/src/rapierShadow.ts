@@ -40,6 +40,11 @@ export type RapierColliderShape =
   | {
       kind: "sphere";
       radius: number;
+    }
+  | {
+      kind: "cylinder";
+      halfHeight: number;
+      radius: number;
     };
 
 export interface RapierColliderSpec {
@@ -50,6 +55,12 @@ export interface RapierColliderSpec {
     x: number;
     y: number;
     z: number;
+  };
+  rotation?: {
+    x: number;
+    y: number;
+    z: number;
+    w: number;
   };
   shape: RapierColliderShape;
 }
@@ -286,11 +297,17 @@ class RapierCompatBackend implements RapierShadowBackend {
       const colliderDesc =
         collider.shape.kind === "sphere"
           ? rapier.ColliderDesc.ball(collider.shape.radius)
-          : rapier.ColliderDesc.cuboid(
-              collider.shape.halfExtents.x,
-              collider.shape.halfExtents.y,
-              collider.shape.halfExtents.z
-            );
+          : collider.shape.kind === "cylinder"
+            ? rapier.ColliderDesc.cylinder(collider.shape.halfHeight, collider.shape.radius)
+            : rapier.ColliderDesc.cuboid(
+                collider.shape.halfExtents.x,
+                collider.shape.halfExtents.y,
+                collider.shape.halfExtents.z
+              );
+
+      if (collider.rotation && typeof colliderDesc.setRotation === "function") {
+        colliderDesc.setRotation(collider.rotation);
+      }
 
       const material = context.materials[collider.materialPreset];
       if (material) {
