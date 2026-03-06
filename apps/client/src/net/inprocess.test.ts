@@ -30,6 +30,7 @@ function createSnapshot(overrides: Partial<Snapshot> = {}): Snapshot {
         velocity: { x: 0, y: 0, z: 0 },
         rotation: { x: 0, y: 0, z: 0, w: 1 },
         boost: 95,
+        onGround: true,
       },
     ],
     ball: {
@@ -139,6 +140,7 @@ test("in-process client net snapshot ingestion yields render-state deltas", () =
           velocity: { x: 0.2, y: 0, z: 0 },
           rotation: { x: 0, y: 0, z: 0, w: 1 },
           boost: 95,
+          onGround: true,
         },
       ],
     }),
@@ -168,6 +170,7 @@ test("in-process client net snapshot ingestion yields render-state deltas", () =
           velocity: { x: 0.4, y: 0, z: 0 },
           rotation: { x: 0, y: 0, z: 0, w: 1 },
           boost: 94,
+          onGround: true,
         },
       ],
       ball: {

@@ -35,6 +35,7 @@ function buildSnapshot(): Snapshot {
         velocity: { x: 0, y: 0, z: 4 },
         rotation: { x: 0, y: 0, z: 0, w: 1 },
         boost: 77,
+        onGround: true,
       },
       {
         id: "car-1",
@@ -44,6 +45,7 @@ function buildSnapshot(): Snapshot {
         velocity: { x: 2, y: 0, z: -2 },
         rotation: { x: 0, y: 0.4, z: 0, w: 0.9 },
         boost: 33,
+        onGround: false,
       },
     ],
     ball: {
@@ -113,6 +115,8 @@ test("applySnapshot converts protocol z-up coordinates to render y-up", () => {
   assert.deepEqual(applied.cars[0]!.velocity, { x: 2, y: -2, z: 0 });
   assert.deepEqual(applied.ball.position, { x: 0, y: 0, z: 1 });
   assert.deepEqual(applied.ball.velocity, { x: 1, y: -1, z: 0 });
+  assert.equal(applied.cars[0]!.onGround, false);
+  assert.equal(applied.cars[1]!.onGround, true);
   assert.deepEqual(applied.cars[0]!.rotation, {
     x: 0,
     y: -Math.sin(Math.PI / 4),

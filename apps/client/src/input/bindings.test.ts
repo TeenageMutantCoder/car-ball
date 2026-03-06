@@ -163,6 +163,40 @@ test("createInputBindings invokes camera toggle callback on KeyC keydown only", 
     boost: false,
     handbrake: false,
   });
+  assert.deepEqual(bindings.getCameraLookInput(), {
+    yaw: 0,
+    pitch: 0,
+  });
+
+  bindings.dispose();
+});
+
+test("createInputBindings maps IJKL to temporary camera look input", () => {
+  const target = new FakeKeyboardTarget();
+  const bindings = createInputBindings({ target });
+
+  target.dispatch("keydown", "KeyI");
+  target.dispatch("keydown", "KeyL");
+  assert.deepEqual(bindings.getCameraLookInput(), {
+    yaw: 1,
+    pitch: 1,
+  });
+
+  target.dispatch("keydown", "KeyJ");
+  target.dispatch("keydown", "KeyK");
+  assert.deepEqual(bindings.getCameraLookInput(), {
+    yaw: 0,
+    pitch: 0,
+  });
+
+  target.dispatch("keyup", "KeyI");
+  target.dispatch("keyup", "KeyJ");
+  target.dispatch("keyup", "KeyK");
+  target.dispatch("keyup", "KeyL");
+  assert.deepEqual(bindings.getCameraLookInput(), {
+    yaw: 0,
+    pitch: 0,
+  });
 
   bindings.dispose();
 });

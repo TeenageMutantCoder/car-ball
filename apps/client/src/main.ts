@@ -32,7 +32,6 @@ import {
 } from "./net/websocket.ts";
 import {
   createCameraController,
-  resolveCameraPose,
   type CameraMode,
 } from "./render/camera.ts";
 import { RendererBridge, type RenderSnapshotState } from "./render/rendererBridge.ts";
@@ -255,7 +254,12 @@ export function bootstrapBabylonScene(options: BabylonSceneBootstrapOptions): Ba
       syncRenderMeshes(renderSnapshot);
       matchHud.update(renderSnapshot);
 
-      const cameraPose = resolveCameraPose(cameraController.getMode(), renderSnapshot, inputFrameContext.carId);
+      const cameraPose = cameraController.resolvePose(
+        renderSnapshot,
+        inputFrameContext.carId,
+        deltaMs,
+        inputBindings.getCameraLookInput(),
+      );
       camera.setPosition(renderToSceneVector3(cameraPose.position));
       camera.setTarget(renderToSceneVector3(cameraPose.target));
     }

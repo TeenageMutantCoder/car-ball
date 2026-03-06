@@ -8,6 +8,7 @@ export interface RenderCarState {
   velocity: Vec3;
   rotation: Rotation;
   boost: number;
+  onGround: boolean;
 }
 
 export interface RenderBallState {
@@ -109,6 +110,7 @@ function normalizeSnapshot(snapshot: Snapshot): RenderSnapshotState {
       velocity: protocolToRenderVec3(car.velocity),
       rotation: protocolToRenderRotation(car.rotation),
       boost: car.boost,
+      onGround: car.onGround,
     }))
     .sort((left, right) => left.id.localeCompare(right.id));
 
@@ -146,6 +148,7 @@ function cloneRenderSnapshot(snapshot: RenderSnapshotState): RenderSnapshotState
       velocity: cloneVec3(car.velocity),
       rotation: cloneRotation(car.rotation),
       boost: car.boost,
+      onGround: car.onGround,
     })),
     ball: {
       id: snapshot.ball.id,
@@ -173,6 +176,7 @@ function interpolateCar(
       velocity: cloneVec3(current!.velocity),
       rotation: cloneRotation(current!.rotation),
       boost: current!.boost,
+      onGround: current!.onGround,
     };
   }
 
@@ -185,6 +189,7 @@ function interpolateCar(
       velocity: cloneVec3(previous.velocity),
       rotation: cloneRotation(previous.rotation),
       boost: previous.boost,
+      onGround: previous.onGround,
     };
   }
 
@@ -201,6 +206,7 @@ function interpolateCar(
       w: interpolateNumber(previous.rotation.w, current.rotation.w, alpha),
     }),
     boost: interpolateNumber(previous.boost, current.boost, alpha),
+    onGround: current.onGround,
   };
 }
 

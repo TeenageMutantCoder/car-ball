@@ -57,6 +57,7 @@ export interface CarSnapshot {
   velocity: Vec3;
   rotation: Rotation;
   boost: number;
+  onGround: boolean;
 }
 
 export interface BallSnapshot {

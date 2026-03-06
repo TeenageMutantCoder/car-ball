@@ -131,6 +131,7 @@ test("getMatchHudValuesForCar returns clamped local car boost", () => {
           velocity: { x: 0, y: 0, z: 0 },
           rotation: { x: 0, y: 0, z: 0, w: 1 },
           boost: 132.4,
+          onGround: true,
         },
       ],
     },
@@ -192,6 +193,7 @@ test("createMatchHud updates scoreboard and removes root on dispose", () => {
         velocity: { x: 0, y: 0, z: 0 },
         rotation: { x: 0, y: 0, z: 0, w: 1 },
         boost: 72.8,
+        onGround: true,
       },
     ],
     ball: {
@@ -230,6 +232,7 @@ test("createMatchHud updates scoreboard and removes root on dispose", () => {
         velocity: { x: 0, y: 0, z: 0 },
         rotation: { x: 0, y: 0, z: 0, w: 1 },
         boost: 72.8,
+        onGround: true,
       },
     ],
     ball: {
@@ -279,6 +282,7 @@ test("createMatchHud restart button invokes onRestart when match is finished", (
         velocity: { x: 0, y: 0, z: 0 },
         rotation: { x: 0, y: 0, z: 0, w: 1 },
         boost: 0,
+        onGround: true,
       },
     ],
     ball: {

@@ -28,6 +28,7 @@ function buildRenderSnapshot(): RenderSnapshotState {
         velocity: { x: 0, y: 0, z: 0 },
         rotation: { x: 0, y: 0, z: 0, w: 1 },
         boost: 42,
+        onGround: true,
       },
     ],
     ball: {
@@ -60,14 +61,16 @@ test("resolveCameraPose uses third-person car camera behind focus car", () => {
   assert.deepEqual(pose.target, { x: 21, y: 2.5, z: 2 });
 });
 
-test("resolveCameraPose ball mode keeps position but targets ball", () => {
+test("resolveCameraPose ball mode prioritizes ball in weighted target", () => {
   const snapshot = buildRenderSnapshot();
 
   const ballPose = resolveCameraPose("ball", snapshot, "car-1");
   const carPose = resolveCameraPose("car", snapshot, "car-1");
 
-  assert.deepEqual(ballPose.position, carPose.position);
-  assert.deepEqual(ballPose.target, { x: -5, y: 2, z: 6 });
+  assert.notDeepEqual(ballPose.position, carPose.position);
+  assert.ok(Math.abs(ballPose.target.x + 2.76) < 1e-12);
+  assert.ok(Math.abs(ballPose.target.y - 3.97) < 1e-12);
+  assert.ok(Math.abs(ballPose.target.z - 4.88) < 1e-12);
 });
 
 test("resolveCameraPose missing-car fallback anchors camera from ball", () => {
@@ -76,4 +79,49 @@ test("resolveCameraPose missing-car fallback anchors camera from ball", () => {
   const fallbackPose = resolveCameraPose("car", snapshot, "car-missing");
   assert.deepEqual(fallbackPose.position, { x: -19, y: 7, z: 6 });
   assert.deepEqual(fallbackPose.target, { x: 13, y: 3.5, z: 6 });
+});
+
+test("car camera ignores pitch while grounded", () => {
+  const snapshot = buildRenderSnapshot();
+  snapshot.cars[0]!.rotation = {
+    x: 0,
+    y: 0,
+    z: -Math.sin(Math.PI / 8),
+    w: Math.cos(Math.PI / 8),
+  };
+
+  const pose = resolveCameraPose("car", snapshot, "car-1");
+  assert.deepEqual(pose.position, { x: -11, y: 6, z: 2 });
+});
+
+test("camera controller keeps last grounded direction while airborne", () => {
+  const controller = createCameraController();
+  const snapshot = buildRenderSnapshot();
+
+  const groundedPose = controller.resolvePose(snapshot, "car-1", 16, { yaw: 0, pitch: 0 });
+
+  snapshot.cars[0]!.onGround = false;
+  snapshot.cars[0]!.rotation = {
+    x: 0,
+    y: Math.sin(Math.PI / 2),
+    z: 0,
+    w: Math.cos(Math.PI / 2),
+  };
+
+  const airbornePose = controller.resolvePose(snapshot, "car-1", 16, { yaw: 0, pitch: 0 });
+  assert.equal(airbornePose.position.x, groundedPose.position.x);
+  assert.equal(airbornePose.position.z, groundedPose.position.z);
+});
+
+test("camera controller applies temporary look input with easing", () => {
+  const controller = createCameraController();
+  const snapshot = buildRenderSnapshot();
+
+  const baseline = controller.resolvePose(snapshot, "car-1", 16, { yaw: 0, pitch: 0 });
+  const lookRight = controller.resolvePose(snapshot, "car-1", 1000, { yaw: 1, pitch: 0 });
+
+  assert.notEqual(lookRight.target.z, baseline.target.z);
+
+  const released = controller.resolvePose(snapshot, "car-1", 1000, { yaw: 0, pitch: 0 });
+  assert.ok(Math.abs(released.target.z - baseline.target.z) < Math.abs(lookRight.target.z - baseline.target.z));
 });

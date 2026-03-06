@@ -58,6 +58,7 @@ test("worldToProtocolSnapshot maps world state deterministically", () => {
   assert.deepEqual(first.cars.map((car) => car.id), ["car:player-a", "car:player-b"]);
   assert.equal(first.cars[0].rotation.z, Math.sin(Math.PI / 4));
   assert.equal(first.cars[0].rotation.w, Math.cos(Math.PI / 4));
+  assert.equal(first.cars[0].onGround, true);
 });
 
 test("worldToProtocolSnapshot encodes pitch and roll into car rotation", () => {

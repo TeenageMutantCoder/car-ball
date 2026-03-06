@@ -190,6 +190,7 @@ test("websocket transport ingests server snapshots via live net", async () => {
         velocity: { x: 0, y: 0, z: 0 },
         rotation: { x: 0, y: 0, z: 0, w: 1 },
         boost: 100,
+        onGround: true,
       },
     ],
     ball: {
@@ -255,6 +256,7 @@ test("websocket transport coalesces snapshot bursts to newest payload", async ()
         velocity: { x: 0, y: 0, z: 0 },
         rotation: { x: 0, y: 0, z: 0, w: 1 },
         boost: 100,
+        onGround: true,
       },
     ],
     ball: {
@@ -289,6 +291,7 @@ test("websocket transport coalesces snapshot bursts to newest payload", async ()
         velocity: { x: 0, y: 0, z: 0 },
         rotation: { x: 0, y: 0, z: 0, w: 1 },
         boost: 100,
+        onGround: true,
       },
     ],
     ball: {

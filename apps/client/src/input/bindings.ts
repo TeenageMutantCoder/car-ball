@@ -1,5 +1,10 @@
 import type { InputControls } from "@car-ball/protocol";
 
+export interface InputCameraLook {
+  yaw: number;
+  pitch: number;
+}
+
 const DEFAULT_CONTROLS: InputControls = {
   throttle: 0,
   steer: 0,
@@ -22,6 +27,10 @@ const JUMP_CODES = new Set(["Space"]);
 const BOOST_CODES = new Set(["ArrowUp"]);
 const HANDBRAKE_CODES = new Set(["ShiftLeft", "ShiftRight"]);
 const CAMERA_TOGGLE_CODES = new Set(["KeyC"]);
+const CAMERA_LOOK_UP_CODES = new Set(["KeyI"]);
+const CAMERA_LOOK_LEFT_CODES = new Set(["KeyJ"]);
+const CAMERA_LOOK_DOWN_CODES = new Set(["KeyK"]);
+const CAMERA_LOOK_RIGHT_CODES = new Set(["KeyL"]);
 
 type KeyStateCode =
   | "throttle.forward"
@@ -34,12 +43,17 @@ type KeyStateCode =
   | "roll.right"
   | "jump"
   | "boost"
-  | "handbrake";
+  | "handbrake"
+  | "camera.look.up"
+  | "camera.look.left"
+  | "camera.look.down"
+  | "camera.look.right";
 
 type KeyDownUpListener = (event: KeyboardEvent) => void;
 
 export interface InputBindings {
   getControls: () => InputControls;
+  getCameraLookInput: () => InputCameraLook;
   dispose: () => void;
 }
 
@@ -108,6 +122,9 @@ export function createInputBindings(options: InputBindingsOptions = {}): InputBi
     getControls(): InputControls {
       return controlsFromPressedStates(pressedStates);
     },
+    getCameraLookInput(): InputCameraLook {
+      return cameraLookInputFromPressedStates(pressedStates);
+    },
     dispose(): void {
       target.removeEventListener("keydown", handleKeyDown);
       target.removeEventListener("keyup", handleKeyUp);
@@ -175,6 +192,22 @@ function mapEventToStateCodes(code: string): KeyStateCode[] {
     mapped.push("handbrake");
   }
 
+  if (CAMERA_LOOK_UP_CODES.has(code)) {
+    mapped.push("camera.look.up");
+  }
+
+  if (CAMERA_LOOK_LEFT_CODES.has(code)) {
+    mapped.push("camera.look.left");
+  }
+
+  if (CAMERA_LOOK_DOWN_CODES.has(code)) {
+    mapped.push("camera.look.down");
+  }
+
+  if (CAMERA_LOOK_RIGHT_CODES.has(code)) {
+    mapped.push("camera.look.right");
+  }
+
   return mapped;
 }
 
@@ -193,5 +226,15 @@ function controlsFromPressedStates(pressedStates: ReadonlySet<KeyStateCode>): In
     jump: pressedStates.has("jump"),
     boost: pressedStates.has("boost"),
     handbrake: pressedStates.has("handbrake"),
+  };
+}
+
+function cameraLookInputFromPressedStates(pressedStates: ReadonlySet<KeyStateCode>): InputCameraLook {
+  const yaw = Number(pressedStates.has("camera.look.right")) - Number(pressedStates.has("camera.look.left"));
+  const pitch = Number(pressedStates.has("camera.look.up")) - Number(pressedStates.has("camera.look.down"));
+
+  return {
+    yaw,
+    pitch,
   };
 }

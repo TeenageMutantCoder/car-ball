@@ -59,7 +59,8 @@ export function worldToProtocolSnapshot(world: WorldState, options: ToProtocolSn
       position: cloneVec3(car.position),
       velocity: cloneVec3(car.velocity),
       rotation: orientationToRotation(car.heading, car.pitch, car.roll),
-      boost: car.boost
+      boost: car.boost,
+      onGround: car.onGround
     }));
 
   return {

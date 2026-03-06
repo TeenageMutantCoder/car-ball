@@ -26,7 +26,15 @@ Right arrow key - Air roll right
 
 Up arrow key - Boost
 
-Ctrl - Switch camera target (forward or ball)
+C - Switch camera target (car or ball)
+
+I - Hold to look camera up
+
+J - Hold to look camera left
+
+K - Hold to look camera down
+
+L - Hold to look camera right
 
 Backspace - Reset car and ball position
 
