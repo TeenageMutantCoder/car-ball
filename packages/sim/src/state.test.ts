@@ -78,3 +78,32 @@ test("worldToProtocolSnapshot encodes pitch and roll into car rotation", () => {
   assert.notEqual(rotation.x, 0);
   assert.notEqual(rotation.y, 0);
 });
+
+test("worldToProtocolSnapshot uses traction normal basis for wall steering rotation", () => {
+  const world = createInitialWorldState({ playerIds: ["player-a"] });
+  const car = world.cars["car:player-a"];
+
+  car.tractionAttached = true;
+  car.tractionSurface = "wall-x-min";
+  car.tractionNormal = { x: 1, y: 0, z: 0 };
+  car.onGround = false;
+
+  car.heading = 0;
+  const headingZeroSnapshot = worldToProtocolSnapshot(world, {
+    sequence: 1,
+    timestamp: 1
+  });
+
+  car.heading = Math.PI / 2;
+  const headingQuarterTurnSnapshot = worldToProtocolSnapshot(world, {
+    sequence: 2,
+    timestamp: 2
+  });
+
+  const headingZeroRotation = headingZeroSnapshot.cars[0].rotation;
+  const headingQuarterTurnRotation = headingQuarterTurnSnapshot.cars[0].rotation;
+
+  assert.notDeepEqual(headingZeroRotation, headingQuarterTurnRotation);
+  assert.equal(Math.abs(headingQuarterTurnRotation.x) > 0.6, true);
+  assert.equal(Math.abs(headingQuarterTurnRotation.y) < 0.2, true);
+});

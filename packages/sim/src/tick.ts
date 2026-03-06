@@ -3,6 +3,7 @@ import {
   CAR_SURFACE_BOUNCE_MIN_NORMAL_SPEED,
   CAR_SURFACE_BOUNCE_RESTITUTION,
   CAR_SURFACE_TANGENTIAL_DAMPING,
+  ARENA_CORNER_RADIUS,
   CEILING_TRACTION_WHEEL_ALIGNMENT_MIN_Z,
   DEFAULT_CAR_HALF_EXTENTS,
   DOUBLE_JUMP_DIRECTIONAL_IMPULSE,
@@ -54,6 +55,30 @@ interface TractionContactCandidate {
   distance: number;
 }
 
+interface CornerRampDefinition {
+  center: {
+    x: number;
+    y: number;
+  };
+  towardCorner: {
+    x: -1 | 1;
+    y: -1 | 1;
+  };
+  xSurface: "wall-x-min" | "wall-x-max";
+  ySurface: "wall-y-min" | "wall-y-max";
+}
+
+interface FloorWallRampDefinition {
+  center: {
+    x: number;
+    y: number;
+    z: number;
+  };
+  axis: "x" | "y";
+  towardWall: -1 | 1;
+  surface: "wall-x-min" | "wall-x-max" | "wall-y-min" | "wall-y-max";
+}
+
 function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
 }
@@ -66,8 +91,29 @@ function dot(left: Vec3Like, right: Vec3Like): number {
   return left.x * right.x + left.y * right.y + left.z * right.z;
 }
 
+function cross(left: Vec3Like, right: Vec3Like): Vec3Like {
+  return {
+    x: left.y * right.z - left.z * right.y,
+    y: left.z * right.x - left.x * right.z,
+    z: left.x * right.y - left.y * right.x
+  };
+}
+
 function magnitude(vector: Vec3Like): number {
   return Math.hypot(vector.x, vector.y, vector.z);
+}
+
+function normalize(vector: Vec3Like): Vec3Like {
+  const length = magnitude(vector);
+  if (length <= Number.EPSILON) {
+    return { x: 0, y: 0, z: 0 };
+  }
+
+  return {
+    x: vector.x / length,
+    y: vector.y / length,
+    z: vector.z / length
+  };
 }
 
 function projectOntoPlane(vector: Vec3Like, normal: Vec3Like): Vec3Like {
@@ -112,6 +158,43 @@ function setTractionAttached(car: WorldState["cars"][string], candidate: Tractio
     z: candidate.normal.z
   };
   car.onGround = false;
+}
+
+function tractionBasis(normal: Vec3Like): { tangentX: Vec3Like; tangentY: Vec3Like } {
+  const normalizedNormal = normalize(normal);
+  const reference = Math.abs(normalizedNormal.z) < 0.95 ? { x: 0, y: 0, z: 1 } : { x: 1, y: 0, z: 0 };
+  const tangentX = normalize(cross(reference, normalizedNormal));
+  const tangentY = normalize(cross(normalizedNormal, tangentX));
+  return { tangentX, tangentY };
+}
+
+function forwardForCar(car: WorldState["cars"][string]): Vec3Like {
+  if (!car.tractionAttached || magnitude(car.tractionNormal) <= Number.EPSILON) {
+    return {
+      x: Math.cos(car.heading),
+      y: Math.sin(car.heading),
+      z: 0
+    };
+  }
+
+  const { tangentX, tangentY } = tractionBasis(car.tractionNormal);
+  const forward = {
+    x: tangentX.x * Math.cos(car.heading) + tangentY.x * Math.sin(car.heading),
+    y: tangentX.y * Math.cos(car.heading) + tangentY.y * Math.sin(car.heading),
+    z: tangentX.z * Math.cos(car.heading) + tangentY.z * Math.sin(car.heading)
+  };
+
+  return normalize(forward);
+}
+
+function alignCarRotationToTractionNormal(car: WorldState["cars"][string]): void {
+  const normal = normalize(car.tractionNormal);
+  if (magnitude(normal) <= Number.EPSILON) {
+    return;
+  }
+
+  car.pitch = Math.atan2(-normal.y, Math.max(1e-6, normal.z));
+  car.roll = Math.atan2(normal.x, Math.max(1e-6, normal.z));
 }
 
 function carCeilingTractionAlignmentZ(car: WorldState["cars"][string]): number {
@@ -183,6 +266,16 @@ function wallOrCeilingCandidate(world: WorldState, position: Vec3Like): Traction
     });
   }
 
+  const cornerRampCandidate = cornerRampContactCandidate(world, position);
+  if (cornerRampCandidate !== undefined) {
+    candidates.push(cornerRampCandidate);
+  }
+
+  const floorWallRampCandidate = floorWallRampContactCandidate(world, position);
+  if (floorWallRampCandidate !== undefined) {
+    candidates.push(floorWallRampCandidate);
+  }
+
   if (candidates.length === 0) {
     return undefined;
   }
@@ -195,7 +288,225 @@ function wallOrCeilingCandidate(world: WorldState, position: Vec3Like): Traction
   return candidates[0];
 }
 
+function floorWallRampDefinitions(world: WorldState): FloorWallRampDefinition[] {
+  const { min, max } = world.arena.bounds;
+  const minX = min.x + DEFAULT_CAR_HALF_EXTENTS.x;
+  const maxX = max.x - DEFAULT_CAR_HALF_EXTENTS.x;
+  const minY = min.y + DEFAULT_CAR_HALF_EXTENTS.y;
+  const maxY = max.y - DEFAULT_CAR_HALF_EXTENTS.y;
+
+  return [
+    {
+      center: { x: minX + ARENA_CORNER_RADIUS, y: (minY + maxY) / 2, z: min.z + ARENA_CORNER_RADIUS },
+      axis: "x",
+      towardWall: -1,
+      surface: "wall-x-min"
+    },
+    {
+      center: { x: maxX - ARENA_CORNER_RADIUS, y: (minY + maxY) / 2, z: min.z + ARENA_CORNER_RADIUS },
+      axis: "x",
+      towardWall: 1,
+      surface: "wall-x-max"
+    },
+    {
+      center: { x: (minX + maxX) / 2, y: minY + ARENA_CORNER_RADIUS, z: min.z + ARENA_CORNER_RADIUS },
+      axis: "y",
+      towardWall: -1,
+      surface: "wall-y-min"
+    },
+    {
+      center: { x: (minX + maxX) / 2, y: maxY - ARENA_CORNER_RADIUS, z: min.z + ARENA_CORNER_RADIUS },
+      axis: "y",
+      towardWall: 1,
+      surface: "wall-y-max"
+    }
+  ];
+}
+
+function floorWallRampContactCandidate(
+  world: WorldState,
+  position: Vec3Like
+): TractionContactCandidate | undefined {
+  let best: TractionContactCandidate | undefined;
+
+  const { min, max } = world.arena.bounds;
+  const minY = min.y + DEFAULT_CAR_HALF_EXTENTS.y + ARENA_CORNER_RADIUS;
+  const maxY = max.y - DEFAULT_CAR_HALF_EXTENTS.y - ARENA_CORNER_RADIUS;
+  const minX = min.x + DEFAULT_CAR_HALF_EXTENTS.x + ARENA_CORNER_RADIUS;
+  const maxX = max.x - DEFAULT_CAR_HALF_EXTENTS.x - ARENA_CORNER_RADIUS;
+
+  for (const ramp of floorWallRampDefinitions(world)) {
+    if (ramp.axis === "x") {
+      if (position.y < minY || position.y > maxY) {
+        continue;
+      }
+
+      const dx = position.x - ramp.center.x;
+      const dz = position.z - ramp.center.z;
+      const inRampQuadrant = dx * ramp.towardWall >= 0 && dz <= 0;
+      if (!inRampQuadrant) {
+        continue;
+      }
+
+      const radialDistance = Math.hypot(dx, dz);
+      const distanceFromRamp = Math.abs(radialDistance - ARENA_CORNER_RADIUS);
+      if (distanceFromRamp > TRACTION_CONTACT_DISTANCE) {
+        continue;
+      }
+
+      const safeDistance = Math.max(radialDistance, 1e-6);
+      const candidate: TractionContactCandidate = {
+        surface: ramp.surface,
+        normal: {
+          x: -dx / safeDistance,
+          y: 0,
+          z: -dz / safeDistance
+        },
+        distance: distanceFromRamp
+      };
+
+      if (
+        best === undefined ||
+        candidate.distance < best.distance ||
+        (candidate.distance === best.distance && candidate.surface.localeCompare(best.surface) < 0)
+      ) {
+        best = candidate;
+      }
+    } else {
+      if (position.x < minX || position.x > maxX) {
+        continue;
+      }
+
+      const dy = position.y - ramp.center.y;
+      const dz = position.z - ramp.center.z;
+      const inRampQuadrant = dy * ramp.towardWall >= 0 && dz <= 0;
+      if (!inRampQuadrant) {
+        continue;
+      }
+
+      const radialDistance = Math.hypot(dy, dz);
+      const distanceFromRamp = Math.abs(radialDistance - ARENA_CORNER_RADIUS);
+      if (distanceFromRamp > TRACTION_CONTACT_DISTANCE) {
+        continue;
+      }
+
+      const safeDistance = Math.max(radialDistance, 1e-6);
+      const candidate: TractionContactCandidate = {
+        surface: ramp.surface,
+        normal: {
+          x: 0,
+          y: -dy / safeDistance,
+          z: -dz / safeDistance
+        },
+        distance: distanceFromRamp
+      };
+
+      if (
+        best === undefined ||
+        candidate.distance < best.distance ||
+        (candidate.distance === best.distance && candidate.surface.localeCompare(best.surface) < 0)
+      ) {
+        best = candidate;
+      }
+    }
+  }
+
+  return best;
+}
+
+function cornerRampDefinitions(world: WorldState): CornerRampDefinition[] {
+  const { min, max } = world.arena.bounds;
+  const minX = min.x + DEFAULT_CAR_HALF_EXTENTS.x;
+  const maxX = max.x - DEFAULT_CAR_HALF_EXTENTS.x;
+  const minY = min.y + DEFAULT_CAR_HALF_EXTENTS.y;
+  const maxY = max.y - DEFAULT_CAR_HALF_EXTENTS.y;
+
+  return [
+    {
+      center: { x: minX + ARENA_CORNER_RADIUS, y: minY + ARENA_CORNER_RADIUS },
+      towardCorner: { x: -1, y: -1 },
+      xSurface: "wall-x-min",
+      ySurface: "wall-y-min"
+    },
+    {
+      center: { x: minX + ARENA_CORNER_RADIUS, y: maxY - ARENA_CORNER_RADIUS },
+      towardCorner: { x: -1, y: 1 },
+      xSurface: "wall-x-min",
+      ySurface: "wall-y-max"
+    },
+    {
+      center: { x: maxX - ARENA_CORNER_RADIUS, y: minY + ARENA_CORNER_RADIUS },
+      towardCorner: { x: 1, y: -1 },
+      xSurface: "wall-x-max",
+      ySurface: "wall-y-min"
+    },
+    {
+      center: { x: maxX - ARENA_CORNER_RADIUS, y: maxY - ARENA_CORNER_RADIUS },
+      towardCorner: { x: 1, y: 1 },
+      xSurface: "wall-x-max",
+      ySurface: "wall-y-max"
+    }
+  ];
+}
+
+function cornerRampContactCandidate(
+  world: WorldState,
+  position: Vec3Like
+): TractionContactCandidate | undefined {
+  let best: TractionContactCandidate | undefined;
+
+  for (const corner of cornerRampDefinitions(world)) {
+    const dx = position.x - corner.center.x;
+    const dy = position.y - corner.center.y;
+    const inCornerQuadrant = dx * corner.towardCorner.x >= 0 && dy * corner.towardCorner.y >= 0;
+    if (!inCornerQuadrant) {
+      continue;
+    }
+
+    const radialDistance = Math.hypot(dx, dy);
+    const distanceFromRamp = Math.abs(radialDistance - ARENA_CORNER_RADIUS);
+    if (distanceFromRamp > TRACTION_CONTACT_DISTANCE) {
+      continue;
+    }
+
+    const safeDistance = Math.max(radialDistance, 1e-6);
+    const inwardNormal = {
+      x: -dx / safeDistance,
+      y: -dy / safeDistance,
+      z: 0
+    };
+
+    const surface: TractionSurface =
+      Math.abs(inwardNormal.x) >= Math.abs(inwardNormal.y) ? corner.xSurface : corner.ySurface;
+
+    const candidate: TractionContactCandidate = {
+      surface,
+      normal: inwardNormal,
+      distance: distanceFromRamp
+    };
+
+    if (
+      best === undefined ||
+      candidate.distance < best.distance ||
+      (candidate.distance === best.distance && candidate.surface.localeCompare(best.surface) < 0)
+    ) {
+      best = candidate;
+    }
+  }
+
+  return best;
+}
+
 function clampPositionToSurface(world: WorldState, car: WorldState["cars"][string]): void {
+  const significantComponents =
+    (Math.abs(car.tractionNormal.x) > 1e-3 ? 1 : 0) +
+    (Math.abs(car.tractionNormal.y) > 1e-3 ? 1 : 0) +
+    (Math.abs(car.tractionNormal.z) > 1e-3 ? 1 : 0);
+  const rampLikeNormal = significantComponents >= 2;
+  if (rampLikeNormal) {
+    return;
+  }
+
   switch (car.tractionSurface) {
     case "wall-x-min":
       car.position.x = world.arena.bounds.min.x + DEFAULT_CAR_HALF_EXTENTS.x;
@@ -215,6 +526,124 @@ function clampPositionToSurface(world: WorldState, car: WorldState["cars"][strin
     case "none":
     default:
       break;
+  }
+}
+
+function resolveFloorWallRampCollisions(world: WorldState, car: WorldState["cars"][string]): void {
+  const { min, max } = world.arena.bounds;
+  const minY = min.y + DEFAULT_CAR_HALF_EXTENTS.y + ARENA_CORNER_RADIUS;
+  const maxY = max.y - DEFAULT_CAR_HALF_EXTENTS.y - ARENA_CORNER_RADIUS;
+  const minX = min.x + DEFAULT_CAR_HALF_EXTENTS.x + ARENA_CORNER_RADIUS;
+  const maxX = max.x - DEFAULT_CAR_HALF_EXTENTS.x - ARENA_CORNER_RADIUS;
+
+  for (const ramp of floorWallRampDefinitions(world)) {
+    if (ramp.axis === "x") {
+      if (car.position.y < minY || car.position.y > maxY) {
+        continue;
+      }
+
+      const dx = car.position.x - ramp.center.x;
+      const dz = car.position.z - ramp.center.z;
+      const inRampQuadrant = dx * ramp.towardWall >= 0 && dz <= 0;
+      if (!inRampQuadrant) {
+        continue;
+      }
+
+      const radialDistance = Math.hypot(dx, dz);
+      if (radialDistance <= ARENA_CORNER_RADIUS) {
+        continue;
+      }
+
+      const safeDistance = Math.max(radialDistance, 1e-6);
+      const directionX = dx / safeDistance;
+      const directionZ = dz / safeDistance;
+
+      car.position.x = ramp.center.x + directionX * ARENA_CORNER_RADIUS;
+      car.position.z = ramp.center.z + directionZ * ARENA_CORNER_RADIUS;
+
+      const inwardNormal = {
+        x: -directionX,
+        y: 0,
+        z: -directionZ
+      };
+
+      const tractionOnSameSurface = car.tractionAttached && dot(car.tractionNormal, inwardNormal) > 0.999;
+      if (!tractionOnSameSurface) {
+        applySurfaceCollisionResponse(car, inwardNormal);
+      }
+    } else {
+      if (car.position.x < minX || car.position.x > maxX) {
+        continue;
+      }
+
+      const dy = car.position.y - ramp.center.y;
+      const dz = car.position.z - ramp.center.z;
+      const inRampQuadrant = dy * ramp.towardWall >= 0 && dz <= 0;
+      if (!inRampQuadrant) {
+        continue;
+      }
+
+      const radialDistance = Math.hypot(dy, dz);
+      if (radialDistance <= ARENA_CORNER_RADIUS) {
+        continue;
+      }
+
+      const safeDistance = Math.max(radialDistance, 1e-6);
+      const directionY = dy / safeDistance;
+      const directionZ = dz / safeDistance;
+
+      car.position.y = ramp.center.y + directionY * ARENA_CORNER_RADIUS;
+      car.position.z = ramp.center.z + directionZ * ARENA_CORNER_RADIUS;
+
+      const inwardNormal = {
+        x: 0,
+        y: -directionY,
+        z: -directionZ
+      };
+
+      const tractionOnSameSurface = car.tractionAttached && dot(car.tractionNormal, inwardNormal) > 0.999;
+      if (!tractionOnSameSurface) {
+        applySurfaceCollisionResponse(car, inwardNormal);
+      }
+    }
+  }
+
+  if (car.position.z > world.arena.bounds.min.z + 1e-6) {
+    car.onGround = false;
+  }
+}
+
+function resolveCornerRampCollisions(world: WorldState, car: WorldState["cars"][string]): void {
+  for (const corner of cornerRampDefinitions(world)) {
+    const dx = car.position.x - corner.center.x;
+    const dy = car.position.y - corner.center.y;
+    const inCornerQuadrant = dx * corner.towardCorner.x >= 0 && dy * corner.towardCorner.y >= 0;
+    if (!inCornerQuadrant) {
+      continue;
+    }
+
+    const radialDistance = Math.hypot(dx, dy);
+    if (radialDistance <= ARENA_CORNER_RADIUS) {
+      continue;
+    }
+
+    const safeDistance = Math.max(radialDistance, 1e-6);
+    const directionX = dx / safeDistance;
+    const directionY = dy / safeDistance;
+
+    car.position.x = corner.center.x + directionX * ARENA_CORNER_RADIUS;
+    car.position.y = corner.center.y + directionY * ARENA_CORNER_RADIUS;
+
+    const inwardNormal = {
+      x: -directionX,
+      y: -directionY,
+      z: 0
+    };
+
+    const tractionOnSameSurface = car.tractionAttached && dot(car.tractionNormal, inwardNormal) > 0.999;
+    if (!tractionOnSameSurface) {
+      applySurfaceCollisionResponse(car, inwardNormal);
+    }
   }
 }
 
@@ -339,8 +768,10 @@ export function tickWorld(world: WorldState, inputFrames: InputFrame[], dtSecond
 
     car.heading -= steer * steeringDirection * STEER_RADIANS_PER_SECOND * dtSeconds;
 
-    const forwardX = Math.cos(car.heading);
-    const forwardY = Math.sin(car.heading);
+    const forward = forwardForCar(car);
+    const forwardX = forward.x;
+    const forwardY = forward.y;
+    const forwardZ = forward.z;
 
     const boostEnabled = controls.boost && car.boost > 0;
     const accel = throttle * ACCELERATION + (boostEnabled ? BOOST_ACCELERATION : 0);
@@ -349,6 +780,7 @@ export function tickWorld(world: WorldState, inputFrames: InputFrame[], dtSecond
 
     car.velocity.x += forwardX * accel * dtSeconds;
     car.velocity.y += forwardY * accel * dtSeconds;
+    car.velocity.z += forwardZ * accel * dtSeconds;
 
     if (!car.onGround && !car.tractionAttached) {
       car.pitch += pitch * AIR_PITCH_RADIANS_PER_SECOND * dtSeconds;
@@ -392,10 +824,16 @@ export function tickWorld(world: WorldState, inputFrames: InputFrame[], dtSecond
       }
     }
 
-    if (!car.tractionAttached && !car.onGround) {
+    if (!car.tractionAttached) {
       const candidate = wallOrCeilingCandidate(world, car.position);
       const speed = magnitude(car.velocity);
-      if (candidate !== undefined && speed <= TRACTION_ATTACH_MAX_SPEED && canAttachToTractionSurface(car, candidate)) {
+      const canAttachFromGround = !car.onGround || (candidate !== undefined && candidate.normal.z > 0);
+      if (
+        candidate !== undefined &&
+        canAttachFromGround &&
+        speed <= TRACTION_ATTACH_MAX_SPEED &&
+        canAttachToTractionSurface(car, candidate)
+      ) {
         setTractionAttached(car, candidate);
       }
     }
@@ -415,6 +853,8 @@ export function tickWorld(world: WorldState, inputFrames: InputFrame[], dtSecond
       car.velocity.x = tangentVelocity.x;
       car.velocity.y = tangentVelocity.y;
       car.velocity.z = tangentVelocity.z;
+
+      alignCarRotationToTractionNormal(car);
     } else {
       car.velocity.z += GRAVITY_Z * dtSeconds;
     }
@@ -436,6 +876,8 @@ export function tickWorld(world: WorldState, inputFrames: InputFrame[], dtSecond
     }
 
     resolveArenaWallAndCeilingCollisions(world, car);
+    resolveFloorWallRampCollisions(world, car);
+    resolveCornerRampCollisions(world, car);
 
     if (car.position.z <= 0) {
       car.position.z = 0;
