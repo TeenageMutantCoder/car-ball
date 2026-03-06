@@ -29,6 +29,7 @@ function buildRenderSnapshot(): RenderSnapshotState {
         rotation: { x: 0, y: 0, z: 0, w: 1 },
         boost: 42,
         onGround: true,
+        tractionAttached: false,
       },
     ],
     ball: {
@@ -111,6 +112,26 @@ test("camera controller keeps last grounded direction while airborne", () => {
   const airbornePose = controller.resolvePose(snapshot, "car-1", 16, { yaw: 0, pitch: 0 });
   assert.equal(airbornePose.position.x, groundedPose.position.x);
   assert.equal(airbornePose.position.z, groundedPose.position.z);
+});
+
+test("camera controller updates heading when traction is attached off ground", () => {
+  const controller = createCameraController();
+  const snapshot = buildRenderSnapshot();
+
+  const groundedPose = controller.resolvePose(snapshot, "car-1", 16, { yaw: 0, pitch: 0 });
+
+  snapshot.cars[0]!.onGround = false;
+  snapshot.cars[0]!.tractionAttached = true;
+  snapshot.cars[0]!.rotation = {
+    x: 0,
+    y: Math.sin(Math.PI / 4),
+    z: 0,
+    w: Math.cos(Math.PI / 4),
+  };
+
+  const tractionPose = controller.resolvePose(snapshot, "car-1", 16, { yaw: 0, pitch: 0 });
+  assert.notEqual(tractionPose.position.x, groundedPose.position.x);
+  assert.notEqual(tractionPose.position.z, groundedPose.position.z);
 });
 
 test("camera controller applies temporary look input with easing", () => {

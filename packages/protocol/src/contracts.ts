@@ -58,6 +58,7 @@ export interface CarSnapshot {
   rotation: Rotation;
   boost: number;
   onGround: boolean;
+  tractionAttached: boolean;
 }
 
 export interface BallSnapshot {

@@ -158,7 +158,8 @@ export function worldToProtocolSnapshot(world: WorldState, options: ToProtocolSn
         ? tractionOrientationToRotation(car)
         : orientationToRotation(car.heading, car.pitch, car.roll),
       boost: car.boost,
-      onGround: car.onGround
+      onGround: car.onGround,
+      tractionAttached: car.tractionAttached
     }));
 
   return {

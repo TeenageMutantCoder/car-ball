@@ -147,7 +147,7 @@ function resolveDrivingForward(
   const flattenedForward = normalizeHorizontalVec3(carForward);
   const groundedForward = flattenedForward ?? DEFAULT_FORWARD;
 
-  if (focusCar.onGround ?? false) {
+  if (focusCar.onGround || focusCar.tractionAttached) {
     if (drivingForwardByCarId !== undefined) {
       drivingForwardByCarId.set(focusCarId, groundedForward);
     }

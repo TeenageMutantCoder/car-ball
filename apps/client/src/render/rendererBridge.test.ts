@@ -36,6 +36,7 @@ function buildSnapshot(): Snapshot {
         rotation: { x: 0, y: 0, z: 0, w: 1 },
         boost: 77,
         onGround: true,
+        tractionAttached: false,
       },
       {
         id: "car-1",
@@ -46,6 +47,7 @@ function buildSnapshot(): Snapshot {
         rotation: { x: 0, y: 0.4, z: 0, w: 0.9 },
         boost: 33,
         onGround: false,
+        tractionAttached: true,
       },
     ],
     ball: {

@@ -9,6 +9,7 @@ export interface RenderCarState {
   rotation: Rotation;
   boost: number;
   onGround: boolean;
+  tractionAttached: boolean;
 }
 
 export interface RenderBallState {
@@ -111,6 +112,7 @@ function normalizeSnapshot(snapshot: Snapshot): RenderSnapshotState {
       rotation: protocolToRenderRotation(car.rotation),
       boost: car.boost,
       onGround: car.onGround,
+      tractionAttached: car.tractionAttached,
     }))
     .sort((left, right) => left.id.localeCompare(right.id));
 
@@ -149,6 +151,7 @@ function cloneRenderSnapshot(snapshot: RenderSnapshotState): RenderSnapshotState
       rotation: cloneRotation(car.rotation),
       boost: car.boost,
       onGround: car.onGround,
+      tractionAttached: car.tractionAttached,
     })),
     ball: {
       id: snapshot.ball.id,
@@ -177,6 +180,7 @@ function interpolateCar(
       rotation: cloneRotation(current!.rotation),
       boost: current!.boost,
       onGround: current!.onGround,
+      tractionAttached: current!.tractionAttached,
     };
   }
 
@@ -190,6 +194,7 @@ function interpolateCar(
       rotation: cloneRotation(previous.rotation),
       boost: previous.boost,
       onGround: previous.onGround,
+      tractionAttached: previous.tractionAttached,
     };
   }
 
@@ -207,6 +212,7 @@ function interpolateCar(
     }),
     boost: interpolateNumber(previous.boost, current.boost, alpha),
     onGround: current.onGround,
+    tractionAttached: current.tractionAttached,
   };
 }
 
