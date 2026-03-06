@@ -1,12 +1,9 @@
 import type { WorldState } from "./state.ts";
+import { DEFAULT_CAR_HALF_EXTENTS } from "./constants.ts";
 import type { RapierColliderSpec, RapierMaterialTable, RapierShadowInitContext } from "./rapierShadow.ts";
 
 export const DEFAULT_BALL_COLLIDER_RADIUS = 0.6;
-export const DEFAULT_CAR_PROXY_HALF_EXTENTS = {
-  x: 1.2,
-  y: 0.8,
-  z: 1.2
-};
+export const DEFAULT_CAR_PROXY_HALF_EXTENTS = DEFAULT_CAR_HALF_EXTENTS;
 
 export function createRapierMaterialTable(): RapierMaterialTable {
   return {

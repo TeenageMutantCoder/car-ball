@@ -1,10 +1,10 @@
+import type { Vec3 } from "@car-ball/protocol";
+
 export const TICK_RATE = 120;
 export const FIXED_STEP_SECONDS = 1 / TICK_RATE;
 export const FIXED_STEP_MS = 1000 / TICK_RATE;
 export const DEFAULT_MAX_SUBSTEPS = 8;
 export const DEFAULT_MATCH_DURATION_SECONDS = 5 * 60;
-
-import type { Vec3 } from "@car-ball/protocol";
 
 export const DOUBLE_JUMP_WINDOW_TICKS = 90;
 export const DOUBLE_JUMP_VERTICAL_IMPULSE = 5;
@@ -16,6 +16,17 @@ export const TRACTION_DETACH_SPEED = 24;
 export const TRACTION_DETACH_NORMAL_SPEED = 8;
 export const TRACTION_DETACH_MAX_ANGLE_FROM_TANGENT_RADIANS = Math.PI / 4;
 export const TRACTION_DAMPING_PER_SECOND = 2.4;
+
+export const DEFAULT_CAR_HALF_EXTENTS = {
+	x: 1.2,
+	y: 0.8,
+	z: 1.2
+} as const;
+
+export const CAR_SURFACE_BOUNCE_RESTITUTION = 0.35;
+export const CAR_SURFACE_TANGENTIAL_DAMPING = 0.94;
+export const CAR_SURFACE_BOUNCE_MIN_NORMAL_SPEED = 0.5;
+export const CEILING_TRACTION_WHEEL_ALIGNMENT_MIN_Z = 0.6;
 
 export interface BoxVolume {
 	min: Vec3;

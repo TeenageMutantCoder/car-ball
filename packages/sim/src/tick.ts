@@ -1,5 +1,10 @@
 import type { InputControls, InputFrame } from "@car-ball/protocol";
 import {
+  CAR_SURFACE_BOUNCE_MIN_NORMAL_SPEED,
+  CAR_SURFACE_BOUNCE_RESTITUTION,
+  CAR_SURFACE_TANGENTIAL_DAMPING,
+  CEILING_TRACTION_WHEEL_ALIGNMENT_MIN_Z,
+  DEFAULT_CAR_HALF_EXTENTS,
   DOUBLE_JUMP_DIRECTIONAL_IMPULSE,
   DOUBLE_JUMP_VERTICAL_IMPULSE,
   DOUBLE_JUMP_WINDOW_TICKS,
@@ -109,11 +114,31 @@ function setTractionAttached(car: WorldState["cars"][string], candidate: Tractio
   car.onGround = false;
 }
 
+function carCeilingTractionAlignmentZ(car: WorldState["cars"][string]): number {
+  return -Math.cos(car.pitch) * Math.cos(car.roll);
+}
+
+function canAttachToTractionSurface(
+  car: WorldState["cars"][string],
+  candidate: TractionContactCandidate
+): boolean {
+  if (candidate.surface !== "ceiling") {
+    return true;
+  }
+
+  return carCeilingTractionAlignmentZ(car) >= CEILING_TRACTION_WHEEL_ALIGNMENT_MIN_Z;
+}
+
 function wallOrCeilingCandidate(world: WorldState, position: Vec3Like): TractionContactCandidate | undefined {
   const candidates: TractionContactCandidate[] = [];
   const { min, max } = world.arena.bounds;
+  const surfaceXMin = min.x + DEFAULT_CAR_HALF_EXTENTS.x;
+  const surfaceXMax = max.x - DEFAULT_CAR_HALF_EXTENTS.x;
+  const surfaceYMin = min.y + DEFAULT_CAR_HALF_EXTENTS.y;
+  const surfaceYMax = max.y - DEFAULT_CAR_HALF_EXTENTS.y;
+  const surfaceZMax = max.z - DEFAULT_CAR_HALF_EXTENTS.z;
 
-  const xMinDistance = Math.abs(position.x - min.x);
+  const xMinDistance = Math.abs(position.x - surfaceXMin);
   if (xMinDistance <= TRACTION_CONTACT_DISTANCE) {
     candidates.push({
       surface: "wall-x-min",
@@ -122,7 +147,7 @@ function wallOrCeilingCandidate(world: WorldState, position: Vec3Like): Traction
     });
   }
 
-  const xMaxDistance = Math.abs(max.x - position.x);
+  const xMaxDistance = Math.abs(surfaceXMax - position.x);
   if (xMaxDistance <= TRACTION_CONTACT_DISTANCE) {
     candidates.push({
       surface: "wall-x-max",
@@ -131,7 +156,7 @@ function wallOrCeilingCandidate(world: WorldState, position: Vec3Like): Traction
     });
   }
 
-  const yMinDistance = Math.abs(position.y - min.y);
+  const yMinDistance = Math.abs(position.y - surfaceYMin);
   if (yMinDistance <= TRACTION_CONTACT_DISTANCE) {
     candidates.push({
       surface: "wall-y-min",
@@ -140,7 +165,7 @@ function wallOrCeilingCandidate(world: WorldState, position: Vec3Like): Traction
     });
   }
 
-  const yMaxDistance = Math.abs(max.y - position.y);
+  const yMaxDistance = Math.abs(surfaceYMax - position.y);
   if (yMaxDistance <= TRACTION_CONTACT_DISTANCE) {
     candidates.push({
       surface: "wall-y-max",
@@ -149,7 +174,7 @@ function wallOrCeilingCandidate(world: WorldState, position: Vec3Like): Traction
     });
   }
 
-  const ceilingDistance = Math.abs(max.z - position.z);
+  const ceilingDistance = Math.abs(surfaceZMax - position.z);
   if (ceilingDistance <= TRACTION_CONTACT_DISTANCE) {
     candidates.push({
       surface: "ceiling",
@@ -173,23 +198,91 @@ function wallOrCeilingCandidate(world: WorldState, position: Vec3Like): Traction
 function clampPositionToSurface(world: WorldState, car: WorldState["cars"][string]): void {
   switch (car.tractionSurface) {
     case "wall-x-min":
-      car.position.x = world.arena.bounds.min.x;
+      car.position.x = world.arena.bounds.min.x + DEFAULT_CAR_HALF_EXTENTS.x;
       break;
     case "wall-x-max":
-      car.position.x = world.arena.bounds.max.x;
+      car.position.x = world.arena.bounds.max.x - DEFAULT_CAR_HALF_EXTENTS.x;
       break;
     case "wall-y-min":
-      car.position.y = world.arena.bounds.min.y;
+      car.position.y = world.arena.bounds.min.y + DEFAULT_CAR_HALF_EXTENTS.y;
       break;
     case "wall-y-max":
-      car.position.y = world.arena.bounds.max.y;
+      car.position.y = world.arena.bounds.max.y - DEFAULT_CAR_HALF_EXTENTS.y;
       break;
     case "ceiling":
-      car.position.z = world.arena.bounds.max.z;
+      car.position.z = world.arena.bounds.max.z - DEFAULT_CAR_HALF_EXTENTS.z;
       break;
     case "none":
     default:
       break;
+  }
+}
+
+function applySurfaceCollisionResponse(car: WorldState["cars"][string], normal: Vec3Like): void {
+  const normalSpeed = dot(car.velocity, normal);
+  if (normalSpeed >= 0) {
+    return;
+  }
+
+  if (Math.abs(normalSpeed) < CAR_SURFACE_BOUNCE_MIN_NORMAL_SPEED) {
+    car.velocity.x -= normal.x * normalSpeed;
+    car.velocity.y -= normal.y * normalSpeed;
+    car.velocity.z -= normal.z * normalSpeed;
+    return;
+  }
+
+  const reflectedNormalSpeed = -normalSpeed * CAR_SURFACE_BOUNCE_RESTITUTION;
+  const normalDelta = reflectedNormalSpeed - normalSpeed;
+
+  car.velocity.x += normal.x * normalDelta;
+  car.velocity.y += normal.y * normalDelta;
+  car.velocity.z += normal.z * normalDelta;
+
+  const retainedNormalSpeed = dot(car.velocity, normal);
+  const tangentVelocity = projectOntoPlane(car.velocity, normal);
+
+  car.velocity.x = tangentVelocity.x * CAR_SURFACE_TANGENTIAL_DAMPING + normal.x * retainedNormalSpeed;
+  car.velocity.y = tangentVelocity.y * CAR_SURFACE_TANGENTIAL_DAMPING + normal.y * retainedNormalSpeed;
+  car.velocity.z = tangentVelocity.z * CAR_SURFACE_TANGENTIAL_DAMPING + normal.z * retainedNormalSpeed;
+}
+
+function resolveArenaWallAndCeilingCollisions(world: WorldState, car: WorldState["cars"][string]): void {
+  const { min, max } = world.arena.bounds;
+  const minX = min.x + DEFAULT_CAR_HALF_EXTENTS.x;
+  const maxX = max.x - DEFAULT_CAR_HALF_EXTENTS.x;
+  const minY = min.y + DEFAULT_CAR_HALF_EXTENTS.y;
+  const maxY = max.y - DEFAULT_CAR_HALF_EXTENTS.y;
+  const maxZ = max.z - DEFAULT_CAR_HALF_EXTENTS.z;
+  const contactNormals: Vec3Like[] = [];
+
+  if (car.position.x < minX) {
+    car.position.x = minX;
+    contactNormals.push(normalForSurface("wall-x-min"));
+  } else if (car.position.x > maxX) {
+    car.position.x = maxX;
+    contactNormals.push(normalForSurface("wall-x-max"));
+  }
+
+  if (car.position.y < minY) {
+    car.position.y = minY;
+    contactNormals.push(normalForSurface("wall-y-min"));
+  } else if (car.position.y > maxY) {
+    car.position.y = maxY;
+    contactNormals.push(normalForSurface("wall-y-max"));
+  }
+
+  if (car.position.z > maxZ) {
+    car.position.z = maxZ;
+    contactNormals.push(normalForSurface("ceiling"));
+  }
+
+  for (const normal of contactNormals) {
+    const tractionOnSameSurface = car.tractionAttached && dot(car.tractionNormal, normal) > 0.999;
+    if (tractionOnSameSurface) {
+      continue;
+    }
+
+    applySurfaceCollisionResponse(car, normal);
   }
 }
 
@@ -291,7 +384,7 @@ export function tickWorld(world: WorldState, inputFrames: InputFrame[], dtSecond
         setTractionDetached(car);
       } else {
         const contactCandidate = wallOrCeilingCandidate(world, car.position);
-        if (contactCandidate === undefined) {
+        if (contactCandidate === undefined || !canAttachToTractionSurface(car, contactCandidate)) {
           setTractionDetached(car);
         } else {
           setTractionAttached(car, contactCandidate);
@@ -302,7 +395,7 @@ export function tickWorld(world: WorldState, inputFrames: InputFrame[], dtSecond
     if (!car.tractionAttached && !car.onGround) {
       const candidate = wallOrCeilingCandidate(world, car.position);
       const speed = magnitude(car.velocity);
-      if (candidate !== undefined && speed <= TRACTION_ATTACH_MAX_SPEED) {
+      if (candidate !== undefined && speed <= TRACTION_ATTACH_MAX_SPEED && canAttachToTractionSurface(car, candidate)) {
         setTractionAttached(car, candidate);
       }
     }
@@ -341,6 +434,8 @@ export function tickWorld(world: WorldState, inputFrames: InputFrame[], dtSecond
     if (car.tractionAttached) {
       clampPositionToSurface(world, car);
     }
+
+    resolveArenaWallAndCeilingCollisions(world, car);
 
     if (car.position.z <= 0) {
       car.position.z = 0;

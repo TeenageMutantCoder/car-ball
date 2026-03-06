@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import type { InputControls, InputFrame, PlayerId } from "@car-ball/protocol";
+import { DEFAULT_CAR_HALF_EXTENTS } from "./constants.ts";
 import { createInitialWorldState } from "./state.ts";
 import { tickWorld } from "./tick.ts";
 
@@ -11,6 +12,8 @@ const CAR_ID = `car:${PLAYER_ID}`;
 const DEFAULT_CONTROLS: InputControls = {
   throttle: 0,
   steer: 0,
+  pitch: 0,
+  roll: 0,
   jump: false,
   boost: false,
   handbrake: false
@@ -36,7 +39,7 @@ test("wall contact sticks under threshold speed", () => {
   const car = world.cars[CAR_ID];
 
   car.onGround = false;
-  car.position.x = world.arena.bounds.max.x - 0.1;
+  car.position.x = world.arena.bounds.max.x - DEFAULT_CAR_HALF_EXTENTS.x - 0.1;
   car.position.z = 12;
   car.velocity.x = 2;
 
@@ -45,13 +48,13 @@ test("wall contact sticks under threshold speed", () => {
   assert.equal(car.tractionAttached, true);
   assert.equal(car.tractionSurface, "wall-x-max");
   assert.equal(car.onGround, false);
-  assert.equal(car.position.x, world.arena.bounds.max.x);
+  assert.equal(car.position.x, world.arena.bounds.max.x - DEFAULT_CAR_HALF_EXTENTS.x);
 
   for (let tick = 2; tick <= 20; tick += 1) {
     tickWorld(world, [frameForTick(tick)]);
     assert.equal(car.tractionAttached, true);
     assert.equal(car.tractionSurface, "wall-x-max");
-    assert.equal(car.position.x, world.arena.bounds.max.x);
+    assert.equal(car.position.x, world.arena.bounds.max.x - DEFAULT_CAR_HALF_EXTENTS.x);
   }
 });
 
@@ -60,7 +63,7 @@ test("traction detaches when threshold is exceeded", () => {
   const car = world.cars[CAR_ID];
 
   car.onGround = false;
-  car.position.x = world.arena.bounds.max.x - 0.1;
+  car.position.x = world.arena.bounds.max.x - DEFAULT_CAR_HALF_EXTENTS.x - 0.1;
   car.position.z = 12;
   car.velocity.x = 2;
 
@@ -81,8 +84,8 @@ test("traction transitions stay bounded and finite", () => {
   const car = world.cars[CAR_ID];
 
   car.onGround = false;
-  car.position.x = world.arena.bounds.max.x - 0.2;
-  car.position.z = world.arena.bounds.max.z - 0.2;
+  car.position.x = world.arena.bounds.max.x - DEFAULT_CAR_HALF_EXTENTS.x - 0.2;
+  car.position.z = world.arena.bounds.max.z - DEFAULT_CAR_HALF_EXTENTS.z - 0.2;
   car.velocity.x = 3;
   car.velocity.z = 1;
 
@@ -112,4 +115,54 @@ test("traction transitions stay bounded and finite", () => {
       assert.notEqual(car.tractionSurface, "none");
     }
   }
+});
+
+test("car rebounds from wall at high speed when not traction-attached", () => {
+  const world = createInitialWorldState({ playerIds: [PLAYER_ID] });
+  const car = world.cars[CAR_ID];
+
+  car.onGround = false;
+  car.position.x = world.arena.bounds.max.x - DEFAULT_CAR_HALF_EXTENTS.x - 0.05;
+  car.position.z = 10;
+  car.velocity.x = 120;
+
+  tickWorld(world, [frameForTick(1)]);
+
+  assert.equal(car.position.x <= world.arena.bounds.max.x - DEFAULT_CAR_HALF_EXTENTS.x, true);
+  assert.equal(car.velocity.x < 0, true);
+  assert.equal(car.tractionAttached, false);
+});
+
+test("ceiling uses rigid rebound when wheels are not aligned for traction", () => {
+  const world = createInitialWorldState({ playerIds: [PLAYER_ID] });
+  const car = world.cars[CAR_ID];
+
+  car.onGround = false;
+  car.position.z = world.arena.bounds.max.z - DEFAULT_CAR_HALF_EXTENTS.z - 0.05;
+  car.velocity.z = 90;
+  car.pitch = 0;
+  car.roll = 0;
+
+  tickWorld(world, [frameForTick(1)]);
+
+  assert.equal(car.position.z <= world.arena.bounds.max.z - DEFAULT_CAR_HALF_EXTENTS.z, true);
+  assert.equal(car.velocity.z < 0, true);
+  assert.equal(car.tractionAttached, false);
+});
+
+test("ceiling traction can attach when wheels are aligned toward ceiling", () => {
+  const world = createInitialWorldState({ playerIds: [PLAYER_ID] });
+  const car = world.cars[CAR_ID];
+
+  car.onGround = false;
+  car.pitch = 0;
+  car.roll = Math.PI;
+  car.position.z = world.arena.bounds.max.z - DEFAULT_CAR_HALF_EXTENTS.z - 0.1;
+  car.velocity.z = 1;
+
+  tickWorld(world, [frameForTick(1)]);
+
+  assert.equal(car.tractionAttached, true);
+  assert.equal(car.tractionSurface, "ceiling");
+  assert.equal(car.position.z, world.arena.bounds.max.z - DEFAULT_CAR_HALF_EXTENTS.z);
 });
